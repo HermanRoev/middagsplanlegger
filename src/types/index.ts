@@ -1,0 +1,20 @@
+// Fil: src/types/index.ts
+
+// Definerer den strukturerte typen for en ingrediens
+export interface Ingredient {
+    name: string;
+    amount: number;
+    unit: 'g' | 'kg' | 'l' | 'dl' | 'stk' | 'ts' | 'ss';
+}
+
+// Definerer den komplette typen for en middag
+export interface Meal {
+    id: string;
+    name: string;
+    imageUrl?: string;
+    servings: number;
+    ingredients: Ingredient[];
+    instructions: string;
+    prepTime?: number; // Preparation time in minutes
+    costEstimate?: number; // Estimated cost in NOK
+}

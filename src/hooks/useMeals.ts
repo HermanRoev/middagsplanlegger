@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { Meal } from '@/types';
+import toast from 'react-hot-toast';
 
 export function useMeals() {
     const [meals, setMeals] = useState<Meal[]>([]);
@@ -24,12 +25,18 @@ export function useMeals() {
                     servings: data.servings || 1,
                     ingredients: data.ingredients || [],
                     instructions: data.instructions || '',
+                    prepTime: data.prepTime || 0,
+                    costEstimate: data.costEstimate || 0,
                 } as Meal;
             });
             setMeals(mealsData);
-        } catch (err) {
-            console.error("Error fetching meals:", err);
-            setError("Failed to load meals. Please try again later.");
+        } catch (error) {
+            console.error('Error fetching meals:', error);
+            const errorMessage = error instanceof Error 
+                ? error.message 
+                : 'Det oppstod en feil ved henting av middager';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
