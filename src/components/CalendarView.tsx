@@ -145,7 +145,7 @@ export function CalendarView() {
                             <span className={`font-bold mb-1 ${isCurrentDay ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' : 'text-gray-800'}`}>{format(day, 'd')}</span>
                             {plannedMeal ? (
                                 <div className="mt-2 flex-grow flex flex-col items-center text-center w-full h-full justify-center">
-                                    {plannedMeal.imageUrl && <Image src={plannedMeal.imageUrl} alt={plannedMeal.mealName} width={160} height={100} className="w-full h-24 object-cover rounded-md mb-1 max-w-full" />}
+                                    {plannedMeal.imageUrl && <Image src={plannedMeal.imageUrl} alt={plannedMeal.mealName} width={160} height={100} unoptimized={true} className="w-full h-24 object-cover rounded-md mb-1 max-w-full" />}
                                     <p className="text-sm font-medium text-gray-700 truncate w-full">{plannedMeal.mealName}</p>
                                 </div>
                             ) : <div className="flex-grow"></div>}
@@ -190,7 +190,8 @@ export function CalendarView() {
                                     src={activePlannedMeal.imageUrl} 
                                     alt={activePlannedMeal.mealName} 
                                     width={400} 
-                                    height={180} 
+                                    height={180}
+                                    unoptimized={true} 
                                     className="w-full h-44 object-cover rounded-lg shadow-md mb-2" 
                                 />
                             ) : (

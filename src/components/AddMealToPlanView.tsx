@@ -100,7 +100,7 @@ export function AddMealToPlanView({ meal, selectedDate, onBack, onPlanSaved, exi
             <div className="flex flex-col md:flex-row gap-8">
                 <div className="md:w-1/3 flex-shrink-0">
                     {meal.imageUrl ? (
-                        <Image src={meal.imageUrl} alt={meal.name} width={400} height={300} className="w-full h-60 object-cover rounded-lg shadow-md" />
+                        <Image src={meal.imageUrl} alt={meal.name} width={400} height={300} unoptimized={true} className="w-full h-60 object-cover rounded-lg shadow-md" />
                     ) : (
                         <div className="w-full h-60 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">Bilde mangler</div>
                     )}

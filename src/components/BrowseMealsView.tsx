@@ -84,6 +84,7 @@ export function BrowseMealsView() {
                                         alt={meal.name}
                                         width={160}
                                         height={100}
+                                        unoptimized={true}
                                         className="w-full h-24 object-cover rounded-md mb-1"
                                     />
                                 ) : (
@@ -116,7 +117,7 @@ export function BrowseMealsView() {
                     <div className="flex flex-col md:flex-row gap-6">
                         <div className="md:w-1/3 flex-shrink-0">
                             {activeMeal.imageUrl ? (
-                                <Image src={activeMeal.imageUrl} alt={activeMeal.name} width={400} height={180} className="w-full h-44 object-cover rounded-lg shadow-md mb-2" />
+                                <Image src={activeMeal.imageUrl} alt={activeMeal.name} width={400} height={180} unoptimized={true} className="w-full h-44 object-cover rounded-lg shadow-md mb-2" />
                             ) : (
                                 <div className="w-full h-44 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">Bilde mangler</div>
                             )}

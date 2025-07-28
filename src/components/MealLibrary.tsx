@@ -66,6 +66,7 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
                                          alt={meal.name}
                                          width={160}
                                          height={100}
+                                         unoptimized={true}
                                          className="w-full h-24 object-cover rounded-md mb-1"
                                      />
                                  ) : (

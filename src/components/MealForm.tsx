@@ -127,7 +127,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
                         onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
                     />
                     {imagePreview ? (
-                        <Image src={imagePreview} alt="Preview" width={300} height={200} className="rounded-lg object-cover" />
+                        <Image src={imagePreview} alt="Preview" width={300} height={200} unoptimized={true} className="rounded-lg object-cover" />
                     ) : (
                         <div className="text-center">
                             <span className="material-icons text-4xl text-gray-400">image</span>
