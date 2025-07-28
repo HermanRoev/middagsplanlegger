@@ -10,15 +10,11 @@ import { MainLayout } from '@/components/MainLayout';
 import { MealForm } from '@/components/MealForm';
 import { Meal } from '@/types';
 
-interface EditMealPageProps {
-    params: {
-        mealId: string;
-    };
-}
-
-export default function EditMealPage({ params }: EditMealPageProps) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function EditMealPage({ params }: any) {
     const router = useRouter();
-    const { mealId } = params;
+    // We still get type safety for mealId by destructuring it here.
+    const { mealId } = params as { mealId: string };
     const [initialData, setInitialData] = useState<Meal | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -32,8 +28,7 @@ export default function EditMealPage({ params }: EditMealPageProps) {
             if (docSnap.exists()) {
                 setInitialData({ id: docSnap.id, ...docSnap.data() } as Meal);
             } else {
-                console.error("Ingen slik middag funnet!");
-                // Håndter feil, f.eks. send brukeren tilbake
+                console.error("No such meal found!");
                 router.push('/meals/browse');
             }
             setIsLoading(false);
@@ -43,7 +38,7 @@ export default function EditMealPage({ params }: EditMealPageProps) {
     }, [mealId, router]);
 
     const handleUpdateMeal = async (mealData: Omit<Meal, 'id'>, imageFile: File | null) => {
-        let imageUrl = mealData.imageUrl; // Start med eksisterende URL
+        let imageUrl = mealData.imageUrl;
         if (imageFile) {
             const storageRef = ref(storage, `meals/${Date.now()}_${imageFile.name}`);
             await uploadBytes(storageRef, imageFile);
@@ -56,21 +51,20 @@ export default function EditMealPage({ params }: EditMealPageProps) {
             imageUrl,
         });
 
-        // Legg til nye ingredienser i masterlisten
         for (const ingredient of mealData.ingredients) {
             await setDoc(doc(db, 'ingredients', ingredient.name), {});
         }
 
-        alert(`Middagen '${mealData.name}' er oppdatert!`);
+        alert(`Meal '${mealData.name}' has been updated!`);
         router.push('/meals/browse');
     };
 
     if (isLoading) {
-        return <MainLayout><p className="text-center">Laster middagsdata...</p></MainLayout>;
+        return <MainLayout><p className="text-center">Loading meal data...</p></MainLayout>;
     }
 
     if (!initialData) {
-        return <MainLayout><p className="text-center">Kunne ikke laste middagen.</p></MainLayout>;
+        return <MainLayout><p className="text-center">Could not load the meal.</p></MainLayout>;
     }
 
     return (

@@ -12,7 +12,7 @@ interface MealLibraryProps {
     cardClassName?: string;
 }
 
-export function MealLibrary({ onSelectMeal, cardClassName }: MealLibraryProps) {
+export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
     const { meals: allMeals, isLoading } = useMeals();
     const [filteredMeals, setFilteredMeals] = useState<Meal[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
