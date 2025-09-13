@@ -55,16 +55,16 @@ export default function ImportMealPage() {
     try {
       let prompt
       let result
-      const model = getGenerativeModel({ model: 'gemini-pro-vision' })
-      const textModel = getGenerativeModel({ model: 'gemini-pro' })
+      const model = getGenerativeModel({ model: 'gemini-2.5-flash' })
 
       if (importType === 'image' && imageFile) {
         const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(imageFile);
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = error => reject(error);
-        });
+          const reader = new FileReader()
+          reader.readAsDataURL(imageFile)
+          reader.onload = () =>
+            resolve((reader.result as string).split(',')[1])
+          reader.onerror = (error) => reject(error)
+        })
 
         const imagePart = {
           inlineData: {
@@ -73,33 +73,33 @@ export default function ImportMealPage() {
           },
         }
         prompt = `
-          You are an expert recipe parser. Analyze the following recipe content.
-          Extract the meal name, a list of ingredients (with name, amount, and unit), and the instructions.
-          Also, provide an estimated cost for the entire meal in Norwegian Kroner (NOK), based on average prices in Norway.
-          The valid units for ingredients are: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normalize to these where possible.
-          Return ONLY a single, valid JSON object with this structure: { "name": string, "ingredients": [{ "name": string, "amount": number, "unit": string }], "instructions": string, "costEstimate": number }.
-          Do not include any text, markdown, or formatting outside of the JSON object.
+          Du er en ekspert på å tolke oppskrifter. Analyser følgende oppskriftsinnhold.
+          Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og instruksjonene.
+          Gi også et estimat for den totale kostnaden for måltidet i norske kroner (NOK), basert på gjennomsnittlige priser i Norge.
+          De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normaliser til disse der det er mulig.
+          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": "...", "costEstimate": ... }.
+          Ikke inkluder tekst, markdown eller formatering utenfor JSON-objektet.
         `
         result = await model.generateContent([prompt, imagePart])
       } else if (importType === 'text' && recipeText.trim()) {
         prompt = `
-          You are an expert recipe parser. Analyze the following recipe content.
-          Extract the meal name, a list of ingredients (with name, amount, and unit), and the instructions.
-          Also, provide an estimated cost for the entire meal in Norwegian Kroner (NOK), based on average prices in Norway.
-          The valid units for ingredients are: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normalize to these where possible.
-          Return ONLY a single, valid JSON object with this structure: { "name": string, "ingredients": [{ "name": string, "amount": number, "unit": string }], "instructions": string, "costEstimate": number }.
-          Do not include any text, markdown, or formatting outside of the JSON object.
+          Du er en ekspert på å tolke oppskrifter. Analyser følgende oppskriftstekst.
+          Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og instruksjonene.
+          Gi også et estimat for den totale kostnaden for måltidet i norske kroner (NOK), basert på gjennomsnittlige priser i Norge.
+          De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normaliser til disse der det er mulig.
+          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": "...", "costEstimate": ... }.
+          Ikke inkluder tekst, markdown eller formatering utenfor JSON-objektet.
         `
-        result = await textModel.generateContent([prompt, recipeText])
+        result = await model.generateContent([prompt, recipeText])
       } else if (importType === 'generate' && generateName.trim()) {
         prompt = `
-          You are a creative chef. Generate a complete recipe for "${generateName}" for ${generateServings} people.
-          Provide the ingredients, step-by-step instructions, an estimated preparation time in minutes, and an estimated cost in Norwegian Kroner (NOK).
-          The valid units for ingredients are: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'.
-          Return ONLY a single, valid JSON object with this structure: { "name": string, "ingredients": [{ "name": string, "amount": number, "unit": string }], "instructions": string, "prepTime": number, "costEstimate": number }.
-          Do not include any text, markdown, or formatting outside of the JSON object.
+          Du er en kreativ kokk. Generer en komplett oppskrift for "${generateName}" for ${generateServings} personer.
+          Oppgi ingrediensene, trinnvise instruksjoner, en estimert tilberedningstid i minutter, og en estimert kostnad i norske kroner (NOK).
+          De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'.
+          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": "...", "prepTime": ..., "costEstimate": ... }.
+          Ikke inkluder tekst, markdown eller formatering utenfor JSON-objektet.
         `
-        result = await textModel.generateContent(prompt)
+        result = await model.generateContent(prompt)
       } else {
         toast.dismiss()
         toast.error(
