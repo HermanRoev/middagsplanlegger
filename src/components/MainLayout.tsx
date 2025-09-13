@@ -1,118 +1,171 @@
 // src/components/MainLayout.tsx
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { clsx } from 'clsx';
-import { useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { clsx } from 'clsx'
+import { useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface MainLayoutProps {
-    children: React.ReactNode;
+  children: React.ReactNode
 }
 
 const navigation = [
-    { name: 'Kalender', href: '/', icon: CalendarIcon },
-    { name: 'Middagsbibliotek', href: '/meals/browse', icon: LibraryIcon },
-    { name: 'Legg til ny middag', href: '/meals/new', icon: PlusIcon },
-    { name: 'Handleliste', href: '/handleliste', icon: ShoppingCartIcon },
-];
+  { name: 'Kalender', href: '/', icon: CalendarIcon },
+  { name: 'Middagsbibliotek', href: '/meals/browse', icon: LibraryIcon },
+  { name: 'Legg til ny middag', href: '/meals/new', icon: PlusIcon },
+  { name: 'Handleliste', href: '/handleliste', icon: ShoppingCartIcon },
+]
 
 export function MainLayout({ children }: MainLayoutProps) {
-    const pathname = usePathname();
-    const { logOut, user, loading } = useAuth();
-    const router = useRouter();
+  const pathname = usePathname()
+  const { logOut, user, loading } = useAuth()
+  const router = useRouter()
 
-    useEffect(() => {
-        if (!loading && !user) {
-            router.replace('/login');
-        }
-    }, [user, loading, router]);
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login')
+    }
+  }, [user, loading, router])
 
-    return (
-        <div className="flex flex-col h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-md z-10">
-                <div className="max-w-7xl py-4 px-4 sm:px-6 lg:px-8">
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        Middagsplanlegger
-                    </h1>
-                </div>
-            </header>
-
-            <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar Navigation */}
-                <aside className="w-64 bg-white border-r border-gray-200 p-6">
-                    <div className="flex flex-col h-full">
-                        <nav className="flex flex-col space-y-2">
-                            {navigation.map((item) => (
-                                <Link 
-                                    key={item.name} 
-                                    href={item.href}
-                                    className={clsx(
-                                        'flex items-center px-4 py-2 text-base font-medium rounded-lg transition-colors',
-                                        pathname === item.href
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                    )}
-                                >
-                                    <item.icon className="h-6 w-6 mr-3" />
-                                    {item.name}
-                                </Link>
-                            ))}
-                        </nav>
-                        <div className="mt-auto pt-4 border-t">
-                            <button 
-                                onClick={logOut} 
-                                className="flex items-center px-4 py-2 text-base font-medium rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 w-full"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                                Logg ut
-                            </button>
-                        </div>
-                    </div>
-                </aside>
-
-                {/* Main Content Area */}
-                <main className="flex-1 p-6 overflow-y-auto">
-                    {children}
-                </main>
-            </div>
+  return (
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-md z-10">
+        <div className="max-w-7xl py-4 px-4 sm:px-6 lg:px-8">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Middagsplanlegger
+          </h1>
         </div>
-    );
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar Navigation */}
+        <aside className="w-64 bg-white border-r border-gray-200 p-6">
+          <div className="flex flex-col h-full">
+            <nav className="flex flex-col space-y-2">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={clsx(
+                    'flex items-center px-4 py-2 text-base font-medium rounded-lg transition-colors',
+                    pathname === item.href
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  )}
+                >
+                  <item.icon className="h-6 w-6 mr-3" />
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+            <div className="mt-auto pt-4 border-t">
+              <button
+                onClick={logOut}
+                className="flex items-center px-4 py-2 text-base font-medium rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 w-full"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                Logg ut
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+      </div>
+    </div>
+  )
 }
 
 // SVG Icons for navigation
 function CalendarIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-    );
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
+    </svg>
+  )
 }
 
 function LibraryIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-        </svg>
-    );
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"
+      />
+    </svg>
+  )
 }
 
 function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-    );
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  )
 }
 
 function ShoppingCartIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-    );
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+      />
+    </svg>
+  )
 }
