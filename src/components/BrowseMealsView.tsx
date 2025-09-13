@@ -12,6 +12,7 @@ import { Meal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
 import { Modal } from './Modal'
 import toast from 'react-hot-toast'
+import { MealCard } from './MealCard'
 
 export function BrowseMealsView() {
   const [activeMeal, setActiveMeal] = useState<Meal | null>(null)
@@ -81,45 +82,11 @@ export function BrowseMealsView() {
       ) : (
         <div className="flex flex-wrap gap-4">
           {filteredMeals.map((meal) => (
-            <div
+            <MealCard
               key={meal.id}
-              className="border border-gray-200 rounded-xl overflow-hidden group flex flex-col justify-between transition-all duration-200 bg-white shadow-sm hover:shadow-lg hover:scale-[1.02] cursor-pointer w-[220px] h-[180px]"
+              meal={meal}
               onClick={() => setActiveMeal(meal)}
-            >
-              <div className="mt-2 flex-grow flex flex-col items-center text-center w-full h-full justify-center px-4">
-                {meal.imageUrl ? (
-                  <Image
-                    src={meal.imageUrl}
-                    alt={meal.name}
-                    width={160}
-                    height={100}
-                    unoptimized={true}
-                    className="w-full h-24 object-cover rounded-md mb-1"
-                  />
-                ) : (
-                  <div className="w-full h-24 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-sm p-2 text-center">
-                    <span>Bilde mangler</span>
-                  </div>
-                )}
-                <p className="text-sm font-medium text-gray-700 truncate w-full">
-                  {meal.name}
-                </p>
-                <div className="flex gap-4 text-xs text-gray-500 mt-1">
-                  {(meal.prepTime ?? 0) > 0 && (
-                    <span className="flex items-center gap-1">
-                      <span className="material-icons text-sm">schedule</span>
-                      {meal.prepTime} min
-                    </span>
-                  )}
-                  {(meal.costEstimate ?? 0) > 0 && (
-                    <span className="flex items-center gap-1">
-                      <span className="material-icons text-sm">payments</span>
-                      {meal.costEstimate} kr
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+            />
           ))}
         </div>
       )}
@@ -137,8 +104,7 @@ export function BrowseMealsView() {
                   alt={activeMeal.name}
                   width={400}
                   height={180}
-                  unoptimized={true}
-                  className="w-full h-44 object-cover rounded-lg shadow-md mb-2"
+                  className="w-full h-44 object-contain rounded-lg shadow-md mb-2"
                 />
               ) : (
                 <div className="w-full h-44 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
