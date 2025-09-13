@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/MainLayout'
 import toast from 'react-hot-toast'
-import { getGenerativeModel } from 'firebase/ai'
-import { db } from '@/lib/firebase'
+import { getAI, getGenerativeModel } from 'firebase/ai'
+import { app, db } from '@/lib/firebase'
 import {
   collection,
   addDoc,
@@ -55,7 +55,8 @@ export default function ImportMealPage() {
     try {
       let prompt
       let result
-      const model = getGenerativeModel({ model: 'gemini-2.5-flash' })
+      const ai = getAI(app)
+      const model = getGenerativeModel(ai, { model: 'gemini-2.5-flash' })
 
       if (importType === 'image' && imageFile) {
         const base64 = await new Promise<string>((resolve, reject) => {
