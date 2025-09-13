@@ -4,7 +4,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { clsx } from 'clsx'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface MainLayoutProps {
@@ -22,6 +22,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const pathname = usePathname()
   const { logOut, user, loading } = useAuth()
   const router = useRouter()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,17 +33,29 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-md z-10">
-        <div className="max-w-7xl py-4 px-4 sm:px-6 lg:px-8">
+      <header className="bg-white shadow-md z-20">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">
             Middagsplanlegger
           </h1>
+          <button
+            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <span className="sr-only">Open menu</span>
+            <MenuIcon className="h-6 w-6" />
+          </button>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Navigation */}
-        <aside className="w-64 bg-white border-r border-gray-200 p-6">
+        <aside
+          className={clsx(
+            'fixed inset-y-0 left-0 z-10 w-64 bg-white border-r border-gray-200 p-6 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0',
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          )}
+        >
           <div className="flex flex-col h-full">
             <nav className="flex flex-col space-y-2">
               {navigation.map((item) => (
@@ -55,6 +68,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   )}
+                  onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon className="h-6 w-6 mr-3" />
                   {item.name}
@@ -63,7 +77,10 @@ export function MainLayout({ children }: MainLayoutProps) {
             </nav>
             <div className="mt-auto pt-4 border-t">
               <button
-                onClick={logOut}
+                onClick={() => {
+                  logOut()
+                  setSidebarOpen(false)
+                }}
                 className="flex items-center px-4 py-2 text-base font-medium rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 w-full"
               >
                 <svg
@@ -94,6 +111,25 @@ export function MainLayout({ children }: MainLayoutProps) {
 }
 
 // SVG Icons for navigation
+function MenuIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+      <svg
+        {...props}
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 6h16M4 12h16M4 18h16"
+        />
+      </svg>
+    )
+  }
+
 function CalendarIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg

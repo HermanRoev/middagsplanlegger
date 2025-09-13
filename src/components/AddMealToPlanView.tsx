@@ -116,7 +116,7 @@ export function AddMealToPlanView({
               width={400}
               height={300}
               unoptimized={true}
-              className="w-full h-60 object-cover rounded-lg shadow-md"
+              className="w-full h-60 object-contain rounded-lg shadow-md"
             />
           ) : (
             <div className="w-full h-60 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">

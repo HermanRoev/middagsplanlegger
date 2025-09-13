@@ -151,7 +151,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
               width={300}
               height={200}
               unoptimized={true}
-              className="rounded-lg object-cover"
+              className="rounded-lg object-contain"
             />
           ) : (
             <div className="text-center">

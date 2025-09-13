@@ -145,7 +145,8 @@ export function CalendarView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-2 text-center font-semibold text-gray-600 pb-2 mb-2">
+      {/* Grid view for larger screens */}
+      <div className="hidden md:grid grid-cols-7 gap-2 text-center font-semibold text-gray-600 pb-2 mb-2">
         {['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'].map((day) => (
           <div key={day} className="py-2">
             {day}
@@ -153,7 +154,7 @@ export function CalendarView() {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-2 flex-grow">
+      <div className="hidden md:grid grid-cols-7 gap-2 flex-grow">
         {Array.from({ length: startingDayIndex }).map((_, index) => (
           <div
             key={`empty-${index}`}
@@ -202,7 +203,7 @@ export function CalendarView() {
                           width={160}
                           height={100}
                           unoptimized={true}
-                          className="w-full h-24 object-cover rounded-md mb-1 max-w-full"
+                          className="w-full h-24 object-contain rounded-md mb-1 max-w-full"
                         />
                       )}
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
@@ -215,6 +216,57 @@ export function CalendarView() {
                 </div>
               )
             })}
+      </div>
+
+      {/* List view for smaller screens */}
+      <div className="md:hidden space-y-2">
+        {daysInMonth.map((day) => {
+          const dateKey = format(day, 'yyyy-MM-dd')
+          const plannedMeal = plannedMeals.get(dateKey)
+          const isCurrentDay = isToday(day)
+          return (
+            <div
+              key={dateKey}
+              className={`p-4 rounded-lg flex items-center gap-4 ${isCurrentDay ? 'bg-blue-50 ring-2 ring-blue-200' : 'bg-gray-50'}`}
+              onClick={() => handleDayClick(day)}
+            >
+              <div
+                className={`flex flex-col items-center justify-center w-12 ${isCurrentDay ? 'text-blue-600' : 'text-gray-700'}`}
+              >
+                <span className="font-bold text-lg">{format(day, 'd')}</span>
+                <span className="text-xs uppercase">
+                  {format(day, 'E', { locale: nb })}
+                </span>
+              </div>
+              <div className="flex-grow">
+                {plannedMeal ? (
+                  <div className="flex items-center gap-4">
+                    {plannedMeal.imageUrl && (
+                      <Image
+                        src={plannedMeal.imageUrl}
+                        alt={plannedMeal.mealName}
+                        width={64}
+                        height={64}
+                        unoptimized={true}
+                        className="w-16 h-16 object-contain rounded-md"
+                      />
+                    )}
+                    <p className="font-semibold text-gray-800">
+                      {plannedMeal.mealName}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">Ingen middag planlagt</p>
+                )}
+              </div>
+              {plannedMeal?.isShopped && (
+                <div className="bg-green-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm shadow">
+                  ✓
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {selectedDate && (
@@ -258,7 +310,7 @@ export function CalendarView() {
                     width={400}
                     height={180}
                     unoptimized={true}
-                    className="w-full h-44 object-cover rounded-lg shadow-md mb-2"
+                    className="w-full h-44 object-contain rounded-lg shadow-md mb-2"
                   />
                 ) : (
                   <div className="w-full h-44 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
