@@ -27,6 +27,7 @@ export function ShoppingListView() {
   const [selectedDays, setSelectedDays] = useState<Date[]>([])
   const [shoppedDays, setShoppedDays] = useState<Date[]>([])
   const [shoppingList, setShoppingList] = useState<AggregatedIngredient[]>([])
+  const [totalCost, setTotalCost] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [copyButtonText, setCopyButtonText] = useState(
     'Kopier til utklippstavlen'
@@ -54,6 +55,7 @@ export function ShoppingListView() {
     const generateList = async () => {
       if (selectedDays.length === 0) {
         setShoppingList([])
+        setTotalCost(0)
         return
       }
       setIsLoading(true)
@@ -65,13 +67,15 @@ export function ShoppingListView() {
           where('isShopped', '!=', true)
         )
         const querySnapshot = await getDocs(plansQuery)
+        let cost = 0
         const aggregatedMap = new Map<
           string,
           { amount: number; unit: string; name: string }
         >()
         querySnapshot.forEach((doc) => {
-          const ingredients =
-            (doc.data().scaledIngredients as Ingredient[]) || []
+          const data = doc.data()
+          cost += data.costEstimate || 0
+          const ingredients = (data.scaledIngredients as Ingredient[]) || []
           ingredients.forEach((ing) => {
             if (
               typeof ing === 'object' &&
@@ -122,6 +126,7 @@ export function ShoppingListView() {
           })
           .sort((a, b) => a.name.localeCompare(b.name))
         setShoppingList(list)
+        setTotalCost(cost)
       } catch (error) {
         console.error('Feil ved generering av handleliste:', error)
         toast.error('Kunne ikke lage listen. Sjekk konsollen for feil.')
@@ -252,6 +257,14 @@ export function ShoppingListView() {
           </div>
 
           <div className="bg-gray-50 p-6 rounded-xl min-h-[40vh] shadow-sm">
+            {totalCost > 0 && (
+              <div className="mb-4 text-center">
+                <p className="text-lg font-semibold text-gray-800">
+                  Estimert total kostnad
+                </p>
+                <p className="text-2xl font-bold text-blue-600">{totalCost} kr</p>
+              </div>
+            )}
             {isLoading && (
               <p className="text-center text-gray-500 pt-10">
                 Oppdaterer liste...

@@ -35,6 +35,8 @@ interface PlannedMeal {
   ingredients?: Ingredient[]
   instructions?: string
   plannedServings: number
+  prepTime?: number
+  costEstimate?: number
 }
 
 export function CalendarView() {
@@ -77,6 +79,8 @@ export function CalendarView() {
         ingredients: data.scaledIngredients || [],
         instructions: data.instructions,
         plannedServings: data.plannedServings,
+        prepTime: data.prepTime,
+        costEstimate: data.costEstimate,
       }
       mealsMap.set(data.date, meal)
     })
@@ -121,28 +125,32 @@ export function CalendarView() {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col w-full">
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-          className="flex items-center gap-1 px-4 py-2 bg-blue-100 rounded-lg hover:bg-blue-200 text-blue-800 font-semibold transition-colors shadow-sm"
-        >
-          <span className="material-icons text-base align-middle">
-            arrow_back
-          </span>
-          Forrige
-        </button>
-        <h2 className="text-2xl font-bold text-gray-800 capitalize">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 capitalize order-1 md:order-2">
           {format(currentDate, 'MMMM yyyy', { locale: nb })}
         </h2>
-        <button
-          onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-          className="flex items-center gap-1 px-4 py-2 bg-blue-100 rounded-lg hover:bg-blue-200 text-blue-800 font-semibold transition-colors shadow-sm"
-        >
-          Neste
-          <span className="material-icons text-base align-middle">
-            arrow_forward
-          </span>
-        </button>
+        <div className="w-full md:w-auto flex justify-between order-2 md:order-1">
+          <button
+            onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+            className="flex items-center gap-1 px-4 py-2 bg-blue-100 rounded-lg hover:bg-blue-200 text-blue-800 font-semibold transition-colors shadow-sm"
+          >
+            <span className="material-icons text-base align-middle">
+              arrow_back
+            </span>
+            Forrige
+          </button>
+        </div>
+        <div className="w-full md:w-auto flex justify-between order-3 md:order-3">
+          <button
+            onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+            className="flex items-center gap-1 px-4 py-2 bg-blue-100 rounded-lg hover:bg-blue-200 text-blue-800 font-semibold transition-colors shadow-sm"
+          >
+            Neste
+            <span className="material-icons text-base align-middle">
+              arrow_forward
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Grid view for larger screens */}
@@ -209,6 +217,24 @@ export function CalendarView() {
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
                         {plannedMeal.mealName}
                       </p>
+                      <div className="flex justify-center items-center gap-2 text-xs text-gray-500 mt-1">
+                        {plannedMeal.prepTime && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons text-sm">
+                              timer
+                            </span>
+                            {plannedMeal.prepTime} min
+                          </span>
+                        )}
+                        {plannedMeal.costEstimate && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons text-sm">
+                              paid
+                            </span>
+                            {plannedMeal.costEstimate} kr
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="flex-grow"></div>
@@ -251,9 +277,29 @@ export function CalendarView() {
                         className="w-16 h-16 object-contain rounded-md"
                       />
                     )}
-                    <p className="font-semibold text-gray-800">
-                      {plannedMeal.mealName}
-                    </p>
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        {plannedMeal.mealName}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                        {plannedMeal.prepTime && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons text-base">
+                              timer
+                            </span>
+                            {plannedMeal.prepTime} min
+                          </span>
+                        )}
+                        {plannedMeal.costEstimate && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons text-base">
+                              paid
+                            </span>
+                            {plannedMeal.costEstimate} kr
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-gray-500 italic">Ingen middag planlagt</p>
@@ -327,6 +373,24 @@ export function CalendarView() {
                     <p className="text-gray-600">
                       Planlagt for {activePlannedMeal.plannedServings} porsjoner
                     </p>
+                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+                      {activePlannedMeal.prepTime && (
+                        <span className="flex items-center gap-1">
+                          <span className="material-icons text-base">
+                            timer
+                          </span>
+                          {activePlannedMeal.prepTime} minutter
+                        </span>
+                      )}
+                      {activePlannedMeal.costEstimate && (
+                        <span className="flex items-center gap-1">
+                          <span className="material-icons text-base">
+                            paid
+                          </span>
+                          ca {activePlannedMeal.costEstimate} kr
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={() => setModalView('library')}

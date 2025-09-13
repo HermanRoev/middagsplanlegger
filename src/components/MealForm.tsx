@@ -30,10 +30,10 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || '')
   const [mealName, setMealName] = useState(initialData?.name || '')
-  const [servings, setServings] = useState(initialData?.servings || 1)
-  const [prepTime, setPrepTime] = useState(initialData?.prepTime || 0)
+  const [servings, setServings] = useState(initialData?.servings || null)
+  const [prepTime, setPrepTime] = useState(initialData?.prepTime || null)
   const [costEstimate, setCostEstimate] = useState(
-    initialData?.costEstimate || 0
+    initialData?.costEstimate || null
   )
   const [instructions, setInstructions] = useState(
     initialData?.instructions || ''
@@ -87,13 +87,13 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
   }, [])
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { name: '', amount: 0, unit: 'stk' }])
+    setIngredients([...ingredients, { name: '', amount: null, unit: 'stk' }])
   }
 
   const updateIngredient = (
     index: number,
     field: keyof Ingredient,
-    value: string | number
+    value: string | number | null
   ) => {
     const newIngredients = [...ingredients]
     newIngredients[index] = { ...newIngredients[index], [field]: value }
@@ -117,7 +117,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
 
     const mealData: Omit<Meal, 'id'> = {
       name: mealName,
-      servings,
+      servings: servings || 1,
       prepTime,
       costEstimate,
       ingredients: ingredients.filter((ing) => ing.name.trim() !== ''),
@@ -192,9 +192,10 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             <input
               type="number"
               id="servings"
-              value={servings}
-              onChange={(e) => setServings(Number(e.target.value))}
+              value={servings ?? ''}
+              onChange={(e) => setServings(Number(e.target.value) || null)}
               min="1"
+              placeholder="f.eks. 4"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
@@ -208,9 +209,10 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             <input
               type="number"
               id="prepTime"
-              value={prepTime}
-              onChange={(e) => setPrepTime(Number(e.target.value))}
+              value={prepTime ?? ''}
+              onChange={(e) => setPrepTime(Number(e.target.value) || null)}
               min="0"
+              placeholder="f.eks. 30"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
@@ -224,9 +226,10 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             <input
               type="number"
               id="costEstimate"
-              value={costEstimate}
-              onChange={(e) => setCostEstimate(Number(e.target.value))}
+              value={costEstimate ?? ''}
+              onChange={(e) => setCostEstimate(Number(e.target.value) || null)}
               min="0"
+              placeholder="f.eks. 150"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
@@ -251,9 +254,13 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
                 />
                 <input
                   type="number"
-                  value={ingredient.amount}
+                  value={ingredient.amount ?? ''}
                   onChange={(e) =>
-                    updateIngredient(index, 'amount', Number(e.target.value))
+                    updateIngredient(
+                      index,
+                      'amount',
+                      Number(e.target.value) || null
+                    )
                   }
                   placeholder="Mengde"
                   className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

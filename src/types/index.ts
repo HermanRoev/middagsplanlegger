@@ -3,7 +3,7 @@
 // Definerer den strukturerte typen for en ingrediens
 export interface Ingredient {
   name: string
-  amount: number
+  amount: number | null
   unit: 'g' | 'kg' | 'l' | 'dl' | 'stk' | 'ts' | 'ss'
 }
 
@@ -12,7 +12,7 @@ export interface Meal {
   id: string
   name: string
   imageUrl?: string
-  servings: number
+  servings: number | null
   ingredients: Ingredient[]
   instructions: string
   prepTime?: number // Preparation time in minutes

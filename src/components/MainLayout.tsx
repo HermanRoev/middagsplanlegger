@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Kalender', href: '/', icon: CalendarIcon },
   { name: 'Middagsbibliotek', href: '/meals/browse', icon: LibraryIcon },
   { name: 'Legg til ny middag', href: '/meals/new', icon: PlusIcon },
+  { name: 'Importer oppskrift', href: '/meals/import', icon: UploadIcon },
   { name: 'Handleliste', href: '/handleliste', icon: ShoppingCartIcon },
 ]
 
@@ -52,7 +53,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         {/* Sidebar Navigation */}
         <aside
           className={clsx(
-            'fixed inset-y-0 left-0 z-10 w-64 bg-white border-r border-gray-200 p-6 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0',
+            'fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 p-6 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0',
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           )}
         >
@@ -144,6 +145,25 @@ function CalendarIcon(props: React.SVGProps<SVGSVGElement>) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
+    </svg>
+  )
+}
+
+function UploadIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3 17.25V6.75a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 6.75v10.5a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 17.25z"
       />
     </svg>
   )
