@@ -47,6 +47,19 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
   const pasteInputRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (initialData) {
+      setMealName(initialData.name || '');
+      setServings(initialData.servings || null);
+      setPrepTime(initialData.prepTime || null);
+      setCostEstimate(initialData.costEstimate || null);
+      const formattedInstructions = initialData.instructions?.replace(/\\n/g, '\n') || '';
+      setInstructions(formattedInstructions);
+      setIngredients(initialData.ingredients || []);
+      setImagePreview(initialData.imageUrl || '');
+    }
+  }, [initialData]);
+
+  useEffect(() => {
     // Fetch master ingredients list
     const fetchMasterIngredients = async () => {
       const querySnapshot = await getDocs(collection(db, 'ingredients'))
