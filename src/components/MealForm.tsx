@@ -21,7 +21,7 @@ const units = [
 
 // Definerer props for komponenten
 interface MealFormProps {
-  initialData?: Meal
+  initialData?: Omit<Meal, 'id'>
   onSave: (mealData: Omit<Meal, 'id'>, imageFile: File | null) => Promise<void>
   isEditing: boolean
 }

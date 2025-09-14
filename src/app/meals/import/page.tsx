@@ -58,6 +58,12 @@ export default function ImportMealPage() {
       const ai = getAI(app)
       const model = getGenerativeModel(ai, { model: 'gemini-2.5-flash' })
 
+      const ingredientsSnapshot = await getDocs(collection(db, 'ingredients'))
+      const masterIngredientList = ingredientsSnapshot.docs.map(
+        (doc) => doc.data().name
+      )
+      const ingredientContext = `Her er en liste over eksisterende ingredienser i databasen. Hvis du finner en ingrediens i oppskriften som ligner på en av disse, vennligst bruk det nøyaktige navnet fra denne listen: ${masterIngredientList.join(', ')}.`
+
       if (importType === 'image' && imageFile) {
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
@@ -75,6 +81,7 @@ export default function ImportMealPage() {
         }
         prompt = `
           Du er en ekspert på å tolke oppskrifter. Analyser følgende oppskriftsinnhold.
+          ${ingredientContext}
           Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og instruksjonene.
           Gi også et estimat for den totale kostnaden for måltidet i norske kroner (NOK), basert på gjennomsnittlige priser i Norge.
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normaliser til disse der det er mulig.
@@ -85,6 +92,7 @@ export default function ImportMealPage() {
       } else if (importType === 'text' && recipeText.trim()) {
         prompt = `
           Du er en ekspert på å tolke oppskrifter. Analyser følgende oppskriftstekst.
+          ${ingredientContext}
           Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og instruksjonene.
           Gi også et estimat for den totale kostnaden for måltidet i norske kroner (NOK), basert på gjennomsnittlige priser i Norge.
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normaliser til disse der det er mulig.
@@ -95,6 +103,7 @@ export default function ImportMealPage() {
       } else if (importType === 'generate' && generateName.trim()) {
         prompt = `
           Du er en kreativ kokk. Generer en komplett oppskrift for "${generateName}" for ${generateServings} personer.
+          ${ingredientContext}
           Oppgi ingrediensene, trinnvise instruksjoner, en estimert tilberedningstid i minutter, og en estimert kostnad i norske kroner (NOK).
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'.
           Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": "...", "prepTime": ..., "costEstimate": ... }.
@@ -122,27 +131,21 @@ export default function ImportMealPage() {
         costEstimate?: number
       }
 
-      toast.loading('Lagrer ny oppskrift...')
-
-      const newMealRef = await addDoc(collection(db, 'meals'), {
+      const recipeForForm: Omit<Meal, 'id'> = {
         name: parsedRecipe.name,
         instructions: parsedRecipe.instructions,
         servings: generateServings || 1,
         ingredients: parsedRecipe.ingredients || [],
-        prepTime: parsedRecipe.prepTime || undefined,
-        costEstimate: parsedRecipe.costEstimate || undefined,
-        imageUrl: undefined,
-      })
+        prepTime: parsedRecipe.prepTime || null,
+        costEstimate: parsedRecipe.costEstimate || null,
+        imageUrl: null,
+      };
 
-      if (parsedRecipe.ingredients && parsedRecipe.ingredients.length > 0) {
-        await Promise.all(
-          parsedRecipe.ingredients.map((ing) => getMasterIngredientId(ing.name))
-        )
-      }
+      sessionStorage.setItem('importedRecipe', JSON.stringify(recipeForForm));
 
       toast.dismiss()
-      toast.success('Oppskrift importert! Omdirigerer for redigering...')
-      router.push(`/meals/edit/${newMealRef.id}`)
+      toast.success('Oppskrift analysert! Omdirigerer til redigeringssiden...')
+      router.push(`/meals/new`)
     } catch (error) {
       toast.dismiss()
       console.error('Feil under importering:', error)

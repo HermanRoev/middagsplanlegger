@@ -11,10 +11,10 @@ export interface Ingredient {
 export interface Meal {
   id: string
   name: string
-  imageUrl?: string
+  imageUrl: string | null
   servings: number | null
   ingredients: Ingredient[]
   instructions: string
-  prepTime?: number // Preparation time in minutes
-  costEstimate?: number // Estimated cost in NOK
+  prepTime: number | null // Preparation time in minutes
+  costEstimate: number | null // Estimated cost in NOK
 }
