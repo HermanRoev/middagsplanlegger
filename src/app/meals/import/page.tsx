@@ -119,11 +119,14 @@ export default function ImportMealPage() {
         return
       }
 
-      const response = result.response
-      const responseText = response.text()
-      const match = responseText.match(/```json\n([\s\S]*?)\n```/);
-      const jsonString = match ? match[1] : responseText;
-      const parsedRecipe = JSON.parse(jsonString) as {
+      const response = result.response;
+      const jsonText = response.candidates[0].content.parts[0].text;
+      if (!jsonText) {
+        throw new Error("No text found in AI response");
+      }
+      // Attempt to clean up the response by removing markdown and trimming
+      const cleanedJsonText = jsonText.replace(/```json\n?/, '').replace(/```$/, '').trim();
+      const parsedRecipe = JSON.parse(cleanedJsonText) as {
         name: string
         ingredients: Omit<Ingredient, 'id'>[]
         instructions: string
