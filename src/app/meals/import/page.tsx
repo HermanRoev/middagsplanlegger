@@ -22,7 +22,7 @@ export default function ImportMealPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [recipeText, setRecipeText] = useState('')
   const [generateName, setGenerateName] = useState('')
-  const [generateServings, setGenerateServings] = useState<number>(4)
+  const [generateServings, setGenerateServings] = useState<number | null>(4)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -270,11 +270,12 @@ export default function ImportMealPage() {
                 <input
                   id="servings"
                   type="number"
-                  value={generateServings}
+                  value={generateServings ?? ''}
                   onChange={(e) =>
-                    setGenerateServings(Number(e.target.value))
+                    setGenerateServings(Number(e.target.value) || null)
                   }
                   min="1"
+                  placeholder="f.eks. 4"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
                 />
               </div>

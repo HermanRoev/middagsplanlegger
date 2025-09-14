@@ -32,7 +32,9 @@ export function AddMealToPlanView({
   onPlanSaved,
   existingPlanId,
 }: AddMealToPlanViewProps) {
-  const [servingsToPlan, setServingsToPlan] = useState(meal.servings || 1)
+  const [servingsToPlan, setServingsToPlan] = useState<number | null>(
+    meal.servings || 1
+  )
   const [isLoading, setIsLoading] = useState(false)
   const [scaledIngredients, setScaledIngredients] = useState<Ingredient[]>(
     meal.ingredients || []
@@ -41,13 +43,14 @@ export function AddMealToPlanView({
   useEffect(() => {
     const baseServings = meal.servings || 1
     const baseIngredients = meal.ingredients || []
+    const currentServings = servingsToPlan || 0
 
-    if (baseServings <= 0 || servingsToPlan <= 0) {
+    if (baseServings <= 0 || currentServings <= 0) {
       setScaledIngredients(baseIngredients)
       return
     }
 
-    const scaleFactor = servingsToPlan / baseServings
+    const scaleFactor = currentServings / baseServings
     const newScaledIngredients = baseIngredients.map((ingredient) => ({
       ...ingredient,
       amount: (ingredient.amount || 0) * scaleFactor,
@@ -56,7 +59,7 @@ export function AddMealToPlanView({
   }, [servingsToPlan, meal.ingredients, meal.servings])
 
   const handleSavePlan = async () => {
-    if (servingsToPlan <= 0) {
+    if (!servingsToPlan || servingsToPlan <= 0) {
       toast.error('Vennligst oppgi et gyldig antall porsjoner.')
       return
     }
@@ -74,11 +77,13 @@ export function AddMealToPlanView({
         date: format(selectedDate, 'yyyy-MM-dd'),
         mealId: meal.id,
         mealName: meal.name,
-        imageUrl: meal.imageUrl || '',
+        imageUrl: meal.imageUrl || null,
         plannedServings: servingsToPlan,
         scaledIngredients: scaledIngredients,
         instructions: meal.instructions,
         isShopped: false,
+        prepTime: meal.prepTime || null,
+        costEstimate: meal.costEstimate || null,
       })
 
       toast.success(
@@ -153,12 +158,13 @@ export function AddMealToPlanView({
             <input
               type="number"
               id="servings"
-              value={servingsToPlan}
+              value={servingsToPlan ?? ''}
               onChange={(e) =>
-                setServingsToPlan(parseInt(e.target.value, 10) || 0)
+                setServingsToPlan(Number(e.target.value) || null)
               }
               className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               min="1"
+              placeholder="f.eks. 4"
             />
           </div>
         </div>
