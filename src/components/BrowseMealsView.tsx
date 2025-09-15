@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { db } from '@/lib/firebase'
@@ -26,7 +26,7 @@ export function BrowseMealsView() {
   const debouncedSearch = useDebounce(searchTerm, 100)
 
   const sortedAndFilteredMeals = useMemo(() => {
-    let filtered = allMeals.filter((meal) =>
+    const filtered = allMeals.filter((meal) =>
       meal.name.toLowerCase().includes(debouncedSearch.toLowerCase())
     );
 

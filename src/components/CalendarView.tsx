@@ -26,7 +26,7 @@ import Image from 'next/image'
 import { Modal } from './Modal'
 import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
-import { Meal, PlannedMeal, Ingredient } from '@/types'
+import { Meal, PlannedMeal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
 
 export function CalendarView() {
@@ -214,7 +214,7 @@ export function CalendarView() {
                           width={160}
                           height={100}
                           unoptimized={true}
-                          className="w-full h-24 object-contain rounded-md mb-1 max-w-full"
+                          className="w-full h-24 object-contain rounded-md mb-1 max-w-full p-1"
                         />
                       )}
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
@@ -259,7 +259,7 @@ export function CalendarView() {
                         width={64}
                         height={64}
                         unoptimized={true}
-                        className="w-16 h-16 object-contain rounded-md"
+                        className="w-16 h-16 object-contain rounded-md p-1"
                       />
                     )}
                     <div>
@@ -320,7 +320,7 @@ export function CalendarView() {
                     width={400}
                     height={180}
                     unoptimized={true}
-                    className="w-full h-44 object-contain rounded-lg shadow-md mb-2"
+                    className="w-full h-44 object-contain rounded-lg shadow-md mb-2 p-1"
                   />
                 ) : (
                   <div className="w-full h-44 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">

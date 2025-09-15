@@ -5,7 +5,14 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
-const InputField = ({ id, label, ...props }: any) => (
+import { InputHTMLAttributes } from 'react';
+
+interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+    id: string;
+    label: string;
+  }
+
+  const InputField = ({ id, label, ...props }: InputFieldProps) => (
     <div className="relative">
       <input
         id={id}
@@ -69,7 +76,7 @@ export default function LoginPage() {
             type="email"
             required
             value={email}
-            onChange={(e:any) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
           />
           <InputField
             id="password"
@@ -77,7 +84,7 @@ export default function LoginPage() {
             type="password"
             required
             value={password}
-            onChange={(e:any) => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
           />
           <button
             type="submit"

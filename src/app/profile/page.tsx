@@ -10,8 +10,14 @@ import {
   uploadProfilePicture,
 } from '@/lib/auth'
 import { MainLayout } from '@/components/MainLayout'
+import { InputHTMLAttributes } from 'react';
 
-const InputField = ({ id, label, ...props }: any) => (
+interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+    id: string;
+    label: string;
+  }
+
+  const InputField = ({ id, label, ...props }: InputFieldProps) => (
     <div className="relative">
       <input
         id={id}
@@ -165,7 +171,7 @@ export default function ProfilePage() {
                   label="Nytt brukernavn"
                   type="text"
                   value={newUsername}
-                  onChange={(e:any) => setNewUsername(e.target.value)}
+                  onChange={(e) => setNewUsername(e.target.value)}
                   disabled={loading}
                 />
                 <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg" disabled={loading || !newUsername}>
@@ -179,7 +185,7 @@ export default function ProfilePage() {
                   label="Nytt passord"
                   type="password"
                   value={newPassword}
-                  onChange={(e:any) => setNewPassword(e.target.value)}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   disabled={loading}
                 />
                  <InputField
@@ -187,7 +193,7 @@ export default function ProfilePage() {
                   label="Bekreft nytt passord"
                   type="password"
                   value={newPasswordConfirm}
-                  onChange={(e:any) => setNewPasswordConfirm(e.target.value)}
+                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
                   disabled={loading}
                 />
                 <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg" disabled={loading || !newPassword}>

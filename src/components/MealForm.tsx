@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase'
 import { collection, getDocs } from 'firebase/firestore'
 import { Ingredient, Meal } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { InputHTMLAttributes } from 'react';
 
 const units = [
   { value: 'g', label: 'gram' },
@@ -24,7 +25,12 @@ interface MealFormProps {
   isEditing: boolean
 }
 
-const InputField = ({ id, label, ...props }: any) => (
+interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+    id: string;
+    label: string;
+  }
+
+  const InputField = ({ id, label, ...props }: InputFieldProps) => (
   <div className="relative">
     <input
       id={id}
@@ -195,7 +201,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           label="Navn på middag"
           type="text"
           value={mealName}
-          onChange={(e:any) => setMealName(e.target.value)}
+          onChange={(e) => setMealName(e.target.value)}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -204,7 +210,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             label="Antall porsjoner"
             type="number"
             value={servings ?? ''}
-            onChange={(e:any) => setServings(Number(e.target.value) || null)}
+            onChange={(e) => setServings(Number(e.target.value) || null)}
             min="1"
           />
           <InputField
@@ -212,7 +218,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             label="Tid (minutter)"
             type="number"
             value={prepTime ?? ''}
-            onChange={(e:any) => setPrepTime(Number(e.target.value) || null)}
+            onChange={(e) => setPrepTime(Number(e.target.value) || null)}
             min="0"
           />
           <InputField
@@ -220,7 +226,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             label="Pris (NOK)"
             type="number"
             value={costEstimate ?? ''}
-            onChange={(e:any) => setCostEstimate(Number(e.target.value) || null)}
+            onChange={(e) => setCostEstimate(Number(e.target.value) || null)}
             min="0"
           />
         </div>
@@ -236,7 +242,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
                     label="Ingrediens"
                     type="text"
                     value={ingredient.name}
-                    onChange={(e:any) =>
+                    onChange={(e) =>
                       updateIngredient(index, 'name', e.target.value)
                     }
                     list="ingredients"
@@ -248,7 +254,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
                     label="Mengde"
                     type="number"
                     value={ingredient.amount ?? ''}
-                    onChange={(e:any) =>
+                    onChange={(e) =>
                       updateIngredient(
                         index,
                         'amount',

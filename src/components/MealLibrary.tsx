@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useMeals } from '@/hooks/useMeals'
 import { useFavorites } from '@/hooks/useFavorites'
 import { Meal } from '@/types'
@@ -16,12 +16,10 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
   const {
     meals: allMeals,
     isLoading: isLoadingMeals,
-    error: mealsError,
   } = useMeals()
   const {
     favoriteMeals,
     isLoading: isLoadingFavorites,
-    error: favoritesError,
     isFavorite,
     addFavorite,
     removeFavorite,
