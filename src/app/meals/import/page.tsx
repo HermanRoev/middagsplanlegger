@@ -100,7 +100,7 @@ export default function ImportMealPage() {
       } else {
         toast.error(
           'Vennligst velg en fil, lim inn tekst, eller fyll inn et navn for generering.',
-          { id: toastId }
+          { id: toastId, duration: 4000 }
         )
         setIsLoading(false)
         return
@@ -111,7 +111,10 @@ export default function ImportMealPage() {
 
       if (!jsonText) {
         console.error('Could not find text in AI response:', response)
-        toast.error('AI-en ga et uventet svar. Prøv igjen.', { id: toastId })
+        toast.error('AI-en ga et uventet svar. Prøv igjen.', {
+          id: toastId,
+          duration: 4000,
+        })
         setIsLoading(false)
         return
       }
@@ -142,13 +145,14 @@ export default function ImportMealPage() {
 
       toast.success('Oppskrift analysert! Omdirigerer til redigeringssiden...', {
         id: toastId,
+        duration: 4000,
       })
       router.push(`/meals/new`)
     } catch (error) {
       console.error('Feil under importering:', error)
       toast.error(
         `En feil oppsto: ${error instanceof Error ? error.message : 'Ukjent feil'}`,
-        { id: toastId }
+        { id: toastId, duration: 4000 }
       )
     } finally {
       setIsLoading(false)
