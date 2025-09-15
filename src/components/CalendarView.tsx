@@ -192,7 +192,7 @@ export function CalendarView() {
               return (
                 <div
                   key={dateKey}
-                  className={`border border-gray-200 rounded-xl p-2 flex flex-col cursor-pointer bg-white shadow-sm hover:shadow-lg hover:bg-blue-50 transition-all duration-200 relative w-full h-[180px] ${isCurrentDay ? 'ring-2 ring-blue-500' : ''}`}
+                  className={`border border-gray-200 rounded-xl p-2 flex flex-col cursor-pointer bg-white shadow-sm hover:shadow-lg hover:bg-blue-50 transition-all duration-200 relative w-full h-52 ${isCurrentDay ? 'ring-2 ring-blue-500' : ''}`}
                   onClick={() => handleDayClick(day)}
                 >
                   {plannedMeal?.isShopped && (
@@ -206,7 +206,7 @@ export function CalendarView() {
                     {format(day, 'd')}
                   </span>
                   {plannedMeal ? (
-                    <div className="mt-2 flex-grow flex flex-col items-center text-center w-full h-full justify-center">
+                    <div className="mt-2 flex-grow flex flex-col items-center text-center w-full">
                       {plannedMeal.imageUrl && (
                         <Image
                           src={plannedMeal.imageUrl}
@@ -220,6 +220,27 @@ export function CalendarView() {
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
                         {plannedMeal.mealName}
                       </p>
+                      <div className="flex-grow" />
+                      <div className="flex justify-center items-center text-xs text-gray-500 mt-1 w-full px-1">
+                        <div className="flex items-center gap-2">
+                          {(plannedMeal.prepTime ?? 0) > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="material-icons text-sm">
+                                schedule
+                              </span>
+                              {plannedMeal.prepTime} min
+                            </span>
+                          )}
+                          {(plannedMeal.costEstimate ?? 0) > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="material-icons text-sm">
+                                payments
+                              </span>
+                              {plannedMeal.costEstimate} kr
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex-grow"></div>
@@ -266,6 +287,20 @@ export function CalendarView() {
                       <p className="font-semibold text-gray-800">
                         {plannedMeal.mealName}
                       </p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                        {(plannedMeal.prepTime ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons text-base">schedule</span>
+                            {plannedMeal.prepTime} min
+                          </span>
+                        )}
+                        {(plannedMeal.costEstimate ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons text-base">payments</span>
+                            {plannedMeal.costEstimate} kr
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
