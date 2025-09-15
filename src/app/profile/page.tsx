@@ -9,6 +9,24 @@ import {
   updateUserPassword,
   uploadProfilePicture,
 } from '@/lib/auth'
+import { MainLayout } from '@/components/MainLayout'
+
+const InputField = ({ id, label, ...props }: any) => (
+    <div className="relative">
+      <input
+        id={id}
+        className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+        placeholder=" "
+        {...props}
+      />
+      <label
+        htmlFor={id}
+        className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1"
+      >
+        {label}
+      </label>
+    </div>
+  );
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth()
@@ -97,106 +115,89 @@ export default function ProfilePage() {
   const loading = isUpdating || isUploading
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Brukerprofil</h1>
-      </header>
+    <MainLayout>
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Brukerprofil</h1>
+        </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Profile Picture and Info */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-            <div className="relative w-32 h-32 mx-auto mb-4">
-              <Image
-                src={newProfilePic ? URL.createObjectURL(newProfilePic) : user.photoURL || '/default-profile.png'}
-                alt="Profilbilde"
-                width={128}
-                height={128}
-                className="rounded-full object-cover border-4 border-white shadow-md"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 transition-transform transform hover:scale-110"
-                aria-label="Endre profilbilde"
-                disabled={loading}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                  <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => e.target.files && handleProfilePicChange(e.target.files[0])}
-                disabled={loading}
-              />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+              <div className="relative w-32 h-32 mx-auto mb-4">
+                <Image
+                  src={newProfilePic ? URL.createObjectURL(newProfilePic) : user.photoURL || '/default-profile.png'}
+                  alt="Profilbilde"
+                  width={128}
+                  height={128}
+                  className="rounded-full object-cover border-4 border-white shadow-md"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 transition-transform transform hover:scale-110 shadow-lg"
+                  aria-label="Endre profilbilde"
+                  disabled={loading}
+                >
+                  <span className="material-icons">edit</span>
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files && handleProfilePicChange(e.target.files[0])}
+                  disabled={loading}
+                />
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-800">{user.displayName || 'Anonym Bruker'}</h2>
+              <p className="text-gray-500">{user.email}</p>
+              {isUploading && <p className="text-sm text-blue-600 mt-2">Laster opp bilde...</p>}
             </div>
-            <h2 className="text-2xl font-semibold text-gray-800">{user.displayName || 'Anonym Bruker'}</h2>
-            <p className="text-gray-500">{user.email}</p>
-            {isUploading && <p className="text-sm text-blue-600 mt-2">Laster opp bilde...</p>}
           </div>
-        </div>
 
-        {/* Right Column: Settings Forms */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-xl font-semibold mb-4 text-gray-700">Kontoinnstillinger</h3>
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white p-8 rounded-lg shadow-lg">
+              <h3 className="text-xl font-semibold mb-6 text-gray-700">Kontoinnstillinger</h3>
 
-            {/* Change Username */}
-            <form onSubmit={handleUsernameChange} className="space-y-4 border-b pb-6 mb-6">
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-600">Endre brukernavn</label>
-                <input
+              <form onSubmit={handleUsernameChange} className="space-y-6 border-b pb-8 mb-8">
+                <InputField
                   id="username"
+                  label="Nytt brukernavn"
                   type="text"
-                  placeholder="Nytt brukernavn"
                   value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  onChange={(e:any) => setNewUsername(e.target.value)}
                   disabled={loading}
                 />
-              </div>
-              <button type="submit" className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition" disabled={loading || !newUsername}>
-                {isUpdating ? 'Lagrer...' : 'Lagre brukernavn'}
-              </button>
-            </form>
+                <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg" disabled={loading || !newUsername}>
+                  {isUpdating ? 'Lagrer...' : 'Lagre brukernavn'}
+                </button>
+              </form>
 
-            {/* Change Password */}
-            <form onSubmit={handlePasswordChange} className="space-y-4">
-              <div>
-                <label htmlFor="password"  className="block text-sm font-medium text-gray-600">Endre passord</label>
-                <input
+              <form onSubmit={handlePasswordChange} className="space-y-6">
+                <InputField
                   id="password"
+                  label="Nytt passord"
                   type="password"
-                  placeholder="Nytt passord"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  onChange={(e:any) => setNewPassword(e.target.value)}
                   disabled={loading}
                 />
-              </div>
-               <div>
-                <label htmlFor="confirmPassword"  className="block text-sm font-medium text-gray-600">Bekreft nytt passord</label>
-                <input
+                 <InputField
                   id="confirmPassword"
+                  label="Bekreft nytt passord"
                   type="password"
-                  placeholder="Bekreft nytt passord"
                   value={newPasswordConfirm}
-                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  onChange={(e:any) => setNewPasswordConfirm(e.target.value)}
                   disabled={loading}
                 />
-              </div>
-              <button type="submit" className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition" disabled={loading || !newPassword}>
-                {isUpdating ? 'Lagrer...' : 'Lagre passord'}
-              </button>
-            </form>
+                <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg" disabled={loading || !newPassword}>
+                  {isUpdating ? 'Lagrer...' : 'Lagre passord'}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   )
 }

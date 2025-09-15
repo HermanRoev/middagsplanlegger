@@ -21,11 +21,11 @@ interface AddMealToPlanViewProps {
 }
 
 const formatAmount = (amount: number | null) => {
-  if (amount == null || isNaN(amount)) {
+  if (amount === null || amount === undefined || isNaN(amount)) {
     return ''
   }
-  if (amount === 0) return 0
-  return Number.isInteger(amount) ? amount : parseFloat(amount.toFixed(1))
+  if (amount === 0) return '0'
+  return Number.isInteger(amount) ? amount.toString() : parseFloat(amount.toFixed(1)).toString()
 }
 
 export function AddMealToPlanView({
@@ -276,7 +276,7 @@ export function AddMealToPlanView({
           onClose={() => setIsEditModalOpen(false)}
           title={`Rediger: ${currentMeal.name}`}
         >
-          <div className="p-4">
+          <div className="p-4 max-h-[80vh] overflow-y-auto">
             <MealForm
               initialData={currentMeal}
               onSave={handleSaveEditedMeal}

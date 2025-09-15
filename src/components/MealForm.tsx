@@ -1,4 +1,3 @@
-// Fil: src/components/MealForm.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -9,7 +8,6 @@ import { collection, getDocs } from 'firebase/firestore'
 import { Ingredient, Meal } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 
-// Enhetene for nedtrekksmenyen
 const units = [
   { value: 'g', label: 'gram' },
   { value: 'kg', label: 'kg' },
@@ -20,12 +18,29 @@ const units = [
   { value: 'ss', label: 'ss' },
 ]
 
-// Definerer props for komponenten
 interface MealFormProps {
   initialData?: Omit<Meal, 'id'>
   onSave: (mealData: Omit<Meal, 'id'>, imageFile: File | null) => Promise<void>
   isEditing: boolean
 }
+
+const InputField = ({ id, label, ...props }: any) => (
+  <div className="relative">
+    <input
+      id={id}
+      className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+      placeholder=" "
+      {...props}
+    />
+    <label
+      htmlFor={id}
+      className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1"
+    >
+      {label}
+    </label>
+  </div>
+);
+
 
 export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
   const { user } = useAuth()
@@ -44,8 +59,6 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
     initialData?.ingredients || []
   )
   const [masterIngredientList, setMasterIngredientList] = useState<string[]>([])
-
-  // For pasting images
   const pasteInputRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -62,7 +75,6 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
   }, [initialData]);
 
   useEffect(() => {
-    // Fetch master ingredients list
     const fetchMasterIngredients = async () => {
       const querySnapshot = await getDocs(collection(db, 'ingredients'))
       setMasterIngredientList(querySnapshot.docs.map((doc) => doc.id))
@@ -75,16 +87,14 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
       setImageFile(file)
       setImagePreview(URL.createObjectURL(file))
     } else {
-      alert('Vennligst velg en gyldig bildefil.')
+      toast.error('Vennligst velg en gyldig bildefil.')
     }
   }
 
-  // KORRIGERT: useEffect for "paste" er nå inkludert og komplett
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
       if (!items) return
-
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile()
@@ -93,7 +103,6 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
         }
       }
     }
-
     const div = pasteInputRef.current
     if (div) {
       div.addEventListener('paste', handlePaste)
@@ -122,14 +131,13 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!mealName) {
-      alert('Vennligst fyll inn navn på middagen')
+      toast.error('Vennligst fyll inn navn på middagen')
       return
     }
     if (ingredients.length === 0) {
-      alert('Legg til minst én ingrediens')
+      toast.error('Legg til minst én ingrediens')
       return
     }
-
     const mealData: Omit<Meal, 'id'> = {
       name: mealName,
       servings: servings || 1,
@@ -144,15 +152,14 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           ? { id: user.uid, name: user.displayName || 'Ukjent bruker' }
           : undefined),
     }
-
     await onSave(mealData, imageFile)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-8">
       <div ref={pasteInputRef} className="space-y-6">
         <div
-          className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer"
+          className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
           onClick={() => document.getElementById('imageInput')?.click()}
         >
           <input
@@ -168,129 +175,94 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             <Image
               src={imagePreview}
               alt="Preview"
-              width={300}
-              height={200}
+              width={400}
+              height={250}
               unoptimized={true}
               className="rounded-lg object-contain"
             />
           ) : (
-            <div className="text-center">
-              <span className="material-icons text-4xl text-gray-400">
-                image
-              </span>
-              <p className="text-sm text-gray-500 mt-2">
-                Klikk for å velge bilde, dra og slipp, eller lim inn
+            <div className="text-center text-gray-500">
+              <span className="material-icons text-5xl">add_photo_alternate</span>
+              <p className="mt-2">
+                Klikk for å velge bilde, eller lim inn
               </p>
             </div>
           )}
         </div>
 
-        <div className="mb-6">
-          <label
-            htmlFor="mealName"
-            className="block mb-2 text-sm font-medium text-gray-700"
-          >
-            Navn på middag
-          </label>
-          <input
-            type="text"
-            id="mealName"
-            value={mealName}
-            onChange={(e) => setMealName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+        <InputField
+          id="mealName"
+          label="Navn på middag"
+          type="text"
+          value={mealName}
+          onChange={(e:any) => setMealName(e.target.value)}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <InputField
+            id="servings"
+            label="Antall porsjoner"
+            type="number"
+            value={servings ?? ''}
+            onChange={(e:any) => setServings(Number(e.target.value) || null)}
+            min="1"
+          />
+          <InputField
+            id="prepTime"
+            label="Tid (minutter)"
+            type="number"
+            value={prepTime ?? ''}
+            onChange={(e:any) => setPrepTime(Number(e.target.value) || null)}
+            min="0"
+          />
+          <InputField
+            id="costEstimate"
+            label="Pris (NOK)"
+            type="number"
+            value={costEstimate ?? ''}
+            onChange={(e:any) => setCostEstimate(Number(e.target.value) || null)}
+            min="0"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div>
-            <label
-              htmlFor="servings"
-              className="block mb-2 text-sm font-medium text-gray-700"
-            >
-              Antall porsjoner
-            </label>
-            <input
-              type="number"
-              id="servings"
-              value={servings ?? ''}
-              onChange={(e) => setServings(Number(e.target.value) || null)}
-              min="1"
-              placeholder="f.eks. 4"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="prepTime"
-              className="block mb-2 text-sm font-medium text-gray-700"
-            >
-              Tilberedningstid (minutter)
-            </label>
-            <input
-              type="number"
-              id="prepTime"
-              value={prepTime ?? ''}
-              onChange={(e) => setPrepTime(Number(e.target.value) || null)}
-              min="0"
-              placeholder="f.eks. 30"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="costEstimate"
-              className="block mb-2 text-sm font-medium text-gray-700"
-            >
-              Estimert kostnad (NOK)
-            </label>
-            <input
-              type="number"
-              id="costEstimate"
-              value={costEstimate ?? ''}
-              onChange={(e) => setCostEstimate(Number(e.target.value) || null)}
-              min="0"
-              placeholder="f.eks. 150"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            />
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
-            Ingredienser
-          </label>
-          <div className="space-y-2">
+        <div>
+          <h3 className="text-lg font-medium text-gray-800 mb-2">Ingredienser</h3>
+          <div className="space-y-4">
             {ingredients.map((ingredient, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={ingredient.name}
-                  onChange={(e) =>
-                    updateIngredient(index, 'name', e.target.value)
-                  }
-                  placeholder="Ingrediens"
-                  list="ingredients"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <input
-                  type="number"
-                  value={ingredient.amount ?? ''}
-                  onChange={(e) =>
-                    updateIngredient(
-                      index,
-                      'amount',
-                      Number(e.target.value) || null
-                    )
-                  }
-                  placeholder="Mengde"
-                  className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div key={index} className="flex items-center gap-2">
+                <div className="flex-grow">
+                  <InputField
+                    id={`ingredient-name-${index}`}
+                    label="Ingrediens"
+                    type="text"
+                    value={ingredient.name}
+                    onChange={(e:any) =>
+                      updateIngredient(index, 'name', e.target.value)
+                    }
+                    list="ingredients"
+                  />
+                </div>
+                <div className="w-28">
+                   <InputField
+                    id={`ingredient-amount-${index}`}
+                    label="Mengde"
+                    type="number"
+                    value={ingredient.amount ?? ''}
+                    onChange={(e:any) =>
+                      updateIngredient(
+                        index,
+                        'amount',
+                        Number(e.target.value) || null
+                      )
+                    }
+                  />
+                </div>
                 <select
                   value={ingredient.unit}
                   onChange={(e) =>
                     updateIngredient(index, 'unit', e.target.value)
                   }
-                  className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  className="w-24 h-[50px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   {units.map((unit) => (
                     <option key={unit.value} value={unit.value}>
@@ -301,7 +273,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
                 <button
                   type="button"
                   onClick={() => removeIngredient(index)}
-                  className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
+                  className="h-[50px] w-[50px] flex items-center justify-center bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                 >
                   <span className="material-icons">delete</span>
                 </button>
@@ -316,42 +288,43 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           <button
             type="button"
             onClick={addIngredient}
-            className="mt-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 flex items-center gap-2"
+            className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition-colors"
           >
             <span className="material-icons">add</span>
             Legg til ingrediens
           </button>
         </div>
 
-        <div className="mb-6">
-          <label
-            htmlFor="instructions"
-            className="block mb-2 text-sm font-medium text-gray-700"
-          >
-            Fremgangsmåte
-          </label>
+        <div className="relative">
           <textarea
             id="instructions"
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            rows={6}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            rows={8}
+            className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+            placeholder=" "
           />
+          <label
+            htmlFor="instructions"
+            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1"
+          >
+            Fremgangsmåte
+          </label>
         </div>
       </div>
 
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-end gap-4 pt-4 border-t">
         <Link
           href="/"
-          className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+          className="px-6 py-2 text-gray-700 rounded-lg hover:bg-gray-100"
         >
           Avbryt
         </Link>
         <button
           type="submit"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm hover:shadow-md transition-shadow"
         >
-          {isEditing ? 'Oppdater' : 'Lagre'} middag
+          {isEditing ? 'Oppdater middag' : 'Lagre middag'}
         </button>
       </div>
     </form>

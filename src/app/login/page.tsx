@@ -5,6 +5,23 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
+const InputField = ({ id, label, ...props }: any) => (
+    <div className="relative">
+      <input
+        id={id}
+        className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+        placeholder=" "
+        {...props}
+      />
+      <label
+        htmlFor={id}
+        className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1"
+      >
+        {label}
+      </label>
+    </div>
+  );
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +41,6 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password)
-      // Successful login, let AuthContext handle the redirect
     } catch (error) {
       console.error('Login error:', error)
       toast.error('Feil e-post eller passord')
@@ -33,58 +49,40 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
-        <div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-2xl">
+        <div className="text-center">
+            <span className="material-icons text-5xl text-blue-600">
+                restaurant_menu
+            </span>
+          <h2 className="mt-4 text-3xl font-bold text-gray-900">
             Middagsplanlegger
           </h2>
-          <p className="mt-2 text-sm text-gray-600 text-center">
+          <p className="mt-2 text-sm text-gray-600">
             Logg inn for å fortsette
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-gray-700"
-              >
-                E-post
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700"
-              >
-                Passord
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-
+          <InputField
+            id="email"
+            label="E-post"
+            type="email"
+            required
+            value={email}
+            onChange={(e:any) => setEmail(e.target.value)}
+          />
+          <InputField
+            id="password"
+            label="Passord"
+            type="password"
+            required
+            value={password}
+            onChange={(e:any) => setPassword(e.target.value)}
+          />
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-shadow hover:shadow-lg"
           >
             {isLoading ? 'Logger inn...' : 'Logg inn'}
           </button>
