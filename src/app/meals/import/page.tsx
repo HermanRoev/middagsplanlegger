@@ -8,10 +8,7 @@ import { getAI, getGenerativeModel } from 'firebase/ai'
 import { app, db } from '@/lib/firebase'
 import {
   collection,
-  addDoc,
   getDocs,
-  query,
-  where,
 } from 'firebase/firestore'
 import { Meal, Ingredient } from '@/types'
 
@@ -29,22 +26,6 @@ export default function ImportMealPage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setImageFile(event.target.files[0])
-    }
-  }
-
-  const getMasterIngredientId = async (
-    ingredientName: string
-  ): Promise<string> => {
-    const cleanName = ingredientName.trim().toLowerCase()
-    const ingredientsRef = collection(db, 'ingredients')
-    const q = query(ingredientsRef, where('name', '==', cleanName))
-    const snapshot = await getDocs(q)
-
-    if (!snapshot.empty) {
-      return snapshot.docs[0].id
-    } else {
-      const newIngredientRef = await addDoc(ingredientsRef, { name: cleanName })
-      return newIngredientRef.id
     }
   }
 
