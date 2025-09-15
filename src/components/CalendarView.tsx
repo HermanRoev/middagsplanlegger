@@ -19,25 +19,10 @@ import Image from 'next/image'
 import { Modal } from './Modal'
 import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
-import { Meal } from '@/types'
+import { Meal, PlannedMeal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
 
 import { Ingredient } from '@/types'
-
-interface PlannedMeal {
-  id: string
-  date: string
-  mealId: string
-  mealName: string
-  imageUrl?: string
-  isShopped?: boolean
-  servings?: number
-  ingredients?: Ingredient[]
-  instructions?: string
-  plannedServings: number
-  prepTime?: number
-  costEstimate?: number
-}
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
