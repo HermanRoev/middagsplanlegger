@@ -21,7 +21,6 @@ import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
 import { Meal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
-import { MealInfoBadge } from './ui/MealInfoBadge'
 
 import { Ingredient } from '@/types'
 
@@ -218,12 +217,6 @@ export function CalendarView() {
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
                         {plannedMeal.mealName}
                       </p>
-                      <MealInfoBadge
-                        prepTime={plannedMeal.prepTime}
-                        costEstimate={plannedMeal.costEstimate}
-                        size="sm"
-                        className="mt-1 justify-center"
-                      />
                     </div>
                   ) : (
                     <div className="flex-grow"></div>
@@ -270,12 +263,6 @@ export function CalendarView() {
                       <p className="font-semibold text-gray-800">
                         {plannedMeal.mealName}
                       </p>
-                      <MealInfoBadge
-                        prepTime={plannedMeal.prepTime}
-                        costEstimate={plannedMeal.costEstimate}
-                        size="base"
-                        className="mt-1"
-                      />
                     </div>
                   </div>
                 ) : (
@@ -306,10 +293,7 @@ export function CalendarView() {
         >
           {modalView === 'library' && (
             <div className="overflow-y-auto max-h-[420px] flex flex-wrap gap-4 justify-center">
-              <MealLibrary
-                onSelectMeal={handleSelectMealFromLibrary}
-                cardClassName="bg-white rounded-lg shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center mx-auto cursor-pointer group hover:shadow-lg transition-shadow w-[220px] h-[160px] min-w-[200px] min-h-[120px] max-w-[240px] max-h-[180px]"
-              />
+              <MealLibrary onSelectMeal={handleSelectMealFromLibrary} />
             </div>
           )}
           {modalView === 'addToPlan' && selectedMeal && (
@@ -350,12 +334,24 @@ export function CalendarView() {
                     <p className="text-gray-600">
                       Planlagt for {activePlannedMeal.plannedServings} porsjoner
                     </p>
-                    <MealInfoBadge
-                      prepTime={activePlannedMeal.prepTime}
-                      costEstimate={activePlannedMeal.costEstimate}
-                      size="base"
-                      className="mt-2"
-                    />
+                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+                      {(activePlannedMeal.prepTime ?? 0) > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="material-icons text-base">
+                            schedule
+                          </span>
+                          {activePlannedMeal.prepTime} min
+                        </span>
+                      )}
+                      {(activePlannedMeal.costEstimate ?? 0) > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="material-icons text-base">
+                            payments
+                          </span>
+                          {activePlannedMeal.costEstimate} kr
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={() => setModalView('library')}
