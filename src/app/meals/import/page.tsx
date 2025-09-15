@@ -31,7 +31,9 @@ export default function ImportMealPage() {
 
   const handleImport = async () => {
     setIsLoading(true)
-    const toastId = toast.loading('Analyserer oppskrift med AI...')
+    const toastId = toast.loading('Analyserer oppskrift med AI...', {
+      duration: Infinity,
+    })
 
     try {
       let prompt
