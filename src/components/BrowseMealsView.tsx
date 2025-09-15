@@ -170,29 +170,37 @@ export function BrowseMealsView() {
                   </p>
                 )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-4">
-                <div>
-                  <h4 className="text-lg font-semibold mb-2 text-gray-800">
+              <div className="space-y-6">
+                {/* Ingredients Section */}
+                <div className="p-4 bg-gray-50 rounded-lg shadow-sm">
+                  <h4 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2">
                     Ingredienser
                   </h4>
-                  <ul className="list-disc list-inside space-y-1 text-gray-700">
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-700">
                     {activeMeal.ingredients?.map((ing, idx) => (
-                      <li key={idx}>
-                        {ing.amount !== undefined && ing.unit ? (
-                          <span className="font-medium">
-                            {ing.amount} {ing.unit}
-                          </span>
-                        ) : null}{' '}
-                        {typeof ing === 'string' ? ing : ing.name}
+                      <li key={idx} className="flex items-center gap-2">
+                        <span className="text-blue-600 material-icons">
+                          fiber_manual_record
+                        </span>
+                        <span>
+                          {ing.amount !== undefined && ing.unit ? (
+                            <span className="font-medium">
+                              {ing.amount} {ing.unit}
+                            </span>
+                          ) : null}{' '}
+                          {typeof ing === 'string' ? ing : ing.name}
+                        </span>
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div>
-                  <h4 className="text-lg font-semibold mb-2 text-gray-800">
+
+                {/* Instructions Section */}
+                <div className="p-4 bg-white rounded-lg">
+                  <h4 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2">
                     Instruksjoner
                   </h4>
-                  <div className="text-gray-700 whitespace-pre-wrap">
+                  <div className="text-gray-700 whitespace-pre-wrap prose prose-sm max-w-none">
                     {activeMeal.instructions || 'Instruksjoner mangler.'}
                   </div>
                 </div>
