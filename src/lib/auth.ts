@@ -1,5 +1,6 @@
 import { auth, storage } from './firebase'
 import {
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
@@ -10,6 +11,21 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export type AuthUser = User | null
+
+export const signUp = async (
+  email: string,
+  password: string,
+  displayName: string
+) => {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password)
+    await updateProfile(result.user, { displayName })
+    return result.user
+  } catch (error) {
+    console.error('Sign up error:', error)
+    throw error
+  }
+}
 
 export const signIn = async (email: string, password: string) => {
   try {
