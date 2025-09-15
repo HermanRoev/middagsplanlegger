@@ -25,27 +25,25 @@ export function MealCard({
 
   return (
     <div
-      className={`relative rounded-lg overflow-hidden group transition-all duration-300 bg-white shadow-md hover:shadow-xl w-[240px] ${className}`}
+      className={`rounded-lg overflow-hidden group transition-all duration-300 bg-white shadow-md hover:shadow-xl w-[240px] flex flex-col cursor-pointer ${className}`}
       onClick={onClick}
       data-testid="meal-card"
     >
-      <div className="relative cursor-pointer">
-        {/* Image */}
-        <div className="h-40 w-full">
-          {meal.imageUrl ? (
-            <Image
-              src={meal.imageUrl}
-              alt={meal.name}
-              layout="fill"
-              objectFit="cover"
-              className="transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
-              <span className="material-icons text-4xl">image</span>
-            </div>
-          )}
-        </div>
+      {/* Image Container */}
+      <div className="relative h-40 w-full">
+        {meal.imageUrl ? (
+          <Image
+            src={meal.imageUrl}
+            alt={meal.name}
+            layout="fill"
+            objectFit="cover"
+            className="transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+            <span className="material-icons text-4xl">image</span>
+          </div>
+        )}
 
         {/* Favorite Button */}
         <button
@@ -57,34 +55,36 @@ export function MealCard({
             {isFavorite ? 'star' : 'star_border'}
           </span>
         </button>
+      </div>
 
-        {/* Content */}
-        <div className="p-4">
-          <h3 className="font-semibold text-lg text-gray-800 truncate">{meal.name}</h3>
+      {/* Content Container */}
+      <div className="p-4 flex-grow flex flex-col">
+        <h3 className="font-semibold text-lg text-gray-800 truncate">{meal.name}</h3>
 
-          <div className="flex justify-between items-center text-sm text-gray-500 mt-2">
-            <div className="flex items-center gap-4">
-              {(meal.prepTime ?? 0) > 0 && (
-                <span className="flex items-center gap-1">
-                  <span className="material-icons text-base">schedule</span>
-                  {meal.prepTime} min
-                </span>
-              )}
-              {(meal.costEstimate ?? 0) > 0 && (
-                <span className="flex items-center gap-1">
-                  <span className="material-icons text-base">payments</span>
-                  {meal.costEstimate} kr
-                </span>
-              )}
-            </div>
+        <div className="flex-grow"></div>
+
+        <div className="flex justify-between items-center text-sm text-gray-500 mt-2">
+          <div className="flex items-center gap-4">
+            {(meal.prepTime ?? 0) > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="material-icons text-base">schedule</span>
+                {meal.prepTime} min
+              </span>
+            )}
+            {(meal.costEstimate ?? 0) > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="material-icons text-base">payments</span>
+                {meal.costEstimate} kr
+              </span>
+            )}
           </div>
-
-          {meal.createdBy && (
-            <p className="text-xs text-gray-400 mt-3 truncate">
-              Av: {meal.createdBy.name}
-            </p>
-          )}
         </div>
+
+        {meal.createdBy && (
+          <p className="text-xs text-gray-400 mt-3 truncate">
+            Av: {meal.createdBy.name}
+          </p>
+        )}
       </div>
     </div>
   )
