@@ -421,8 +421,8 @@ export function CalendarView() {
                 </div>
                 <div className="space-y-6">
                   {/* Ingredients Section */}
-                  <div className="p-4 bg-gray-50 rounded-lg shadow-sm">
-                    <h4 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2">
+                  <div>
+                    <h4 className="text-lg font-semibold mb-3 text-gray-800">
                       Ingredienser
                     </h4>
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-700">
@@ -447,8 +447,8 @@ export function CalendarView() {
                   </div>
 
                   {/* Instructions Section */}
-                  <div className="p-4 bg-white rounded-lg ">
-                    <h4 className="text-lg font-semibold mb-3 text-gray-800 border-b pb-2">
+                  <div>
+                    <h4 className="text-lg font-semibold mb-3 text-gray-800">
                       Instruksjoner
                     </h4>
                     <div className="text-gray-700 whitespace-pre-wrap prose prose-sm max-w-none">

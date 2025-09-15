@@ -50,7 +50,9 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
         </div>
 
         {/* Modal Content */}
-        <div className="p-6">{children}</div>
+        <div className="p-6 overflow-y-auto" style={{ maxHeight: '80vh' }}>
+          {children}
+        </div>
       </div>
     </div>
   )
