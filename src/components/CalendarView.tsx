@@ -21,6 +21,7 @@ import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
 import { Meal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
+import { MealInfoBadge } from './ui/MealInfoBadge'
 
 import { Ingredient } from '@/types'
 
@@ -217,24 +218,12 @@ export function CalendarView() {
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
                         {plannedMeal.mealName}
                       </p>
-                      <div className="flex justify-center items-center gap-2 text-xs text-gray-500 mt-1">
-                        {plannedMeal.prepTime && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-icons text-sm">
-                              timer
-                            </span>
-                            {plannedMeal.prepTime} min
-                          </span>
-                        )}
-                        {plannedMeal.costEstimate && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-icons text-sm">
-                              paid
-                            </span>
-                            {plannedMeal.costEstimate} kr
-                          </span>
-                        )}
-                      </div>
+                      <MealInfoBadge
+                        prepTime={plannedMeal.prepTime}
+                        costEstimate={plannedMeal.costEstimate}
+                        size="sm"
+                        className="mt-1 justify-center"
+                      />
                     </div>
                   ) : (
                     <div className="flex-grow"></div>
@@ -281,24 +270,12 @@ export function CalendarView() {
                       <p className="font-semibold text-gray-800">
                         {plannedMeal.mealName}
                       </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                        {plannedMeal.prepTime && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-icons text-base">
-                              timer
-                            </span>
-                            {plannedMeal.prepTime} min
-                          </span>
-                        )}
-                        {plannedMeal.costEstimate && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-icons text-base">
-                              paid
-                            </span>
-                            {plannedMeal.costEstimate} kr
-                          </span>
-                        )}
-                      </div>
+                      <MealInfoBadge
+                        prepTime={plannedMeal.prepTime}
+                        costEstimate={plannedMeal.costEstimate}
+                        size="base"
+                        className="mt-1"
+                      />
                     </div>
                   </div>
                 ) : (
@@ -373,24 +350,12 @@ export function CalendarView() {
                     <p className="text-gray-600">
                       Planlagt for {activePlannedMeal.plannedServings} porsjoner
                     </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
-                      {activePlannedMeal.prepTime && (
-                        <span className="flex items-center gap-1">
-                          <span className="material-icons text-base">
-                            timer
-                          </span>
-                          {activePlannedMeal.prepTime} minutter
-                        </span>
-                      )}
-                      {activePlannedMeal.costEstimate && (
-                        <span className="flex items-center gap-1">
-                          <span className="material-icons text-base">
-                            paid
-                          </span>
-                          ca {activePlannedMeal.costEstimate} kr
-                        </span>
-                      )}
-                    </div>
+                    <MealInfoBadge
+                      prepTime={activePlannedMeal.prepTime}
+                      costEstimate={activePlannedMeal.costEstimate}
+                      size="base"
+                      className="mt-2"
+                    />
                   </div>
                   <button
                     onClick={() => setModalView('library')}

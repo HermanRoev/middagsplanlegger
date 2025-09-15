@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { Meal } from '@/types'
+import { MealInfoBadge } from './ui/MealInfoBadge'
 
 interface MealCardProps {
   meal: Meal
@@ -32,20 +33,12 @@ export function MealCard({ meal, onClick, className }: MealCardProps) {
         <p className="text-sm font-medium text-gray-700 truncate w-full">
           {meal.name}
         </p>
-        <div className="flex gap-4 text-xs text-gray-500 mt-1">
-          {(meal.prepTime ?? 0) > 0 && (
-            <span className="flex items-center gap-1">
-              <span className="material-icons text-sm">schedule</span>
-              {meal.prepTime} min
-            </span>
-          )}
-          {(meal.costEstimate ?? 0) > 0 && (
-            <span className="flex items-center gap-1">
-              <span className="material-icons text-sm">payments</span>
-              {meal.costEstimate} kr
-            </span>
-          )}
-        </div>
+        <MealInfoBadge
+          prepTime={meal.prepTime}
+          costEstimate={meal.costEstimate}
+          size="sm"
+          className="mt-1"
+        />
       </div>
     </div>
   )
