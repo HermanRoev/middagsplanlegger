@@ -220,6 +220,22 @@ export function CalendarView() {
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
                         {plannedMeal.mealName}
                       </p>
+                      <div className="flex justify-between items-center text-xs text-gray-500 mt-1 w-full px-1">
+                        <div className="flex items-center gap-2">
+                          {(plannedMeal.prepTime ?? 0) > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="material-icons text-sm">schedule</span>
+                              {plannedMeal.prepTime} min
+                            </span>
+                          )}
+                          {(plannedMeal.costEstimate ?? 0) > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="material-icons text-sm">payments</span>
+                              {plannedMeal.costEstimate} kr
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex-grow"></div>
@@ -266,6 +282,20 @@ export function CalendarView() {
                       <p className="font-semibold text-gray-800">
                         {plannedMeal.mealName}
                       </p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                        {(plannedMeal.prepTime ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons text-base">schedule</span>
+                            {plannedMeal.prepTime} min
+                          </span>
+                        )}
+                        {(plannedMeal.costEstimate ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons text-base">payments</span>
+                            {plannedMeal.costEstimate} kr
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
