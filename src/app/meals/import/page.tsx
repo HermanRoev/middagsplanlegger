@@ -66,6 +66,7 @@ export default function ImportMealPage() {
           Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og en liste med trinnvise instruksjoner.
           Gi også et estimat for den totale kostnaden for måltidet i norske kroner (NOK), basert på gjennomsnittlige priser i Norge.
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normaliser til disse der det er mulig.
+          For "instructions", hver streng i listen skal være ren tekst for ett trinn, uten "Steg X:" eller annen formatering.
           Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": ["...", "..."], "costEstimate": ... }.
           Hele responsen din skal KUN være JSON-objektet, som starter med { og slutter med }. Ikke inkluder 'json' eller annen tekst.
         `
@@ -77,6 +78,7 @@ export default function ImportMealPage() {
           Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og en liste med trinnvise instruksjoner.
           Gi også et estimat for den totale kostnaden for måltidet i norske kroner (NOK), basert på gjennomsnittlige priser i Norge.
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normaliser til disse der det er mulig.
+          For "instructions", hver streng i listen skal være ren tekst for ett trinn, uten "Steg X:" eller annen formatering.
           Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": ["...", "..."], "costEstimate": ... }.
           Hele responsen din skal KUN være JSON-objektet, som starter med { og slutter med }. Ikke inkluder 'json' eller annen tekst.
         `
@@ -87,6 +89,7 @@ export default function ImportMealPage() {
           ${ingredientContext}
           Oppgi ingrediensene, en liste med trinnvise instruksjoner, en estimert tilberedningstid i minutter, og en estimert kostnad i norske kroner (NOK).
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'.
+          For "instructions", hver streng i listen skal være ren tekst for ett trinn, uten "Steg X:" eller annen formatering.
           Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": ["...", "..."], "prepTime": ..., "costEstimate": ... }.
           Hele responsen din skal KUN være JSON-objektet, som starter med { og slutter med }. Ikke inkluder 'json' eller annen tekst.
         `

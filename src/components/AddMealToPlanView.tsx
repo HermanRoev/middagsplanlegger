@@ -246,8 +246,19 @@ export function AddMealToPlanView({
           <h4 className="text-lg font-semibold mb-2 text-gray-800">
             Instruksjoner
           </h4>
-          <div className="text-gray-700 whitespace-pre-wrap">
-            {currentMeal.instructions || 'Instruksjoner mangler.'}
+          <div className="text-gray-700 prose prose-sm max-w-none">
+            {Array.isArray(currentMeal.instructions) &&
+            currentMeal.instructions.length > 0 ? (
+              <ol className="list-decimal list-inside space-y-2">
+                {currentMeal.instructions.map((step, index) => (
+                  <li key={index}>
+                    <span className="font-bold">Steg {index + 1}:</span> {step}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              'Instruksjoner mangler.'
+            )}
           </div>
         </div>
       </div>

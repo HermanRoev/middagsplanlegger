@@ -12,7 +12,9 @@ export const mealSchema = z.object({
   ingredients: z
     .array(ingredientSchema)
     .min(1, 'Minst én ingrediens er påkrevd'),
-  instructions: z.string().min(1, 'Instruksjoner er påkrevd'),
+  instructions: z
+    .array(z.string())
+    .min(1, 'Minst ett instruksjonssteg er påkrevd'),
   imageUrl: z.string().optional(),
 })
 

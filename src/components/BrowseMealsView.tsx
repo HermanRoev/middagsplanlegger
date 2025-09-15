@@ -200,8 +200,20 @@ export function BrowseMealsView() {
                   <h4 className="text-lg font-semibold mb-3 text-gray-800">
                     Instruksjoner
                   </h4>
-                  <div className="text-gray-700 whitespace-pre-wrap prose prose-sm max-w-none">
-                    {activeMeal.instructions || 'Instruksjoner mangler.'}
+                  <div className="text-gray-700 prose prose-sm max-w-none">
+                    {Array.isArray(activeMeal.instructions) &&
+                    activeMeal.instructions.length > 0 ? (
+                      <ol className="list-decimal list-inside space-y-2">
+                        {activeMeal.instructions.map((step, index) => (
+                          <li key={index}>
+                            <span className="font-bold">Steg {index + 1}:</span>{' '}
+                            {step}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      'Instruksjoner mangler.'
+                    )}
                   </div>
                 </div>
               </div>
