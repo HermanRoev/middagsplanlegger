@@ -19,10 +19,8 @@ import Image from 'next/image'
 import { Modal } from './Modal'
 import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
-import { Meal, PlannedMeal } from '@/types'
+import { Meal, PlannedMeal, Ingredient } from '@/types'
 import { Skeleton } from './ui/Skeleton'
-
-import { Ingredient } from '@/types'
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
