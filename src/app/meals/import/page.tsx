@@ -31,7 +31,7 @@ export default function ImportMealPage() {
 
   const handleImport = async () => {
     setIsLoading(true)
-    toast.loading('Analyserer oppskrift med AI...')
+    const toastId = toast.loading('Analyserer oppskrift med AI...')
 
     try {
       let prompt
@@ -96,9 +96,9 @@ export default function ImportMealPage() {
         `
         result = await model.generateContent(prompt)
       } else {
-        toast.dismiss()
         toast.error(
-          'Vennligst velg en fil, lim inn tekst, eller fyll inn et navn for generering.'
+          'Vennligst velg en fil, lim inn tekst, eller fyll inn et navn for generering.',
+          { id: toastId }
         )
         setIsLoading(false)
         return
@@ -108,9 +108,8 @@ export default function ImportMealPage() {
       const jsonText = response.candidates?.[0]?.content?.parts?.[0]?.text
 
       if (!jsonText) {
-        toast.dismiss()
         console.error('Could not find text in AI response:', response)
-        toast.error('AI-en ga et uventet svar. Prøv igjen.')
+        toast.error('AI-en ga et uventet svar. Prøv igjen.', { id: toastId })
         setIsLoading(false)
         return
       }
@@ -139,14 +138,15 @@ export default function ImportMealPage() {
 
       sessionStorage.setItem('importedRecipe', JSON.stringify(recipeForForm))
 
-      toast.dismiss()
-      toast.success('Oppskrift analysert! Omdirigerer til redigeringssiden...')
+      toast.success('Oppskrift analysert! Omdirigerer til redigeringssiden...', {
+        id: toastId,
+      })
       router.push(`/meals/new`)
     } catch (error) {
-      toast.dismiss()
       console.error('Feil under importering:', error)
       toast.error(
-        `En feil oppsto: ${error instanceof Error ? error.message : 'Ukjent feil'}`
+        `En feil oppsto: ${error instanceof Error ? error.message : 'Ukjent feil'}`,
+        { id: toastId }
       )
     } finally {
       setIsLoading(false)
