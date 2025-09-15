@@ -329,7 +329,6 @@ export function ShoppingListView() {
           background-color: #2563eb !important;
           color: white !important;
           border-radius: 0.375rem;
-          font-weight: bold;
         }
         .day-shopped {
           background-color: #dcfce7 !important;
@@ -337,9 +336,12 @@ export function ShoppingListView() {
           border-radius: 0.375rem;
         }
         .day-plannable {
-          background-color: #f3f4f6;
-          border: 2px solid #3b82f6;
+          background-color: #fecaca;
           border-radius: 0.375rem;
+        }
+        .day-plannable.day-selected {
+          background-color: #ef4444 !important;
+          color: white !important;
         }
         .day-today {
           font-weight: bold;
