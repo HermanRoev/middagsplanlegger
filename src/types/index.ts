@@ -14,7 +14,7 @@ export interface Meal {
   imageUrl:string | null
   servings:number | null
   ingredients:Ingredient[]
-  instructions:string
+  instructions:string[]
   prepTime:number | null // Preparation time in minutes
   costEstimate:number | null // Estimated cost in NOK
   createdBy?: {
@@ -32,7 +32,7 @@ export interface PlannedMeal {
   isShopped?:boolean
   servings?:number
   scaledIngredients?:Ingredient[]
-  instructions?:string
+  instructions?:string[]
   plannedServings:number
   prepTime?:number
   costEstimate?:number

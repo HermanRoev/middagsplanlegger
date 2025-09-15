@@ -59,9 +59,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
   const [costEstimate, setCostEstimate] = useState(
     initialData?.costEstimate || null
   )
-  const [instructions, setInstructions] = useState(
-    initialData?.instructions || ''
-  )
+  const [instructions, setInstructions] = useState<string[]>([''])
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     initialData?.ingredients || []
   )
@@ -70,16 +68,27 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
 
   useEffect(() => {
     if (initialData) {
-      setMealName(initialData.name || '');
-      setServings(initialData.servings || null);
-      setPrepTime(initialData.prepTime || null);
-      setCostEstimate(initialData.costEstimate || null);
-      const formattedInstructions = initialData.instructions?.replace(/\\n/g, '\n') || '';
-      setInstructions(formattedInstructions);
-      setIngredients(initialData.ingredients || []);
-      setImagePreview(initialData.imageUrl || '');
+      setMealName(initialData.name || '')
+      setServings(initialData.servings || null)
+      setPrepTime(initialData.prepTime || null)
+      setCostEstimate(initialData.costEstimate || null)
+      if (
+        initialData.instructions &&
+        Array.isArray(initialData.instructions)
+      ) {
+        setInstructions(initialData.instructions)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if (typeof (initialData.instructions as any) === 'string') {
+        // For backward compatibility with old string format
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setInstructions((initialData.instructions as any).split('\n'))
+      } else {
+        setInstructions([''])
+      }
+      setIngredients(initialData.ingredients || [])
+      setImagePreview(initialData.imageUrl || '')
     }
-  }, [initialData]);
+  }, [initialData])
 
   useEffect(() => {
     const fetchMasterIngredients = async () => {
@@ -135,6 +144,20 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
     setIngredients(ingredients.filter((_, i) => i !== index))
   }
 
+  const addInstruction = () => {
+    setInstructions([...instructions, ''])
+  }
+
+  const updateInstruction = (index: number, value: string) => {
+    const newInstructions = [...instructions]
+    newInstructions[index] = value
+    setInstructions(newInstructions)
+  }
+
+  const removeInstruction = (index: number) => {
+    setInstructions(instructions.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!mealName) {
@@ -151,7 +174,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
       prepTime,
       costEstimate,
       ingredients: ingredients.filter((ing) => ing.name.trim() !== ''),
-      instructions,
+      instructions: instructions.filter((inst) => inst.trim() !== ''),
       imageUrl: initialData?.imageUrl || '',
       createdBy:
         initialData?.createdBy ||
@@ -302,21 +325,38 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           </button>
         </div>
 
-        <div className="relative">
-          <textarea
-            id="instructions"
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            rows={8}
-            className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-            placeholder=" "
-          />
-          <label
-            htmlFor="instructions"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1"
+        <div>
+          <h3 className="text-lg font-medium text-gray-800 mb-2">Fremgangsmåte</h3>
+          <div className="space-y-4">
+            {instructions.map((step, index) => (
+              <div key={index} className="flex items-start gap-2">
+                <div className="flex-grow">
+                  <InputField
+                    id={`instruction-${index}`}
+                    label={`Steg ${index + 1}`}
+                    type="text"
+                    value={step}
+                    onChange={(e) => updateInstruction(index, e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeInstruction(index)}
+                  className="h-[50px] w-[50px] flex items-center justify-center bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                >
+                  <span className="material-icons">delete</span>
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={addInstruction}
+            className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition-colors"
           >
-            Fremgangsmåte
-          </label>
+            <span className="material-icons">add</span>
+            Legg til steg
+          </button>
         </div>
       </div>
 

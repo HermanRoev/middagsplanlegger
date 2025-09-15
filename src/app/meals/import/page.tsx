@@ -63,10 +63,10 @@ export default function ImportMealPage() {
         prompt = `
           Du er en ekspert på å tolke oppskrifter. Analyser følgende oppskriftsinnhold.
           ${ingredientContext}
-          Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og instruksjonene.
+          Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og en liste med trinnvise instruksjoner.
           Gi også et estimat for den totale kostnaden for måltidet i norske kroner (NOK), basert på gjennomsnittlige priser i Norge.
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normaliser til disse der det er mulig.
-          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": "...", "costEstimate": ... }.
+          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": ["...", "..."], "costEstimate": ... }.
           Hele responsen din skal KUN være JSON-objektet, som starter med { og slutter med }. Ikke inkluder 'json' eller annen tekst.
         `
         result = await model.generateContent([prompt, imagePart])
@@ -74,10 +74,10 @@ export default function ImportMealPage() {
         prompt = `
           Du er en ekspert på å tolke oppskrifter. Analyser følgende oppskriftstekst.
           ${ingredientContext}
-          Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og instruksjonene.
+          Trekk ut navnet på retten, en liste over ingredienser (med navn, mengde og enhet), og en liste med trinnvise instruksjoner.
           Gi også et estimat for den totale kostnaden for måltidet i norske kroner (NOK), basert på gjennomsnittlige priser i Norge.
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'. Normaliser til disse der det er mulig.
-          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": "...", "costEstimate": ... }.
+          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": ["...", "..."], "costEstimate": ... }.
           Hele responsen din skal KUN være JSON-objektet, som starter med { og slutter med }. Ikke inkluder 'json' eller annen tekst.
         `
         result = await model.generateContent([prompt, recipeText])
@@ -85,9 +85,9 @@ export default function ImportMealPage() {
         prompt = `
           Du er en kreativ kokk. Generer en komplett oppskrift for "${generateName}" for ${generateServings} personer.
           ${ingredientContext}
-          Oppgi ingrediensene, trinnvise instruksjoner, en estimert tilberedningstid i minutter, og en estimert kostnad i norske kroner (NOK).
+          Oppgi ingrediensene, en liste med trinnvise instruksjoner, en estimert tilberedningstid i minutter, og en estimert kostnad i norske kroner (NOK).
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'.
-          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": "...", "prepTime": ..., "costEstimate": ... }.
+          Returner KUN et enkelt, gyldig JSON-objekt med denne strukturen: { "name": "...", "ingredients": [{ "name": "...", "amount": ..., "unit": "..." }], "instructions": ["...", "..."], "prepTime": ..., "costEstimate": ... }.
           Hele responsen din skal KUN være JSON-objektet, som starter med { og slutter med }. Ikke inkluder 'json' eller annen tekst.
         `
         result = await model.generateContent(prompt)
@@ -100,37 +100,40 @@ export default function ImportMealPage() {
         return
       }
 
-      const response = result.response;
-      const jsonText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+      const response = result.response
+      const jsonText = response.candidates?.[0]?.content?.parts?.[0]?.text
 
       if (!jsonText) {
-        toast.dismiss();
-        console.error("Could not find text in AI response:", response);
-        toast.error("AI-en ga et uventet svar. Prøv igjen.");
-        setIsLoading(false);
-        return;
+        toast.dismiss()
+        console.error('Could not find text in AI response:', response)
+        toast.error('AI-en ga et uventet svar. Prøv igjen.')
+        setIsLoading(false)
+        return
       }
 
-      const cleanedJsonText = jsonText.replace(/```json\n?/, '').replace(/```$/, '').trim();
+      const cleanedJsonText = jsonText
+        .replace(/```json\n?/, '')
+        .replace(/```$/, '')
+        .trim()
       const parsedRecipe = JSON.parse(cleanedJsonText) as {
         name: string
         ingredients: Omit<Ingredient, 'id'>[]
-        instructions: string
+        instructions: string[]
         prepTime?: number
         costEstimate?: number
       }
 
       const recipeForForm: Omit<Meal, 'id'> = {
         name: parsedRecipe.name,
-        instructions: parsedRecipe.instructions,
+        instructions: parsedRecipe.instructions || [],
         servings: generateServings || 1,
         ingredients: parsedRecipe.ingredients || [],
         prepTime: parsedRecipe.prepTime || null,
         costEstimate: parsedRecipe.costEstimate || null,
         imageUrl: null,
-      };
+      }
 
-      sessionStorage.setItem('importedRecipe', JSON.stringify(recipeForForm));
+      sessionStorage.setItem('importedRecipe', JSON.stringify(recipeForForm))
 
       toast.dismiss()
       toast.success('Oppskrift analysert! Omdirigerer til redigeringssiden...')
