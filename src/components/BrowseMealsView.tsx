@@ -203,14 +203,14 @@ export function BrowseMealsView() {
                   <div className="text-gray-700 prose prose-sm max-w-none">
                     {Array.isArray(activeMeal.instructions) &&
                     activeMeal.instructions.length > 0 ? (
-                      <ol className="list-decimal list-inside space-y-2">
+                      <div className="space-y-2">
                         {activeMeal.instructions.map((step, index) => (
-                          <li key={index}>
+                          <div key={index}>
                             <span className="font-bold">Steg {index + 1}:</span>{' '}
                             {step}
-                          </li>
+                          </div>
                         ))}
-                      </ol>
+                      </div>
                     ) : (
                       'Instruksjoner mangler.'
                     )}

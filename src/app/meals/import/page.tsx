@@ -87,6 +87,7 @@ export default function ImportMealPage() {
         prompt = `
           Du er en kreativ kokk. Generer en komplett oppskrift for "${generateName}" for ${generateServings} personer.
           ${ingredientContext}
+          Lag en oppskrift som er praktisk for en travel hverdag; unngå unødvendig kompliserte steg eller å lage alt fra bunnen av.
           Oppgi ingrediensene, en liste med trinnvise instruksjoner, en estimert tilberedningstid i minutter, og en estimert kostnad i norske kroner (NOK).
           De gyldige enhetene for ingredienser er: 'g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'.
           For "instructions", hver streng i listen skal være ren tekst for ett trinn, uten "Steg X:" eller annen formatering.
