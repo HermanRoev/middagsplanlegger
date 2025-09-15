@@ -238,25 +238,9 @@ export function ShoppingListView() {
               disabled: 'day-disabled',
               caption_label: 'text-2xl font-bold capitalize',
             }}
-            components={{
-              DayContent: ({ date }) => {
-                const dateStr = format(date, 'yyyy-MM-dd')
-                const plan = allPlans.find((p) => p.date === dateStr)
-                return (
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <span>{format(date, 'd')}</span>
-                    {plan && (
-                      <span className="text-xs mt-1 truncate w-full px-1">
-                        {plan.mealName}
-                      </span>
-                    )}
-                  </div>
-                )
-              },
-            }}
             classNames={{
               cell: 'h-36 w-full text-center relative',
-              day: 'w-full h-full text-lg p-2',
+              day: 'w-full h-full text-lg',
               caption: 'mb-6',
               head_cell: 'text-lg font-semibold mb-2',
               head_row: 'mb-1',
@@ -352,7 +336,8 @@ export function ShoppingListView() {
           border-radius: 0.375rem;
         }
         .day-plannable {
-          background-color: #eff6ff;
+          background-color: #fef9c3 !important;
+          border: 1px solid #fde047;
           border-radius: 0.375rem;
           font-weight: bold;
         }
