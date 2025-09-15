@@ -36,8 +36,8 @@ export function MealCard({
             src={meal.imageUrl}
             alt={meal.name}
             layout="fill"
-            objectFit="contain"
-            className="p-2"
+            objectFit="cover"
+            className=""
           />
         ) : (
           <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
