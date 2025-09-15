@@ -71,6 +71,7 @@ export function CalendarView() {
         plannedServings: data.plannedServings,
         prepTime: data.prepTime,
         costEstimate: data.costEstimate,
+        plannedBy: data.plannedBy,
       }
       mealsMap.set(data.date, meal)
     })
@@ -336,6 +337,11 @@ export function CalendarView() {
                     <p className="text-gray-600">
                       Planlagt for {activePlannedMeal.plannedServings} porsjoner
                     </p>
+                    {activePlannedMeal.plannedBy && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Lagt til av: {activePlannedMeal.plannedBy.name}
+                      </p>
+                    )}
                     <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
                       {(activePlannedMeal.prepTime ?? 0) > 0 && (
                         <span className="flex items-center gap-1">

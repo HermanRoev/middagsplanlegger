@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { db } from '@/lib/firebase'
 import { collection, getDocs } from 'firebase/firestore'
 import { Ingredient, Meal } from '@/types'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Enhetene for nedtrekksmenyen
 const units = [
@@ -27,6 +28,7 @@ interface MealFormProps {
 }
 
 export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
+  const { user } = useAuth()
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || '')
   const [mealName, setMealName] = useState(initialData?.name || '')
@@ -136,6 +138,11 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
       ingredients: ingredients.filter((ing) => ing.name.trim() !== ''),
       instructions,
       imageUrl: initialData?.imageUrl || '',
+      createdBy:
+        initialData?.createdBy ||
+        (user
+          ? { id: user.uid, name: user.displayName || 'Ukjent bruker' }
+          : undefined),
     }
 
     await onSave(mealData, imageFile)

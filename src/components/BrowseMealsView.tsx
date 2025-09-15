@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { db } from '@/lib/firebase'
 import { doc, deleteDoc } from 'firebase/firestore'
 import { useMeals } from '@/hooks/useMeals'
+import { useFavorites } from '@/hooks/useFavorites'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Meal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
@@ -18,6 +19,7 @@ export function BrowseMealsView() {
   const [activeMeal, setActiveMeal] = useState<Meal | null>(null)
   const handleCloseDetail = () => setActiveMeal(null)
   const { meals: allMeals, isLoading, refetch } = useMeals()
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites()
   const [filteredMeals, setFilteredMeals] = useState<Meal[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearch = useDebounce(searchTerm, 100)
@@ -86,6 +88,12 @@ export function BrowseMealsView() {
               key={meal.id}
               meal={meal}
               onClick={() => setActiveMeal(meal)}
+              isFavorite={isFavorite(meal.id)}
+              onToggleFavorite={() =>
+                isFavorite(meal.id)
+                  ? removeFavorite(meal.id)
+                  : addFavorite(meal.id)
+              }
             />
           ))}
         </div>
