@@ -32,16 +32,16 @@ export function MealCard({ meal, onClick, className }: MealCardProps) {
         <p className="text-sm font-medium text-gray-700 truncate w-full">
           {meal.name}
         </p>
-        <div className="flex gap-4 text-xs text-gray-500 mt-1">
+        <div className="flex gap-4 text-sm text-gray-500 mt-1">
           {(meal.prepTime ?? 0) > 0 && (
             <span className="flex items-center gap-1">
-              <span className="material-icons text-sm">schedule</span>
+              <span className="material-icons text-base">schedule</span>
               {meal.prepTime} min
             </span>
           )}
           {(meal.costEstimate ?? 0) > 0 && (
             <span className="flex items-center gap-1">
-              <span className="material-icons text-sm">payments</span>
+              <span className="material-icons text-base">payments</span>
               {meal.costEstimate} kr
             </span>
           )}

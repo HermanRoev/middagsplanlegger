@@ -217,24 +217,6 @@ export function CalendarView() {
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
                         {plannedMeal.mealName}
                       </p>
-                      <div className="flex justify-center items-center gap-2 text-xs text-gray-500 mt-1">
-                        {plannedMeal.prepTime && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-icons text-sm">
-                              timer
-                            </span>
-                            {plannedMeal.prepTime} min
-                          </span>
-                        )}
-                        {plannedMeal.costEstimate && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-icons text-sm">
-                              paid
-                            </span>
-                            {plannedMeal.costEstimate} kr
-                          </span>
-                        )}
-                      </div>
                     </div>
                   ) : (
                     <div className="flex-grow"></div>
@@ -281,24 +263,6 @@ export function CalendarView() {
                       <p className="font-semibold text-gray-800">
                         {plannedMeal.mealName}
                       </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                        {plannedMeal.prepTime && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-icons text-base">
-                              timer
-                            </span>
-                            {plannedMeal.prepTime} min
-                          </span>
-                        )}
-                        {plannedMeal.costEstimate && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-icons text-base">
-                              paid
-                            </span>
-                            {plannedMeal.costEstimate} kr
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 ) : (
@@ -329,10 +293,7 @@ export function CalendarView() {
         >
           {modalView === 'library' && (
             <div className="overflow-y-auto max-h-[420px] flex flex-wrap gap-4 justify-center">
-              <MealLibrary
-                onSelectMeal={handleSelectMealFromLibrary}
-                cardClassName="bg-white rounded-lg shadow-md border border-gray-100 p-4 flex flex-col items-center justify-center mx-auto cursor-pointer group hover:shadow-lg transition-shadow w-[220px] h-[160px] min-w-[200px] min-h-[120px] max-w-[240px] max-h-[180px]"
-              />
+              <MealLibrary onSelectMeal={handleSelectMealFromLibrary} />
             </div>
           )}
           {modalView === 'addToPlan' && selectedMeal && (
@@ -374,20 +335,20 @@ export function CalendarView() {
                       Planlagt for {activePlannedMeal.plannedServings} porsjoner
                     </p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
-                      {activePlannedMeal.prepTime && (
+                      {(activePlannedMeal.prepTime ?? 0) > 0 && (
                         <span className="flex items-center gap-1">
                           <span className="material-icons text-base">
-                            timer
+                            schedule
                           </span>
-                          {activePlannedMeal.prepTime} minutter
+                          {activePlannedMeal.prepTime} min
                         </span>
                       )}
-                      {activePlannedMeal.costEstimate && (
+                      {(activePlannedMeal.costEstimate ?? 0) > 0 && (
                         <span className="flex items-center gap-1">
                           <span className="material-icons text-base">
-                            paid
+                            payments
                           </span>
-                          ca {activePlannedMeal.costEstimate} kr
+                          {activePlannedMeal.costEstimate} kr
                         </span>
                       )}
                     </div>
