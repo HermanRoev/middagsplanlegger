@@ -3,7 +3,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '@/lib/firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  deleteDoc,
+} from 'firebase/firestore'
 import {
   format,
   startOfMonth,
@@ -19,25 +26,8 @@ import Image from 'next/image'
 import { Modal } from './Modal'
 import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
-import { Meal } from '@/types'
+import { Meal, PlannedMeal, Ingredient } from '@/types'
 import { Skeleton } from './ui/Skeleton'
-
-import { Ingredient } from '@/types'
-
-interface PlannedMeal {
-  id: string
-  date: string
-  mealId: string
-  mealName: string
-  imageUrl?: string
-  isShopped?: boolean
-  servings?: number
-  ingredients?: Ingredient[]
-  instructions?: string
-  plannedServings: number
-  prepTime?: number
-  costEstimate?: number
-}
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -121,6 +111,18 @@ export function CalendarView() {
   const handlePlanSaved = () => {
     setIsModalOpen(false)
     fetchPlannedMeals()
+  }
+
+  const handleRemoveMeal = async (planId: string) => {
+    if (!planId) return
+    try {
+      await deleteDoc(doc(db, 'mealPlans', planId))
+      setIsModalOpen(false)
+      fetchPlannedMeals()
+    } catch (error) {
+      console.error('Error removing meal from plan: ', error)
+      // Optionally: show an error message to the user
+    }
   }
 
   return (
@@ -353,15 +355,28 @@ export function CalendarView() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setModalView('library')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                  >
-                    <span className="material-icons text-base align-middle">
-                      swap_horiz
-                    </span>
-                    Bytt middag
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setModalView('library')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <span className="material-icons text-base align-middle">
+                        swap_horiz
+                      </span>
+                      Bytt middag
+                    </button>
+                    <button
+                      onClick={() =>
+                        activePlannedMeal && handleRemoveMeal(activePlannedMeal.id)
+                      }
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+                    >
+                      <span className="material-icons text-base align-middle">
+                        delete
+                      </span>
+                      Fjern
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>

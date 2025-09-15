@@ -14,7 +14,7 @@ import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
 import { nb } from 'date-fns/locale'
 import { format } from 'date-fns'
-import { Ingredient } from '@/types'
+import { Ingredient, PlannedMeal } from '@/types'
 import toast from 'react-hot-toast'
 
 interface AggregatedIngredient {
@@ -23,9 +23,41 @@ interface AggregatedIngredient {
   unit: string
 }
 
+function normalizeIngredient(ing: Ingredient): {
+  name: string
+  amount: number
+  unit: string
+  key: string
+} {
+  let baseAmount = ing.amount || 0
+  let baseUnit = ing.unit
+  let keySuffix = baseUnit
+
+  if (ing.unit === 'kg') {
+    baseAmount *= 1000
+    baseUnit = 'g'
+  } else if (ing.unit === 'l') {
+    baseAmount *= 10
+    baseUnit = 'dl'
+  } else if (ing.unit === 'ss') {
+    baseAmount *= 3
+    baseUnit = 'ts'
+  }
+
+  if (['g', 'kg'].includes(ing.unit)) keySuffix = 'g'
+  if (['dl', 'l'].includes(ing.unit)) keySuffix = 'dl'
+  if (['ts', 'ss'].includes(ing.unit)) keySuffix = 'ts'
+
+  const key = `${ing.name.trim().toLowerCase()}_${keySuffix}`
+
+  return { name: ing.name.trim(), amount: baseAmount, unit: baseUnit, key }
+}
+
 export function ShoppingListView() {
   const [selectedDays, setSelectedDays] = useState<Date[]>([])
   const [shoppedDays, setShoppedDays] = useState<Date[]>([])
+  const [plannableDays, setPlannableDays] = useState<Date[]>([])
+  const [allPlans, setAllPlans] = useState<PlannedMeal[]>([])
   const [shoppingList, setShoppingList] = useState<AggregatedIngredient[]>([])
   const [totalCost, setTotalCost] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -35,107 +67,99 @@ export function ShoppingListView() {
 
   // Fetch ALL planned meals once to display in the calendar
   useEffect(() => {
-    const fetchShoppedDays = async () => {
-      const plansQuery = query(
-        collection(db, 'mealPlans'),
-        where('isShopped', '==', true)
-      )
-      const querySnapshot = await getDocs(plansQuery)
-      const dates = querySnapshot.docs.map(
-        (d) => new Date(d.data().date + 'T12:00:00')
-      )
-      setShoppedDays(dates)
+    const fetchAllPlans = async () => {
+      setIsLoading(true)
+      try {
+        const plansQuery = query(collection(db, 'mealPlans'))
+        const querySnapshot = await getDocs(plansQuery)
+        const plans: PlannedMeal[] = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as PlannedMeal[]
+        setAllPlans(plans)
+
+        const shopped = plans
+          .filter((p) => p.isShopped)
+          .map((p) => new Date(p.date + 'T12:00:00'))
+        const plannable = plans
+          .filter((p) => !p.isShopped)
+          .map((p) => new Date(p.date + 'T12:00:00'))
+
+        setShoppedDays(shopped)
+        setPlannableDays(plannable)
+      } catch (error) {
+        console.error('Feil ved henting av måltidsplaner:', error)
+        toast.error('Kunne ikke hente måltidsplaner.')
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    fetchShoppedDays()
+    fetchAllPlans()
   }, [])
 
   // Automatically generate the shopping list when selectedDays changes
   useEffect(() => {
-    const generateList = async () => {
+    const generateList = () => {
       if (selectedDays.length === 0) {
         setShoppingList([])
         setTotalCost(0)
         return
       }
-      setIsLoading(true)
-      try {
-        const dateStrings = selectedDays.map((day) => format(day, 'yyyy-MM-dd'))
-        const plansQuery = query(
-          collection(db, 'mealPlans'),
-          where('date', 'in', dateStrings),
-          where('isShopped', '!=', true)
-        )
-        const querySnapshot = await getDocs(plansQuery)
-        let cost = 0
-        const aggregatedMap = new Map<
-          string,
-          { amount: number; unit: string; name: string }
-        >()
-        querySnapshot.forEach((doc) => {
-          const data = doc.data()
-          cost += data.costEstimate || 0
-          const ingredients = (data.scaledIngredients as Ingredient[]) || []
-          ingredients.forEach((ing) => {
-            if (
-              typeof ing === 'object' &&
-              ing !== null &&
-              ing.name &&
-              ing.unit &&
-              ing.amount != null
-            ) {
-              let baseAmount = ing.amount
-              let baseUnit = ing.unit
-              let keySuffix = baseUnit
-              if (ing.unit === 'kg') {
-                baseAmount = ing.amount * 1000
-                baseUnit = 'g'
-              }
-              if (ing.unit === 'g' || ing.unit === 'kg') keySuffix = 'g'
-              if (ing.unit === 'l') {
-                baseAmount = ing.amount * 10
-                baseUnit = 'dl'
-              }
-              if (ing.unit === 'l' || ing.unit === 'dl') keySuffix = 'dl'
-              if (ing.unit === 'ss') {
-                baseAmount = ing.amount * 3
-                baseUnit = 'ts'
-              }
-              if (ing.unit === 'ss' || ing.unit === 'ts') keySuffix = 'ts'
-              const key = `${ing.name.trim().toLowerCase()}_${keySuffix}`
-              const existing = aggregatedMap.get(key)
-              if (existing) {
-                existing.amount += baseAmount
-              } else {
-                aggregatedMap.set(key, {
-                  name: ing.name.trim(),
-                  amount: baseAmount,
-                  unit: baseUnit,
-                })
-              }
+
+      const dateStrings = selectedDays.map((day) => format(day, 'yyyy-MM-dd'))
+      const relevantPlans = allPlans.filter(
+        (plan) => dateStrings.includes(plan.date) && !plan.isShopped
+      )
+
+      let cost = 0
+      const aggregatedMap = new Map<
+        string,
+        { amount: number; unit: string; name: string }
+      >()
+
+      relevantPlans.forEach((plan) => {
+        cost += plan.costEstimate || 0
+        const ingredients = (plan.scaledIngredients as Ingredient[]) || []
+        ingredients.forEach((ing) => {
+          if (
+            typeof ing === 'object' &&
+            ing !== null &&
+            ing.name &&
+            ing.unit &&
+            ing.amount != null
+          ) {
+            const normalized = normalizeIngredient(ing)
+            const existing = aggregatedMap.get(normalized.key)
+            if (existing) {
+              existing.amount += normalized.amount
+            } else {
+              aggregatedMap.set(normalized.key, {
+                name: normalized.name,
+                amount: normalized.amount,
+                unit: normalized.unit,
+              })
             }
-          })
+          }
         })
-        const list = Array.from(aggregatedMap.values())
-          .map((value) => {
-            if (value.unit === 'g' && value.amount >= 1000)
-              return { ...value, amount: value.amount / 1000, unit: 'kg' }
-            if (value.unit === 'dl' && value.amount >= 10)
-              return { ...value, amount: value.amount / 10, unit: 'l' }
-            return value
-          })
-          .sort((a, b) => a.name.localeCompare(b.name))
-        setShoppingList(list)
-        setTotalCost(cost)
-      } catch (error) {
-        console.error('Feil ved generering av handleliste:', error)
-        toast.error('Kunne ikke lage listen. Sjekk konsollen for feil.')
-      } finally {
-        setIsLoading(false)
-      }
+      })
+
+      const list = Array.from(aggregatedMap.values())
+        .map((value) => {
+          if (value.unit === 'g' && value.amount >= 1000)
+            return { ...value, amount: value.amount / 1000, unit: 'kg' }
+          if (value.unit === 'dl' && value.amount >= 10)
+            return { ...value, amount: value.amount / 10, unit: 'l' }
+          return value
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      setShoppingList(list)
+      setTotalCost(cost)
     }
+
     generateList()
-  }, [selectedDays])
+  }, [selectedDays, allPlans])
 
   const handleMarkAsShopped = async () => {
     if (selectedDays.length === 0) return
@@ -205,10 +229,11 @@ export function ShoppingListView() {
             showOutsideDays
             fixedWeeks
             disabled={shoppedDays}
-            modifiers={{ shopped: shoppedDays }}
+            modifiers={{ shopped: shoppedDays, plannable: plannableDays }}
             modifiersClassNames={{
               selected: 'day-selected',
               shopped: 'day-shopped',
+              plannable: 'day-plannable',
               today: 'day-today',
               disabled: 'day-disabled',
               caption_label: 'text-2xl font-bold capitalize',
@@ -309,6 +334,14 @@ export function ShoppingListView() {
           background-color: #dcfce7 !important;
           color: #166534 !important;
           border-radius: 0.375rem;
+        }
+        .day-plannable {
+          background-color: #fecaca;
+          border-radius: 0.375rem;
+        }
+        .day-plannable.day-selected {
+          background-color: #ef4444 !important;
+          color: white !important;
         }
         .day-today {
           font-weight: bold;
