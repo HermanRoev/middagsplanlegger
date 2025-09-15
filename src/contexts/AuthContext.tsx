@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   signIn as authSignIn,
   signOut as authSignOut,
+  signUp as authSignUp,
   subscribeToAuthChanges,
   type AuthUser,
 } from '@/lib/auth'
@@ -14,6 +15,11 @@ interface AuthContextType {
   user: AuthUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
+  signUp: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<void>
   logOut: () => Promise<void>
 }
 
@@ -41,13 +47,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe()
   }, [router, pathname])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password:string) => {
     try {
       await authSignIn(email, password)
       toast.success('Vellykket login.')
       router.push('/')
     } catch (error) {
       toast.error('Innlogging feilet. Sjekk dine påloggingsdetaljer.')
+      throw error
+    }
+  }
+
+  const signUp = async (
+    email: string,
+    password: string,
+    displayName: string
+  ) => {
+    try {
+      await authSignUp(email, password, displayName)
+      toast.success('Konto opprettet.')
+      router.push('/')
+    } catch (error) {
+      toast.error('Registrering feilet. Prøv igjen.')
       throw error
     }
   }
@@ -64,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, logOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, logOut }}>
       {children}
     </AuthContext.Provider>
   )
