@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import toast from 'react-hot-toast'
 import Link from 'next/link'
 import Image from 'next/image'
 import { db } from '@/lib/firebase'

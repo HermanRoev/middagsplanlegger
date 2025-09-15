@@ -26,7 +26,7 @@ import Image from 'next/image'
 import { Modal } from './Modal'
 import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
-import { Meal, PlannedMeal } from '@/types'
+import { Meal, PlannedMeal, Ingredient } from '@/types'
 import { Skeleton } from './ui/Skeleton'
 
 export function CalendarView() {
@@ -66,7 +66,7 @@ export function CalendarView() {
         imageUrl: data.imageUrl,
         isShopped: data.isShopped || false,
         servings: data.servings,
-        ingredients: data.scaledIngredients || [],
+        scaledIngredients: data.scaledIngredients || [],
         instructions: data.instructions,
         plannedServings: data.plannedServings,
         prepTime: data.prepTime,
@@ -390,16 +390,18 @@ export function CalendarView() {
                       Ingredienser
                     </h4>
                     <ul className="list-disc list-inside space-y-1 text-gray-700">
-                      {activePlannedMeal.ingredients?.map((ing, idx) => (
-                        <li key={idx}>
-                          {ing.amount !== undefined && ing.unit ? (
-                            <span className="font-medium">
-                              {ing.amount} {ing.unit}
-                            </span>
-                          ) : null}{' '}
-                          {ing.name}
-                        </li>
-                      ))}
+                      {activePlannedMeal.scaledIngredients?.map(
+                        (ing: Ingredient, idx: number) => (
+                          <li key={idx}>
+                            {ing.amount !== undefined && ing.unit ? (
+                              <span className="font-medium">
+                                {ing.amount} {ing.unit}
+                              </span>
+                            ) : null}{' '}
+                            {ing.name}
+                          </li>
+                        )
+                      )}
                     </ul>
                   </div>
                   <div>
