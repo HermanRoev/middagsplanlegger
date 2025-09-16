@@ -18,7 +18,7 @@ export default function ImportMealPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [recipeText, setRecipeText] = useState('')
   const [generateName, setGenerateName] = useState('')
-  const [generateServings, setGenerateServings] = useState<number | null>(4)
+  const [generateServings, setGenerateServings] = useState<number | null>()
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
