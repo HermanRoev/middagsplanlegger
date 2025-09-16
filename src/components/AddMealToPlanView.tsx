@@ -19,6 +19,7 @@ interface AddMealToPlanViewProps {
   onBack: () => void
   onPlanSaved: () => void
   existingPlanId?: string
+  isInsideModal?: boolean
 }
 
 const formatAmount = (amount: number | null) => {
@@ -37,6 +38,7 @@ export function AddMealToPlanView({
   onBack,
   onPlanSaved,
   existingPlanId,
+  isInsideModal,
 }: AddMealToPlanViewProps) {
   const { user } = useAuth()
   const [servingsToPlan, setServingsToPlan] = useState<number | null>(
@@ -44,6 +46,7 @@ export function AddMealToPlanView({
   )
   const [isLoading, setIsLoading] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   // Use a different state for the meal being displayed/planned, which can be updated by the edit form
   const [currentMeal, setCurrentMeal] = useState<Meal>(meal)
 
@@ -156,6 +159,17 @@ export function AddMealToPlanView({
     }
 
     setIsEditModalOpen(false)
+    setIsEditing(false)
+  }
+
+  if (isInsideModal && isEditing) {
+    return (
+      <MealForm
+        initialData={currentMeal}
+        onSave={handleSaveEditedMeal}
+        isEditing={true}
+      />
+    )
   }
 
   return (
@@ -190,7 +204,9 @@ export function AddMealToPlanView({
       </MealDetailView>
       <div className="flex justify-end mt-6 gap-4">
         <button
-          onClick={() => setIsEditModalOpen(true)}
+          onClick={() =>
+            isInsideModal ? setIsEditing(true) : setIsEditModalOpen(true)
+          }
           disabled={isLoading}
           className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:bg-gray-400 flex items-center gap-2"
         >
@@ -207,19 +223,17 @@ export function AddMealToPlanView({
         </button>
       </div>
 
-      {isEditModalOpen && (
+      {!isInsideModal && isEditModalOpen && (
         <Modal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           title={`Rediger: ${currentMeal.name}`}
         >
-          <div className="p-4 max-h-[80vh] overflow-y-auto">
-            <MealForm
-              initialData={currentMeal}
-              onSave={handleSaveEditedMeal}
-              isEditing={true}
-            />
-          </div>
+          <MealForm
+            initialData={currentMeal}
+            onSave={handleSaveEditedMeal}
+            isEditing={true}
+          />
         </Modal>
       )}
     </div>

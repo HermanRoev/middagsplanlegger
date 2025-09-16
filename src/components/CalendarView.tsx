@@ -335,9 +335,7 @@ export function CalendarView() {
           }
         >
           {modalView === 'library' && (
-            <div className="overflow-y-auto max-h-[420px] flex flex-wrap gap-4 justify-center">
-              <MealLibrary onSelectMeal={handleSelectMealFromLibrary} />
-            </div>
+            <MealLibrary onSelectMeal={handleSelectMealFromLibrary} />
           )}
           {modalView === 'addToPlan' && selectedMeal && (
             <AddMealToPlanView
@@ -348,6 +346,7 @@ export function CalendarView() {
               }
               onPlanSaved={handlePlanSaved}
               existingPlanId={activePlannedMeal?.id}
+              isInsideModal={true}
             />
           )}
           {modalView === 'viewMeal' && activePlannedMeal && (
