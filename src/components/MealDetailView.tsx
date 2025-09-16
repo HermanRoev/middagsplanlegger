@@ -37,79 +37,81 @@ export function MealDetailView({
   }))
 
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-col md:flex-row gap-8">
-        <div className="md:w-1/3 flex-shrink-0">
-          {meal.imageUrl ? (
-            <Image
-              src={meal.imageUrl}
-              alt={meal.name}
-              width={400}
-              height={300}
-              unoptimized
-              className="w-full h-60 object-contain rounded-lg shadow-md"
-            />
-          ) : (
-            <div className="w-full h-60 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
-              Bilde mangler
-            </div>
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      {meal.imageUrl ? (
+        <Image
+          src={meal.imageUrl}
+          alt={meal.name}
+          width={600}
+          height={300}
+          unoptimized
+          className="w-full h-64 object-cover"
+        />
+      ) : (
+        <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400">
+          <span className="material-icons text-4xl">photo_camera</span>
+        </div>
+      )}
+      <div className="p-6">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">{meal.name}</h2>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-gray-600 mb-6">
+          <span className="flex items-center gap-2">
+            <span className="material-icons text-lg">restaurant_menu</span>
+            Originaloppskrift for {meal.servings || '?'} porsjoner
+          </span>
+          {(meal.prepTime ?? 0) > 0 && (
+            <span className="flex items-center gap-2">
+              <span className="material-icons text-lg">schedule</span>
+              {meal.prepTime} min
+            </span>
+          )}
+          {(meal.costEstimate ?? 0) > 0 && (
+            <span className="flex items-center gap-2">
+              <span className="material-icons text-lg">payments</span>
+              {meal.costEstimate} kr
+            </span>
           )}
         </div>
-        <div className="md:w-2/3">
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">{meal.name}</h3>
-          <div className="flex gap-4 text-gray-600 mb-4">
-            <p className="flex items-center gap-1">
-              Originaloppskrift for {meal.servings || '?'} porsjoner
-            </p>
-            {(meal.prepTime ?? 0) > 0 && (
-              <p className="flex items-center gap-1">
-                <span className="material-icons text-base">schedule</span>
-                {meal.prepTime} min
-              </p>
-            )}
-            {(meal.costEstimate ?? 0) > 0 && (
-              <p className="flex items-center gap-1">
-                <span className="material-icons text-base">payments</span>
-                {meal.costEstimate} kr
-              </p>
-            )}
+        {children}
+        <div className="mt-8">
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">
+              Ingredienser (for {servings || 0} porsjoner)
+            </h3>
+            <ul className="space-y-2 text-gray-700">
+              {scaledIngredients?.map((ing, index) => (
+                <li key={index} className="flex items-center gap-3">
+                  <span className="material-icons text-blue-500">
+                    arrow_right
+                  </span>
+                  <span>
+                    <span className="font-bold">
+                      {formatAmount(ing.amount)} {ing.unit}
+                    </span>{' '}
+                    {ing.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
-          {children}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-        <div>
-          <h4 className="text-lg font-semibold mb-2 text-gray-800">
-            Ingredienser (for {servings || 0} porsjoner)
-          </h4>
-          <ul className="list-disc list-inside space-y-1 text-gray-700">
-            {scaledIngredients?.map((ing, index) => (
-              <li key={index}>
-                <span className="font-medium">
-                  {formatAmount(ing.amount)} {ing.unit}
-                </span>{' '}
-                {ing.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h4 className="text-lg font-semibold mb-2 text-gray-800">
-            Instruksjoner
-          </h4>
-          <div className="text-gray-700 prose prose-sm max-w-none">
-            {Array.isArray(meal.instructions) &&
-            meal.instructions.length > 0 ? (
-              <div className="space-y-2">
-                {meal.instructions.map((step, index) => (
-                  <div key={index}>
-                    <span className="font-bold">Steg {index + 1}:</span> {step}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              'Instruksjoner mangler.'
-            )}
+          <div>
+            <h3 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">
+              Instruksjoner
+            </h3>
+            <div className="prose prose-sm max-w-none text-gray-700">
+              {Array.isArray(meal.instructions) &&
+              meal.instructions.length > 0 ? (
+                <ol className="list-decimal list-outside space-y-3 pl-5">
+                  {meal.instructions.map((step, index) => (
+                    <li key={index} className="pl-2">
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p>Instruksjoner mangler.</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
