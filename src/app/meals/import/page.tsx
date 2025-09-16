@@ -230,7 +230,6 @@ export default function ImportMealPage() {
             <TextAreaField
               id="text-upload"
               label="Lim inn oppskriftstekst"
-              rows={12}
               value={recipeText}
               onChange={(e) => setRecipeText(e.target.value)}
               onKeyDown={(e) => {
