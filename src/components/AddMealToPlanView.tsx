@@ -88,6 +88,7 @@ export function AddMealToPlanView({
           ? { id: user.uid, name: user.displayName || 'Ukjent bruker' }
           : undefined,
         originalMealId: meal.id, // Keep track of the original meal
+        servings: currentMeal.servings || 1, // Save the base servings
       })
 
       toast.success(
