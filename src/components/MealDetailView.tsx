@@ -45,7 +45,7 @@ export function MealDetailView({
           width={600}
           height={300}
           unoptimized
-          className="w-full h-64 object-cover"
+          className="w-full h-64 object-contain"
         />
       ) : (
         <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400">
@@ -98,16 +98,17 @@ export function MealDetailView({
             <h3 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">
               Instruksjoner
             </h3>
-            <div className="prose prose-sm max-w-none text-gray-700">
+            <div className="space-y-4 text-gray-700">
               {Array.isArray(meal.instructions) &&
               meal.instructions.length > 0 ? (
-                <ol className="list-decimal list-outside space-y-3 pl-5">
-                  {meal.instructions.map((step, index) => (
-                    <li key={index} className="pl-2">
-                      {step}
-                    </li>
-                  ))}
-                </ol>
+                meal.instructions.map((step, index) => (
+                  <div key={index} className="flex gap-4">
+                    <span className="flex-shrink-0 font-bold text-blue-600">
+                      Steg {index + 1}:
+                    </span>
+                    <p>{step}</p>
+                  </div>
+                ))
               ) : (
                 <p>Instruksjoner mangler.</p>
               )}
