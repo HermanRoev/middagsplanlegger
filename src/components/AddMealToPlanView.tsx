@@ -65,15 +65,15 @@ export function AddMealToPlanView({
 
       const baseServings = currentMeal.servings || 1
       const plannedServings = servingsToPlan || 1
-      const scaleFactor =
-        baseServings > 0 && plannedServings > 0
-          ? plannedServings / baseServings
-          : 1
       const scaledIngredients = (currentMeal.ingredients || []).map(
-        (ingredient) => ({
-          ...ingredient,
-          amount: (ingredient.amount || 0) * scaleFactor,
-        })
+        (ingredient) => {
+          const amountPerServing = (ingredient.amount || 0) / baseServings
+          const scaledAmount = amountPerServing * plannedServings
+          return {
+            ...ingredient,
+            amount: scaledAmount,
+          }
+        }
       )
 
       await addDoc(collection(db, 'mealPlans'), {
@@ -91,6 +91,7 @@ export function AddMealToPlanView({
           ? { id: user.uid, name: user.displayName || 'Ukjent bruker' }
           : undefined,
         originalMealId: meal.id, // Keep track of the original meal
+        servings: currentMeal.servings || 1, // Save the base servings
       })
 
       toast.success(

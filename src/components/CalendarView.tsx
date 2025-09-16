@@ -362,6 +362,7 @@ export function CalendarView() {
                 instructions: activePlannedMeal.instructions ?? [],
               }}
               servings={activePlannedMeal.plannedServings}
+              isPlannedMeal={true}
             >
               <div className="flex justify-between items-start mb-4">
                 <div>

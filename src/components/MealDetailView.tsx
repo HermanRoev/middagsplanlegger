@@ -7,6 +7,7 @@ interface MealDetailViewProps {
   meal: Meal | null
   children?: React.ReactNode
   servings?: number
+  isPlannedMeal?: boolean
 }
 
 const formatAmount = (amount: number | null) => {
@@ -23,18 +24,28 @@ export function MealDetailView({
   meal,
   children,
   servings,
+  isPlannedMeal = false,
 }: MealDetailViewProps) {
   if (!meal) return null
 
-  const baseServings = meal.servings || 1
-  const plannedServings = servings || 0
-  const scaleFactor =
-    baseServings > 0 && plannedServings > 0 ? plannedServings / baseServings : 1
-
-  const scaledIngredients = (meal.ingredients || []).map((ingredient) => ({
-    ...ingredient,
-    amount: (ingredient.amount || 0) * scaleFactor,
-  }))
+  const ingredientsToDisplay = (() => {
+    if (isPlannedMeal) {
+      return meal.ingredients || []
+    }
+    const baseServings = meal.servings || 1
+    const plannedServings = servings || baseServings
+    if (baseServings === plannedServings) {
+      return meal.ingredients || []
+    }
+    const scaleFactor =
+      baseServings > 0 && plannedServings > 0
+        ? plannedServings / baseServings
+        : 1
+    return (meal.ingredients || []).map((ingredient) => ({
+      ...ingredient,
+      amount: (ingredient.amount || 0) * scaleFactor,
+    }))
+  })()
 
   return (
     <div>
@@ -76,10 +87,10 @@ export function MealDetailView({
         <div className="mt-8">
           <div className="mb-8">
             <h3 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">
-              Ingredienser (for {servings || 0} porsjoner)
+              Ingredienser (for {servings || meal.servings || 0} porsjoner)
             </h3>
             <ul className="space-y-2 text-gray-700">
-              {scaledIngredients?.map((ing, index) => (
+              {ingredientsToDisplay?.map((ing, index) => (
                 <li key={index} className="flex items-center gap-3">
                   <span className="material-icons text-blue-500">
                     arrow_right
