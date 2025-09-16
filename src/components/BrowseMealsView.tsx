@@ -136,7 +136,10 @@ export function BrowseMealsView() {
           onClose={handleCloseDetail}
           title={activeMeal.name}
         >
-          <MealDetailView meal={activeMeal} servings={activeMeal.servings}>
+          <MealDetailView
+            meal={activeMeal}
+            servings={activeMeal.servings ?? undefined}
+          >
             <div className="flex gap-4 mt-6">
               <Link
                   href={`/meals/edit/${activeMeal.id}`}
@@ -161,7 +164,6 @@ export function BrowseMealsView() {
                 </button>
               </div>
             </MealDetailView>
-          </div>
         </Modal>
       )}
       {sortedAndFilteredMeals.length === 0 && !isLoading && (

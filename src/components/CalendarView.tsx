@@ -354,12 +354,12 @@ export function CalendarView() {
               meal={{
                 id: activePlannedMeal.mealId,
                 name: activePlannedMeal.mealName,
-                imageUrl: activePlannedMeal.imageUrl,
-                servings: activePlannedMeal.servings,
-                prepTime: activePlannedMeal.prepTime,
-                costEstimate: activePlannedMeal.costEstimate,
-                ingredients: activePlannedMeal.scaledIngredients,
-                instructions: activePlannedMeal.instructions,
+                imageUrl: activePlannedMeal.imageUrl ?? null,
+                servings: activePlannedMeal.servings ?? null,
+                prepTime: activePlannedMeal.prepTime ?? null,
+                costEstimate: activePlannedMeal.costEstimate ?? null,
+                ingredients: activePlannedMeal.scaledIngredients ?? [],
+                instructions: activePlannedMeal.instructions ?? [],
               }}
               servings={activePlannedMeal.plannedServings}
             >
