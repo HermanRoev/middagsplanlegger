@@ -37,7 +37,7 @@ export function MealDetailView({
   }))
 
   return (
-    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+    <div>
       {meal.imageUrl ? (
         <Image
           src={meal.imageUrl}
