@@ -38,22 +38,20 @@ export function MealDetailView({
 
   return (
     <div>
-      <div className="overflow-hidden rounded-t-lg">
-        {meal.imageUrl ? (
-          <Image
-            src={meal.imageUrl}
-            alt={meal.name}
-            width={600}
-            height={300}
-            unoptimized
-            className="w-full h-64 object-contain"
-          />
-        ) : (
-          <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400">
-            <span className="material-icons text-4xl">photo_camera</span>
-          </div>
-        )}
-      </div>
+      {meal.imageUrl ? (
+        <Image
+          src={meal.imageUrl}
+          alt={meal.name}
+          width={600}
+          height={300}
+          unoptimized
+          className="w-full h-64 object-contain"
+        />
+      ) : (
+        <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400">
+          <span className="material-icons text-4xl">photo_camera</span>
+        </div>
+      )}
       <div className="p-6">
         <h2 className="text-3xl font-bold text-gray-800 mb-2">{meal.name}</h2>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-gray-600 mb-6">
