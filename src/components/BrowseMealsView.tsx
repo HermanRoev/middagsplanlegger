@@ -136,10 +136,12 @@ export function BrowseMealsView() {
           onClose={handleCloseDetail}
           title={activeMeal.name}
         >
-          <div className="p-4">
-            <MealDetailView meal={activeMeal} servings={activeMeal.servings}>
-              <div className="flex gap-4 mt-6">
-                <Link
+          <MealDetailView
+            meal={activeMeal}
+            servings={activeMeal.servings ?? undefined}
+          >
+            <div className="flex gap-4 mt-6">
+              <Link
                   href={`/meals/edit/${activeMeal.id}`}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow"
                 >
@@ -162,7 +164,6 @@ export function BrowseMealsView() {
                 </button>
               </div>
             </MealDetailView>
-          </div>
         </Modal>
       )}
       {sortedAndFilteredMeals.length === 0 && !isLoading && (

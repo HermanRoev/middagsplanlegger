@@ -335,9 +335,7 @@ export function CalendarView() {
           }
         >
           {modalView === 'library' && (
-            <div className="overflow-y-auto max-h-[420px] flex flex-wrap gap-4 justify-center">
-              <MealLibrary onSelectMeal={handleSelectMealFromLibrary} />
-            </div>
+            <MealLibrary onSelectMeal={handleSelectMealFromLibrary} />
           )}
           {modalView === 'addToPlan' && selectedMeal && (
             <AddMealToPlanView
@@ -348,6 +346,7 @@ export function CalendarView() {
               }
               onPlanSaved={handlePlanSaved}
               existingPlanId={activePlannedMeal?.id}
+              isInsideModal={true}
             />
           )}
           {modalView === 'viewMeal' && activePlannedMeal && (
@@ -355,12 +354,12 @@ export function CalendarView() {
               meal={{
                 id: activePlannedMeal.mealId,
                 name: activePlannedMeal.mealName,
-                imageUrl: activePlannedMeal.imageUrl,
-                servings: activePlannedMeal.servings,
-                prepTime: activePlannedMeal.prepTime,
-                costEstimate: activePlannedMeal.costEstimate,
-                ingredients: activePlannedMeal.scaledIngredients,
-                instructions: activePlannedMeal.instructions,
+                imageUrl: activePlannedMeal.imageUrl ?? null,
+                servings: activePlannedMeal.servings ?? null,
+                prepTime: activePlannedMeal.prepTime ?? null,
+                costEstimate: activePlannedMeal.costEstimate ?? null,
+                ingredients: activePlannedMeal.scaledIngredients ?? [],
+                instructions: activePlannedMeal.instructions ?? [],
               }}
               servings={activePlannedMeal.plannedServings}
             >
