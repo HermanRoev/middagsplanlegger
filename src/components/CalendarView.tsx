@@ -215,7 +215,7 @@ export function CalendarView() {
                           width={160}
                           height={100}
                           unoptimized={true}
-                          className="w-full h-24 object-contain rounded-md mb-1 max-w-full"
+                          className="w-full h-24 object-contain rounded-lg mb-1 max-w-full"
                         />
                       )}
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
@@ -281,7 +281,7 @@ export function CalendarView() {
                         width={64}
                         height={64}
                         unoptimized={true}
-                        className="w-16 h-16 object-contain rounded-md"
+                        className="w-16 h-16 object-contain rounded-lg"
                       />
                     )}
                     <div>

@@ -37,7 +37,7 @@ export function MealDetailView({
   }))
 
   return (
-    <div>
+    <div className="overflow-hidden">
       {meal.imageUrl ? (
         <Image
           src={meal.imageUrl}
@@ -45,10 +45,10 @@ export function MealDetailView({
           width={600}
           height={300}
           unoptimized
-          className="w-full h-64 object-contain"
+          className="w-full h-64 object-contain rounded-t-lg"
         />
       ) : (
-        <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400">
+        <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400 rounded-t-lg">
           <span className="material-icons text-4xl">photo_camera</span>
         </div>
       )}
