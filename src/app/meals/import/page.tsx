@@ -8,6 +8,8 @@ import { getAI, getGenerativeModel } from 'firebase/ai'
 import { app, db } from '@/lib/firebase'
 import { collection, getDocs } from 'firebase/firestore'
 import { Meal, Ingredient } from '@/types'
+import InputField from '@/components/ui/InputField'
+import TextAreaField from '@/components/ui/TextAreaField'
 
 export default function ImportMealPage() {
   const [importType, setImportType] = useState<'image' | 'text' | 'generate'>(
@@ -225,61 +227,50 @@ export default function ImportMealPage() {
           )}
 
           {importType === 'text' && (
-            <div>
-              <label
-                htmlFor="text-upload"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Lim inn oppskriftstekst
-              </label>
-              <textarea
-                id="text-upload"
-                rows={12}
-                value={recipeText}
-                onChange={(e) => setRecipeText(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
-                placeholder="Lim inn hele oppskriften her, inkludert tittel, ingredienser og fremgangsmåte..."
-              ></textarea>
-            </div>
+            <TextAreaField
+              id="text-upload"
+              label="Lim inn oppskriftstekst"
+              rows={12}
+              value={recipeText}
+              onChange={(e) => setRecipeText(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  handleImport()
+                }
+              }}
+            />
           )}
 
           {importType === 'generate' && (
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="meal-name"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Navn på middag
-                </label>
-                <input
-                  id="meal-name"
-                  type="text"
-                  value={generateName}
-                  onChange={(e) => setGenerateName(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
-                  placeholder="f.eks. Spaghetti Bolognese"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="servings"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Antall porsjoner
-                </label>
-                <input
-                  id="servings"
-                  type="number"
-                  value={generateServings ?? ''}
-                  onChange={(e) =>
-                    setGenerateServings(Number(e.target.value) || null)
+            <div className="space-y-6">
+              <InputField
+                id="meal-name"
+                label="Navn på middag"
+                type="text"
+                value={generateName}
+                onChange={(e) => setGenerateName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleImport()
                   }
-                  min="1"
-                  placeholder="f.eks. 4"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
-                />
-              </div>
+                }}
+                required
+              />
+              <InputField
+                id="servings"
+                label="Antall porsjoner"
+                type="number"
+                value={generateServings ?? ''}
+                onChange={(e) =>
+                  setGenerateServings(Number(e.target.value) || null)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleImport()
+                  }
+                }}
+                min="1"
+              />
             </div>
           )}
 
