@@ -209,14 +209,16 @@ export function CalendarView() {
                   {plannedMeal ? (
                     <div className="mt-2 flex-grow flex flex-col items-center text-center w-full">
                       {plannedMeal.imageUrl && (
-                        <Image
-                          src={plannedMeal.imageUrl}
-                          alt={plannedMeal.mealName}
-                          width={160}
-                          height={100}
-                          unoptimized={true}
-                          className="w-full h-24 object-contain rounded-lg mb-1 max-w-full"
-                        />
+                        <div className="w-full h-24 mb-1 max-w-full rounded-lg overflow-hidden">
+                          <Image
+                            src={plannedMeal.imageUrl}
+                            alt={plannedMeal.mealName}
+                            width={160}
+                            height={100}
+                            unoptimized={true}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
                       )}
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
                         {plannedMeal.mealName}
@@ -275,14 +277,16 @@ export function CalendarView() {
                 {plannedMeal ? (
                   <div className="flex items-center gap-4">
                     {plannedMeal.imageUrl && (
-                      <Image
-                        src={plannedMeal.imageUrl}
-                        alt={plannedMeal.mealName}
-                        width={64}
-                        height={64}
-                        unoptimized={true}
-                        className="w-16 h-16 object-contain rounded-lg"
-                      />
+                      <div className="w-16 h-16 rounded-lg overflow-hidden">
+                        <Image
+                          src={plannedMeal.imageUrl}
+                          alt={plannedMeal.mealName}
+                          width={64}
+                          height={64}
+                          unoptimized={true}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                     )}
                     <div>
                       <p className="font-semibold text-gray-800">
