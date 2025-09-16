@@ -64,7 +64,6 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
     initialData?.ingredients || []
   )
   const [masterIngredientList, setMasterIngredientList] = useState<string[]>([])
-  const pasteInputRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (initialData) {
@@ -119,11 +118,8 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
         }
       }
     }
-    const div = pasteInputRef.current
-    if (div) {
-      div.addEventListener('paste', handlePaste)
-      return () => div.removeEventListener('paste', handlePaste)
-    }
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
   }, [])
 
   const addIngredient = () => {
@@ -187,7 +183,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      <div ref={pasteInputRef} className="space-y-6">
+      <div className="space-y-6">
         <div
           className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
           onClick={() => document.getElementById('imageInput')?.click()}
