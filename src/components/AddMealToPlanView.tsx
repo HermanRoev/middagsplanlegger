@@ -11,6 +11,7 @@ import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
 import { MealForm } from './MealForm'
 import { Modal } from './Modal'
+import { MealDetailView } from './MealDetailView'
 
 interface AddMealToPlanViewProps {
   meal: Meal
@@ -25,7 +26,9 @@ const formatAmount = (amount: number | null) => {
     return ''
   }
   if (amount === 0) return '0'
-  return Number.isInteger(amount) ? amount.toString() : parseFloat(amount.toFixed(1)).toString()
+  return Number.isInteger(amount)
+    ? amount.toString()
+    : parseFloat(amount.toFixed(1)).toString()
 }
 
 export function AddMealToPlanView({
@@ -43,27 +46,6 @@ export function AddMealToPlanView({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   // Use a different state for the meal being displayed/planned, which can be updated by the edit form
   const [currentMeal, setCurrentMeal] = useState<Meal>(meal)
-  const [scaledIngredients, setScaledIngredients] = useState<Ingredient[]>(
-    meal.ingredients || []
-  )
-
-  useEffect(() => {
-    const baseServings = currentMeal.servings || 1
-    const baseIngredients = currentMeal.ingredients || []
-    const plannedServings = servingsToPlan || 0
-
-    if (baseServings <= 0 || plannedServings <= 0) {
-      setScaledIngredients(baseIngredients)
-      return
-    }
-
-    const scaleFactor = plannedServings / baseServings
-    const newScaledIngredients = baseIngredients.map((ingredient) => ({
-      ...ingredient,
-      amount: (ingredient.amount || 0) * scaleFactor,
-    }))
-    setScaledIngredients(newScaledIngredients)
-  }, [servingsToPlan, currentMeal])
 
   const handleSavePlan = async () => {
     if (!servingsToPlan || servingsToPlan <= 0) {
@@ -77,6 +59,19 @@ export function AddMealToPlanView({
       if (existingPlanId) {
         await deleteDoc(doc(db, 'mealPlans', existingPlanId))
       }
+
+      const baseServings = currentMeal.servings || 1
+      const plannedServings = servingsToPlan || 1
+      const scaleFactor =
+        baseServings > 0 && plannedServings > 0
+          ? plannedServings / baseServings
+          : 1
+      const scaledIngredients = (currentMeal.ingredients || []).map(
+        (ingredient) => ({
+          ...ingredient,
+          amount: (ingredient.amount || 0) * scaleFactor,
+        })
+      )
 
       await addDoc(collection(db, 'mealPlans'), {
         date: format(selectedDate, 'yyyy-MM-dd'),
@@ -115,48 +110,53 @@ export function AddMealToPlanView({
     imageFile: File | null
   ) => {
     const saveAsNew = window.confirm(
-      "Vil du lagre dette som en helt ny middag i biblioteket?\n\n" +
-      "Trykk 'OK' for å lagre som en ny middag.\n" +
-      "Trykk 'Avbryt' for å bare bruke endringene for denne dagen."
-    );
+      'Vil du lagre dette som en helt ny middag i biblioteket?\n\n' +
+        "Trykk 'OK' for å lagre som en ny middag.\n" +
+        "Trykk 'Avbryt' for å bare bruke endringene for denne dagen."
+    )
 
     if (saveAsNew) {
-      const toastId = toast.loading('Lagrer som ny middag...');
+      const toastId = toast.loading('Lagrer som ny middag...')
       try {
-        let imageUrl = editedMealData.imageUrl || '';
+        let imageUrl = editedMealData.imageUrl || ''
         if (imageFile) {
-          const storageRef = ref(storage, `meals/${Date.now()}_${imageFile.name}`);
-          await uploadBytes(storageRef, imageFile);
-          imageUrl = await getDownloadURL(storageRef);
+          const storageRef = ref(
+            storage,
+            `meals/${Date.now()}_${imageFile.name}`
+          )
+          await uploadBytes(storageRef, imageFile)
+          imageUrl = await getDownloadURL(storageRef)
         }
 
         const newMealDoc = await addDoc(collection(db, 'meals'), {
           ...editedMealData,
           imageUrl,
-          createdBy: user ? { id: user.uid, name: user.displayName || 'Ukjent bruker' } : undefined,
-        });
+          createdBy: user
+            ? { id: user.uid, name: user.displayName || 'Ukjent bruker' }
+            : undefined,
+        })
 
         for (const ingredient of editedMealData.ingredients) {
-          await setDoc(doc(db, 'ingredients', ingredient.name), {});
+          await setDoc(doc(db, 'ingredients', ingredient.name), {})
         }
 
-        setCurrentMeal({ ...editedMealData, id: newMealDoc.id, imageUrl });
-        toast.success(`Ny middag '${editedMealData.name}' lagret!`, { id: toastId });
-
+        setCurrentMeal({ ...editedMealData, id: newMealDoc.id, imageUrl })
+        toast.success(`Ny middag '${editedMealData.name}' lagret!`, {
+          id: toastId,
+        })
       } catch (error) {
-        console.error('Error creating new meal:', error);
-        toast.error('Kunne ikke lagre ny middag.', { id: toastId });
-        return; // Stop if saving as new fails
+        console.error('Error creating new meal:', error)
+        toast.error('Kunne ikke lagre ny middag.', { id: toastId })
+        return // Stop if saving as new fails
       }
     } else {
-       // Just use the edits for this day
-       setCurrentMeal({ ...currentMeal, ...editedMealData });
-       toast.success('Endringene brukes for denne dagen.');
+      // Just use the edits for this day
+      setCurrentMeal({ ...currentMeal, ...editedMealData })
+      toast.success('Endringene brukes for denne dagen.')
     }
 
-    setIsEditModalOpen(false);
-  };
-
+    setIsEditModalOpen(false)
+  }
 
   return (
     <div>
@@ -169,99 +169,25 @@ export function AddMealToPlanView({
           Tilbake til biblioteket
         </button>
       </div>
-      <div className="flex flex-col md:flex-row gap-8">
-        <div className="md:w-1/3 flex-shrink-0">
-          {currentMeal.imageUrl ? (
-            <Image
-              src={currentMeal.imageUrl}
-              alt={currentMeal.name}
-              width={400}
-              height={300}
-              unoptimized
-              className="w-full h-60 object-contain rounded-lg shadow-md"
-            />
-          ) : (
-            <div className="w-full h-60 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
-              Bilde mangler
-            </div>
-          )}
+      <MealDetailView meal={currentMeal} servings={servingsToPlan || 0}>
+        <div className="mb-6">
+          <label
+            htmlFor="servings"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
+            Hvor mange porsjoner skal du lage?
+          </label>
+          <input
+            type="number"
+            id="servings"
+            value={servingsToPlan ?? ''}
+            onChange={(e) => setServingsToPlan(Number(e.target.value) || null)}
+            className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            min="1"
+            placeholder="f.eks. 4"
+          />
         </div>
-        <div className="md:w-2/3">
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">{currentMeal.name}</h3>
-          <div className="flex gap-4 text-gray-600 mb-4">
-            <p className="flex items-center gap-1">
-              Originaloppskrift for {currentMeal.servings || '?'} porsjoner
-            </p>
-            {(currentMeal.prepTime ?? 0) > 0 && (
-              <p className="flex items-center gap-1">
-                <span className="material-icons text-base">schedule</span>
-                {currentMeal.prepTime} min
-              </p>
-            )}
-            {(currentMeal.costEstimate ?? 0) > 0 && (
-              <p className="flex items-center gap-1">
-                <span className="material-icons text-base">payments</span>
-                {currentMeal.costEstimate} kr
-              </p>
-            )}
-          </div>
-          <div className="mb-6">
-            <label
-              htmlFor="servings"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Hvor mange porsjoner skal du lage?
-            </label>
-            <input
-              type="number"
-              id="servings"
-              value={servingsToPlan ?? ''}
-              onChange={(e) =>
-                setServingsToPlan(Number(e.target.value) || null)
-              }
-              className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              min="1"
-              placeholder="f.eks. 4"
-            />
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-        <div>
-          <h4 className="text-lg font-semibold mb-2 text-gray-800">
-            Ingredienser (for {servingsToPlan || 0} porsjoner)
-          </h4>
-          <ul className="list-disc list-inside space-y-1 text-gray-700">
-            {scaledIngredients?.map((ing, index) => (
-              <li key={index}>
-                <span className="font-medium">
-                  {formatAmount(ing.amount)} {ing.unit}
-                </span>{' '}
-                {ing.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h4 className="text-lg font-semibold mb-2 text-gray-800">
-            Instruksjoner
-          </h4>
-          <div className="text-gray-700 prose prose-sm max-w-none">
-            {Array.isArray(currentMeal.instructions) &&
-            currentMeal.instructions.length > 0 ? (
-              <div className="space-y-2">
-                {currentMeal.instructions.map((step, index) => (
-                  <div key={index}>
-                    <span className="font-bold">Steg {index + 1}:</span> {step}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              'Instruksjoner mangler.'
-            )}
-          </div>
-        </div>
-      </div>
+      </MealDetailView>
       <div className="flex justify-end mt-6 gap-4">
         <button
           onClick={() => setIsEditModalOpen(true)}

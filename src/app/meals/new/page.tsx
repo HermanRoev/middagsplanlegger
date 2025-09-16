@@ -13,7 +13,9 @@ import { useState, useEffect } from 'react'
 
 export default function NewMealPage() {
   const router = useRouter()
-  const [initialData, setInitialData] = useState<Omit<Meal, 'id'> | undefined>(undefined)
+  const [initialData, setInitialData] = useState<Omit<Meal, 'id'> | undefined>(
+    undefined
+  )
 
   useEffect(() => {
     const importedRecipeJson = sessionStorage.getItem('importedRecipe')
@@ -23,7 +25,10 @@ export default function NewMealPage() {
         setInitialData(recipe)
         sessionStorage.removeItem('importedRecipe')
       } catch (error) {
-        console.error("Could not parse imported recipe from sessionStorage", error)
+        console.error(
+          'Could not parse imported recipe from sessionStorage',
+          error
+        )
       }
     }
   }, [])
@@ -65,7 +70,11 @@ export default function NewMealPage() {
         <h2 className="text-3xl font-bold mb-6 text-gray-800">
           {initialData ? 'Importert Oppskrift' : 'Legg til ny middag'}
         </h2>
-        <MealForm onSave={handleCreateMeal} isEditing={false} initialData={initialData} />
+        <MealForm
+          onSave={handleCreateMeal}
+          isEditing={false}
+          initialData={initialData}
+        />
       </div>
     </MainLayout>
   )

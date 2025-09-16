@@ -28,6 +28,7 @@ import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
 import { Meal, PlannedMeal, Ingredient } from '@/types'
 import { Skeleton } from './ui/Skeleton'
+import { MealDetailView } from './MealDetailView'
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -214,7 +215,7 @@ export function CalendarView() {
                           width={160}
                           height={100}
                           unoptimized={true}
-                          className="w-full h-24 object-cover rounded-md mb-1 max-w-full"
+                          className="w-full h-24 object-contain rounded-md mb-1 max-w-full"
                         />
                       )}
                       <p className="text-sm font-medium text-gray-700 truncate w-full">
@@ -280,7 +281,7 @@ export function CalendarView() {
                         width={64}
                         height={64}
                         unoptimized={true}
-                        className="w-16 h-16 object-cover rounded-md"
+                        className="w-16 h-16 object-contain rounded-md"
                       />
                     )}
                     <div>
@@ -290,13 +291,17 @@ export function CalendarView() {
                       <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
                         {(plannedMeal.prepTime ?? 0) > 0 && (
                           <span className="flex items-center gap-1">
-                            <span className="material-icons text-base">schedule</span>
+                            <span className="material-icons text-base">
+                              schedule
+                            </span>
                             {plannedMeal.prepTime} min
                           </span>
                         )}
                         {(plannedMeal.costEstimate ?? 0) > 0 && (
                           <span className="flex items-center gap-1">
-                            <span className="material-icons text-base">payments</span>
+                            <span className="material-icons text-base">
+                              payments
+                            </span>
                             {plannedMeal.costEstimate} kr
                           </span>
                         )}
@@ -346,132 +351,55 @@ export function CalendarView() {
             />
           )}
           {modalView === 'viewMeal' && activePlannedMeal && (
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="md:w-1/3 flex-shrink-0">
-                {activePlannedMeal.imageUrl ? (
-                  <Image
-                    src={activePlannedMeal.imageUrl}
-                    alt={activePlannedMeal.mealName}
-                    width={400}
-                    height={180}
-                    unoptimized={true}
-                    className="w-full h-44 object-cover rounded-lg shadow-md mb-2"
-                  />
-                ) : (
-                  <div className="w-full h-44 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
-                    Bilde mangler
-                  </div>
-                )}
-              </div>
-              <div className="md:w-2/3">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                      {activePlannedMeal.mealName}
-                    </h3>
-                    <p className="text-gray-600">
-                      Planlagt for {activePlannedMeal.plannedServings} porsjoner
+            <MealDetailView
+              meal={{
+                id: activePlannedMeal.mealId,
+                name: activePlannedMeal.mealName,
+                imageUrl: activePlannedMeal.imageUrl,
+                servings: activePlannedMeal.servings,
+                prepTime: activePlannedMeal.prepTime,
+                costEstimate: activePlannedMeal.costEstimate,
+                ingredients: activePlannedMeal.scaledIngredients,
+                instructions: activePlannedMeal.instructions,
+              }}
+              servings={activePlannedMeal.plannedServings}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="text-gray-600">
+                    Planlagt for {activePlannedMeal.plannedServings} porsjoner
+                  </p>
+                  {activePlannedMeal.plannedBy && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Lagt til av: {activePlannedMeal.plannedBy.name}
                     </p>
-                    {activePlannedMeal.plannedBy && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        Lagt til av: {activePlannedMeal.plannedBy.name}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
-                      {(activePlannedMeal.prepTime ?? 0) > 0 && (
-                        <span className="flex items-center gap-1">
-                          <span className="material-icons text-base">
-                            schedule
-                          </span>
-                          {activePlannedMeal.prepTime} min
-                        </span>
-                      )}
-                      {(activePlannedMeal.costEstimate ?? 0) > 0 && (
-                        <span className="flex items-center gap-1">
-                          <span className="material-icons text-base">
-                            payments
-                          </span>
-                          {activePlannedMeal.costEstimate} kr
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setModalView('library')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                    >
-                      <span className="material-icons text-base align-middle">
-                        swap_horiz
-                      </span>
-                      Bytt middag
-                    </button>
-                    <button
-                      onClick={() =>
-                        activePlannedMeal && handleRemoveMeal(activePlannedMeal.id)
-                      }
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
-                    >
-                      <span className="material-icons text-base align-middle">
-                        delete
-                      </span>
-                      Fjern
-                    </button>
-                  </div>
+                  )}
                 </div>
-                <div className="space-y-6">
-                  {/* Ingredients Section */}
-                  <div>
-                    <h4 className="text-lg font-semibold mb-3 text-gray-800">
-                      Ingredienser
-                    </h4>
-                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-700">
-                      {activePlannedMeal.scaledIngredients?.map(
-                        (ing: Ingredient, idx: number) => (
-                          <li key={idx} className="flex items-center gap-2">
-                            <span className="text-blue-600 material-icons">
-                              fiber_manual_record
-                            </span>
-                            <span>
-                              {ing.amount !== undefined && ing.unit ? (
-                                <span className="font-medium">
-                                  {ing.amount} {ing.unit}
-                                </span>
-                              ) : null}{' '}
-                              {ing.name}
-                            </span>
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-
-                  {/* Instructions Section */}
-                  <div>
-                    <h4 className="text-lg font-semibold mb-3 text-gray-800">
-                      Instruksjoner
-                    </h4>
-                    <div className="text-gray-700 prose prose-sm max-w-none">
-                      {Array.isArray(activePlannedMeal.instructions) &&
-                      activePlannedMeal.instructions.length > 0 ? (
-                        <div className="space-y-2">
-                          {activePlannedMeal.instructions.map((step, index) => (
-                            <div key={index}>
-                              <span className="font-bold">
-                                Steg {index + 1}:
-                              </span>{' '}
-                              {step}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        'Instruksjoner mangler.'
-                      )}
-                    </div>
-                  </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setModalView('library')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <span className="material-icons text-base align-middle">
+                      swap_horiz
+                    </span>
+                    Bytt middag
+                  </button>
+                  <button
+                    onClick={() =>
+                      activePlannedMeal &&
+                      handleRemoveMeal(activePlannedMeal.id)
+                    }
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+                  >
+                    <span className="material-icons text-base align-middle">
+                      delete
+                    </span>
+                    Fjern
+                  </button>
                 </div>
               </div>
-            </div>
+            </MealDetailView>
           )}
         </Modal>
       )}

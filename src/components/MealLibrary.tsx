@@ -13,10 +13,7 @@ interface MealLibraryProps {
 
 export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all')
-  const {
-    meals: allMeals,
-    isLoading: isLoadingMeals,
-  } = useMeals()
+  const { meals: allMeals, isLoading: isLoadingMeals } = useMeals()
   const {
     favoriteMeals,
     isLoading: isLoadingFavorites,
@@ -63,7 +60,13 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
     ))
   }
 
-  const TabButton = ({ tabName, title }: { tabName: 'all' | 'favorites', title: string }) => (
+  const TabButton = ({
+    tabName,
+    title,
+  }: {
+    tabName: 'all' | 'favorites'
+    title: string
+  }) => (
     <button
       onClick={() => setActiveTab(tabName)}
       className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
@@ -80,8 +83,8 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
     <div className="w-full">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <div className="flex items-center bg-gray-100 p-1 rounded-lg">
-           <TabButton tabName="all" title="Alle Middager" />
-           <TabButton tabName="favorites" title="Favoritter" />
+          <TabButton tabName="all" title="Alle Middager" />
+          <TabButton tabName="favorites" title="Favoritter" />
         </div>
         <div role="search">
           <label htmlFor="meal-search" className="sr-only">
@@ -101,7 +104,7 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
       {isLoading ? (
         <div className="flex flex-wrap justify-center gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
-             <div
+            <div
               key={i}
               className="border border-gray-200 rounded-xl overflow-hidden group flex flex-col justify-between transition-all duration-200 bg-white shadow-sm w-[220px] h-[220px]"
             >
@@ -109,10 +112,10 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
                 <Skeleton className="w-full h-24 rounded-md mb-2" />
                 <Skeleton className="h-4 w-3/4 mt-2" />
               </div>
-               <div className="p-3 bg-gray-50 border-t w-full">
-                 <Skeleton className="h-3 w-1/2 mx-auto" />
-                 <Skeleton className="h-3 w-3/4 mx-auto mt-1" />
-               </div>
+              <div className="p-3 bg-gray-50 border-t w-full">
+                <Skeleton className="h-3 w-1/2 mx-auto" />
+                <Skeleton className="h-3 w-3/4 mx-auto mt-1" />
+              </div>
             </div>
           ))}
         </div>

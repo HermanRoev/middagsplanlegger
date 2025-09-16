@@ -287,7 +287,9 @@ export function ShoppingListView() {
                 <p className="text-lg font-semibold text-gray-800">
                   Estimert total kostnad
                 </p>
-                <p className="text-2xl font-bold text-blue-600">{totalCost} kr</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {totalCost} kr
+                </p>
               </div>
             )}
             {isLoading && (

@@ -49,7 +49,9 @@ export function MealCard({
         <button
           onClick={handleFavoriteClick}
           className="absolute top-2 right-2 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full text-yellow-500 hover:text-yellow-400 hover:scale-110 transition-all"
-          aria-label={isFavorite ? 'Fjern fra favoritter' : 'Legg til i favoritter'}
+          aria-label={
+            isFavorite ? 'Fjern fra favoritter' : 'Legg til i favoritter'
+          }
         >
           <span className="material-icons">
             {isFavorite ? 'star' : 'star_border'}
@@ -59,7 +61,9 @@ export function MealCard({
 
       {/* Content Container */}
       <div className="p-4 flex-grow flex flex-col">
-        <h3 className="font-semibold text-lg text-gray-800 truncate">{meal.name}</h3>
+        <h3 className="font-semibold text-lg text-gray-800 truncate">
+          {meal.name}
+        </h3>
 
         <div className="flex-grow"></div>
 

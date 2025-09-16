@@ -6,10 +6,7 @@ import { MainLayout } from '@/components/MainLayout'
 import toast from 'react-hot-toast'
 import { getAI, getGenerativeModel } from 'firebase/ai'
 import { app, db } from '@/lib/firebase'
-import {
-  collection,
-  getDocs,
-} from 'firebase/firestore'
+import { collection, getDocs } from 'firebase/firestore'
 import { Meal, Ingredient } from '@/types'
 
 export default function ImportMealPage() {
@@ -51,8 +48,7 @@ export default function ImportMealPage() {
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
           reader.readAsDataURL(imageFile)
-          reader.onload = () =>
-            resolve((reader.result as string).split(',')[1])
+          reader.onload = () => resolve((reader.result as string).split(',')[1])
           reader.onerror = (error) => reject(error)
         })
 
@@ -143,10 +139,13 @@ export default function ImportMealPage() {
 
       sessionStorage.setItem('importedRecipe', JSON.stringify(recipeForForm))
 
-      toast.success('Oppskrift analysert! Omdirigerer til redigeringssiden...', {
-        id: toastId,
-        duration: 4000,
-      })
+      toast.success(
+        'Oppskrift analysert! Omdirigerer til redigeringssiden...',
+        {
+          id: toastId,
+          duration: 4000,
+        }
+      )
       router.push(`/meals/new`)
     } catch (error) {
       console.error('Feil under importering:', error)

@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe()
   }, [router, pathname])
 
-  const signIn = async (email: string, password:string) => {
+  const signIn = async (email: string, password: string) => {
     try {
       await authSignIn(email, password)
       toast.success('Vellykket login.')

@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase'
 import { collection, getDocs } from 'firebase/firestore'
 import { Ingredient, Meal } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { InputHTMLAttributes } from 'react';
+import { InputHTMLAttributes } from 'react'
 
 const units = [
   { value: 'g', label: 'gram' },
@@ -27,11 +27,11 @@ interface MealFormProps {
 }
 
 interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
-    id: string;
-    label: string;
-  }
+  id: string
+  label: string
+}
 
-  const InputField = ({ id, label, ...props }: InputFieldProps) => (
+const InputField = ({ id, label, ...props }: InputFieldProps) => (
   <div className="relative">
     <input
       id={id}
@@ -46,8 +46,7 @@ interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
       {label}
     </label>
   </div>
-);
-
+)
 
 export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
   const { user } = useAuth()
@@ -71,10 +70,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
       setServings(initialData.servings || null)
       setPrepTime(initialData.prepTime || null)
       setCostEstimate(initialData.costEstimate || null)
-      if (
-        initialData.instructions &&
-        Array.isArray(initialData.instructions)
-      ) {
+      if (initialData.instructions && Array.isArray(initialData.instructions)) {
         setInstructions(initialData.instructions)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } else if (typeof (initialData.instructions as any) === 'string') {
@@ -208,10 +204,10 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             />
           ) : (
             <div className="text-center text-gray-500">
-              <span className="material-icons text-5xl">add_photo_alternate</span>
-              <p className="mt-2">
-                Klikk for å velge bilde, eller lim inn
-              </p>
+              <span className="material-icons text-5xl">
+                add_photo_alternate
+              </span>
+              <p className="mt-2">Klikk for å velge bilde, eller lim inn</p>
             </div>
           )}
         </div>
@@ -252,7 +248,9 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
         </div>
 
         <div>
-          <h3 className="text-lg font-medium text-gray-800 mb-2">Ingredienser</h3>
+          <h3 className="text-lg font-medium text-gray-800 mb-2">
+            Ingredienser
+          </h3>
           <div className="space-y-4">
             {ingredients.map((ingredient, index) => (
               <div key={index} className="flex items-center gap-2">
@@ -269,7 +267,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
                   />
                 </div>
                 <div className="w-28">
-                   <InputField
+                  <InputField
                     id={`ingredient-amount-${index}`}
                     label="Mengde"
                     type="number"
@@ -322,7 +320,9 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
         </div>
 
         <div>
-          <h3 className="text-lg font-medium text-gray-800 mb-2">Fremgangsmåte</h3>
+          <h3 className="text-lg font-medium text-gray-800 mb-2">
+            Fremgangsmåte
+          </h3>
           <div className="space-y-4">
             {instructions.map((step, index) => (
               <div key={index} className="flex items-start gap-2">

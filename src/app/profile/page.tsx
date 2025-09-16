@@ -10,29 +10,29 @@ import {
   uploadProfilePicture,
 } from '@/lib/auth'
 import { MainLayout } from '@/components/MainLayout'
-import { InputHTMLAttributes } from 'react';
+import { InputHTMLAttributes } from 'react'
 
 interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
-    id: string;
-    label: string;
-  }
+  id: string
+  label: string
+}
 
-  const InputField = ({ id, label, ...props }: InputFieldProps) => (
-    <div className="relative">
-      <input
-        id={id}
-        className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-        placeholder=" "
-        {...props}
-      />
-      <label
-        htmlFor={id}
-        className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1"
-      >
-        {label}
-      </label>
-    </div>
-  );
+const InputField = ({ id, label, ...props }: InputFieldProps) => (
+  <div className="relative">
+    <input
+      id={id}
+      className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+      placeholder=" "
+      {...props}
+    />
+    <label
+      htmlFor={id}
+      className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1"
+    >
+      {label}
+    </label>
+  </div>
+)
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth()
@@ -76,7 +76,9 @@ export default function ProfilePage() {
       setNewPassword('')
       setNewPasswordConfirm('')
     } catch {
-      toast.error('Klarte ikke å oppdatere passord. Du må kanskje logge inn på nytt.')
+      toast.error(
+        'Klarte ikke å oppdatere passord. Du må kanskje logge inn på nytt.'
+      )
     } finally {
       setIsUpdating(false)
     }
@@ -132,7 +134,11 @@ export default function ProfilePage() {
             <div className="bg-white p-6 rounded-lg shadow-lg text-center">
               <div className="relative w-32 h-32 mx-auto mb-4">
                 <Image
-                  src={newProfilePic ? URL.createObjectURL(newProfilePic) : user.photoURL || '/default-profile.png'}
+                  src={
+                    newProfilePic
+                      ? URL.createObjectURL(newProfilePic)
+                      : user.photoURL || '/default-profile.png'
+                  }
                   alt="Profilbilde"
                   width={128}
                   height={128}
@@ -151,21 +157,34 @@ export default function ProfilePage() {
                   ref={fileInputRef}
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => e.target.files && handleProfilePicChange(e.target.files[0])}
+                  onChange={(e) =>
+                    e.target.files && handleProfilePicChange(e.target.files[0])
+                  }
                   disabled={loading}
                 />
               </div>
-              <h2 className="text-2xl font-semibold text-gray-800">{user.displayName || 'Anonym Bruker'}</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                {user.displayName || 'Anonym Bruker'}
+              </h2>
               <p className="text-gray-500">{user.email}</p>
-              {isUploading && <p className="text-sm text-blue-600 mt-2">Laster opp bilde...</p>}
+              {isUploading && (
+                <p className="text-sm text-blue-600 mt-2">
+                  Laster opp bilde...
+                </p>
+              )}
             </div>
           </div>
 
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white p-8 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold mb-6 text-gray-700">Kontoinnstillinger</h3>
+              <h3 className="text-xl font-semibold mb-6 text-gray-700">
+                Kontoinnstillinger
+              </h3>
 
-              <form onSubmit={handleUsernameChange} className="space-y-6 border-b pb-8 mb-8">
+              <form
+                onSubmit={handleUsernameChange}
+                className="space-y-6 border-b pb-8 mb-8"
+              >
                 <InputField
                   id="username"
                   label="Nytt brukernavn"
@@ -174,7 +193,11 @@ export default function ProfilePage() {
                   onChange={(e) => setNewUsername(e.target.value)}
                   disabled={loading}
                 />
-                <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg" disabled={loading || !newUsername}>
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg"
+                  disabled={loading || !newUsername}
+                >
                   {isUpdating ? 'Lagrer...' : 'Lagre brukernavn'}
                 </button>
               </form>
@@ -188,7 +211,7 @@ export default function ProfilePage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   disabled={loading}
                 />
-                 <InputField
+                <InputField
                   id="confirmPassword"
                   label="Bekreft nytt passord"
                   type="password"
@@ -196,7 +219,11 @@ export default function ProfilePage() {
                   onChange={(e) => setNewPasswordConfirm(e.target.value)}
                   disabled={loading}
                 />
-                <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg" disabled={loading || !newPassword}>
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg"
+                  disabled={loading || !newPassword}
+                >
                   {isUpdating ? 'Lagrer...' : 'Lagre passord'}
                 </button>
               </form>

@@ -13,8 +13,9 @@ import { Skeleton } from './ui/Skeleton'
 import { Modal } from './Modal'
 import toast from 'react-hot-toast'
 import { MealCard } from './MealCard'
+import { MealDetailView } from './MealDetailView'
 
-type SortOption = 'name' | 'favorites';
+type SortOption = 'name' | 'favorites'
 
 export function BrowseMealsView() {
   const [activeMeal, setActiveMeal] = useState<Meal | null>(null)
@@ -22,28 +23,28 @@ export function BrowseMealsView() {
   const { meals: allMeals, isLoading, refetch } = useMeals()
   const { addFavorite, removeFavorite, isFavorite } = useFavorites()
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortOrder, setSortOrder] = useState<SortOption>('name');
+  const [sortOrder, setSortOrder] = useState<SortOption>('name')
   const debouncedSearch = useDebounce(searchTerm, 100)
 
   const sortedAndFilteredMeals = useMemo(() => {
     const filtered = allMeals.filter((meal) =>
       meal.name.toLowerCase().includes(debouncedSearch.toLowerCase())
-    );
+    )
 
     if (sortOrder === 'name') {
-      filtered.sort((a, b) => a.name.localeCompare(b.name));
+      filtered.sort((a, b) => a.name.localeCompare(b.name))
     } else if (sortOrder === 'favorites') {
       filtered.sort((a, b) => {
-        const aIsFavorite = isFavorite(a.id);
-        const bIsFavorite = isFavorite(b.id);
-        if (aIsFavorite && !bIsFavorite) return -1;
-        if (!aIsFavorite && bIsFavorite) return 1;
-        return a.name.localeCompare(b.name);
-      });
+        const aIsFavorite = isFavorite(a.id)
+        const bIsFavorite = isFavorite(b.id)
+        if (aIsFavorite && !bIsFavorite) return -1
+        if (!aIsFavorite && bIsFavorite) return 1
+        return a.name.localeCompare(b.name)
+      })
     }
 
-    return filtered;
-  }, [debouncedSearch, allMeals, sortOrder, isFavorite]);
+    return filtered
+  }, [debouncedSearch, allMeals, sortOrder, isFavorite])
 
   const handleDeleteMeal = async (mealId: string, mealName: string) => {
     if (
@@ -67,35 +68,37 @@ export function BrowseMealsView() {
     <div className="bg-gray-50 p-4 sm:p-6 lg:p-8 min-h-full">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Middagsbibliotek</h1>
-        <p className="text-gray-600 mt-1">Søk og finn inspirasjon til din neste middag.</p>
+        <p className="text-gray-600 mt-1">
+          Søk og finn inspirasjon til din neste middag.
+        </p>
       </header>
 
       <div className="mb-8 flex items-center gap-4">
-          <div className="relative flex-grow">
-              <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  search
-              </span>
-              <input
-                type="text"
-                placeholder="Søk etter middag..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full max-w-md pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              />
+        <div className="relative flex-grow">
+          <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            search
+          </span>
+          <input
+            type="text"
+            placeholder="Søk etter middag..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full max-w-md pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          />
+        </div>
+        <div className="relative">
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as SortOption)}
+            className="appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-full focus:outline-none focus:bg-white focus:border-blue-500"
+          >
+            <option value="name">Sorter etter Navn</option>
+            <option value="favorites">Sorter etter Favoritter</option>
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <span className="material-icons text-base">expand_more</span>
           </div>
-          <div className="relative">
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as SortOption)}
-              className="appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-full focus:outline-none focus:bg-white focus:border-blue-500"
-            >
-              <option value="name">Sorter etter Navn</option>
-              <option value="favorites">Sorter etter Favoritter</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <span className="material-icons text-base">expand_more</span>
-            </div>
-          </div>
+        </div>
       </div>
 
       {isLoading ? (
@@ -133,90 +136,8 @@ export function BrowseMealsView() {
           onClose={handleCloseDetail}
           title={activeMeal.name}
         >
-          <div className="flex flex-col md:flex-row gap-6 p-4">
-            <div className="md:w-1/3 flex-shrink-0">
-              {activeMeal.imageUrl ? (
-                <Image
-                  src={activeMeal.imageUrl}
-                  alt={activeMeal.name}
-                  width={400}
-                  height={300}
-                  className="w-full h-auto object-contain rounded-lg shadow-md"
-                />
-              ) : (
-                <div className="w-full h-44 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
-                  Bilde mangler
-                </div>
-              )}
-            </div>
-            <div className="md:w-2/3">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                {activeMeal.name}
-              </h3>
-              <div className="flex flex-wrap gap-x-4 gap-y-2 text-gray-600 mb-4">
-                <p>
-                  Originaloppskrift for {activeMeal.servings || '?'} porsjoner
-                </p>
-                {(activeMeal.prepTime ?? 0) > 0 && (
-                  <p className="flex items-center gap-1">
-                    <span className="material-icons text-base">schedule</span>
-                    {activeMeal.prepTime} min
-                  </p>
-                )}
-                {(activeMeal.costEstimate ?? 0) > 0 && (
-                  <p className="flex items-center gap-1">
-                    <span className="material-icons text-base">payments</span>
-                    {activeMeal.costEstimate} kr
-                  </p>
-                )}
-              </div>
-              <div className="space-y-6">
-                {/* Ingredients Section */}
-                <div>
-                  <h4 className="text-lg font-semibold mb-3 text-gray-800">
-                    Ingredienser
-                  </h4>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-700">
-                    {activeMeal.ingredients?.map((ing, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <span className="text-blue-600 material-icons">
-                          fiber_manual_record
-                        </span>
-                        <span>
-                          {ing.amount !== undefined && ing.unit ? (
-                            <span className="font-medium">
-                              {ing.amount} {ing.unit}
-                            </span>
-                          ) : null}{' '}
-                          {typeof ing === 'string' ? ing : ing.name}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Instructions Section */}
-                <div>
-                  <h4 className="text-lg font-semibold mb-3 text-gray-800">
-                    Instruksjoner
-                  </h4>
-                  <div className="text-gray-700 prose prose-sm max-w-none">
-                    {Array.isArray(activeMeal.instructions) &&
-                    activeMeal.instructions.length > 0 ? (
-                      <div className="space-y-2">
-                        {activeMeal.instructions.map((step, index) => (
-                          <div key={index}>
-                            <span className="font-bold">Steg {index + 1}:</span>{' '}
-                            {step}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      'Instruksjoner mangler.'
-                    )}
-                  </div>
-                </div>
-              </div>
+          <div className="p-4">
+            <MealDetailView meal={activeMeal} servings={activeMeal.servings}>
               <div className="flex gap-4 mt-6">
                 <Link
                   href={`/meals/edit/${activeMeal.id}`}
@@ -240,7 +161,7 @@ export function BrowseMealsView() {
                   Slett
                 </button>
               </div>
-            </div>
+            </MealDetailView>
           </div>
         </Modal>
       )}
