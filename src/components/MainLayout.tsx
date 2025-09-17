@@ -106,7 +106,11 @@ export function MainLayout({ children }: MainLayoutProps) {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-6">
+          <div className="bg-white p-6 rounded-xl shadow-xl h-full overflow-y-auto">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   )

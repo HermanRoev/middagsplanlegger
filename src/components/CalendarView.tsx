@@ -128,7 +128,7 @@ export function CalendarView() {
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col w-full">
+    <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <h2 className="text-2xl font-bold text-gray-800 capitalize order-1 md:order-2">
           {format(currentDate, 'MMMM yyyy', { locale: nb })}
@@ -403,6 +403,6 @@ export function CalendarView() {
           )}
         </Modal>
       )}
-    </div>
+    </>
   )
 }
