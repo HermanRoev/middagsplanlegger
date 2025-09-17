@@ -14,6 +14,7 @@ import { Modal } from './Modal'
 import toast from 'react-hot-toast'
 import { MealCard } from './MealCard'
 import { MealDetailView } from './MealDetailView'
+import InputField from './ui/InputField'
 
 type SortOption = 'name' | 'favorites'
 
@@ -65,7 +66,7 @@ export function BrowseMealsView() {
   }
 
   return (
-    <div className="bg-gray-50 p-4 sm:p-6 lg:p-8 min-h-full">
+    <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col w-full">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Middagsbibliotek</h1>
         <p className="text-gray-600 mt-1">
@@ -74,16 +75,14 @@ export function BrowseMealsView() {
       </header>
 
       <div className="mb-8 flex items-center gap-4">
-        <div className="relative flex-grow">
-          <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            search
-          </span>
-          <input
+        <div className="flex-grow max-w-md">
+          <InputField
+            id="meal-search"
+            label="Søk etter middag..."
+            icon="search"
             type="text"
-            placeholder="Søk etter middag..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full max-w-md pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
           />
         </div>
         <div className="relative">

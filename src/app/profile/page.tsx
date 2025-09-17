@@ -124,14 +124,14 @@ export default function ProfilePage() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+      <div className="bg-white p-6 rounded-xl shadow-xl">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Brukerprofil</h1>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+          <div className="lg:col-span-1">
+            <div className="text-center">
               <div className="relative w-32 h-32 mx-auto mb-4">
                 <Image
                   src={
@@ -175,15 +175,14 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white p-8 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold mb-6 text-gray-700">
+          <div className="lg:col-span-2">
+            <div className="max-w-lg">
+              <h3 className="text-xl font-semibold mb-6 text-gray-700 border-b pb-4">
                 Kontoinnstillinger
               </h3>
-
               <form
                 onSubmit={handleUsernameChange}
-                className="space-y-6 border-b pb-8 mb-8"
+                className="space-y-6 pb-8 mb-8"
               >
                 <InputField
                   id="username"
@@ -202,6 +201,9 @@ export default function ProfilePage() {
                 </button>
               </form>
 
+              <h3 className="text-xl font-semibold mb-6 text-gray-700 border-b pb-4">
+                Endre passord
+              </h3>
               <form onSubmit={handlePasswordChange} className="space-y-6">
                 <InputField
                   id="password"
