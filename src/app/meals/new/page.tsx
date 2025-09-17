@@ -68,10 +68,10 @@ export default function NewMealPage() {
 
   return (
     <MainLayout>
-      <div className="bg-white p-8 rounded-xl shadow-xl w-full">
-        <h2 className="text-3xl font-bold mb-6 text-gray-800">
-          {initialData ? 'Importert Oppskrift' : 'Legg til ny middag'}
-        </h2>
+      <h2 className="text-3xl font-bold mb-6 text-gray-800">
+        {initialData ? 'Importert Oppskrift' : 'Legg til ny middag'}
+      </h2>
+      <div className="bg-white p-8 rounded-xl shadow-xl max-w-4xl mx-auto">
         <MealForm
           onSave={handleCreateMeal}
           isEditing={false}
