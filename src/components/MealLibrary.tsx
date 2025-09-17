@@ -7,6 +7,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { Meal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
 import { MealCard } from './MealCard'
+import InputField from './ui/InputField'
 
 interface MealLibraryProps {
   onSelectMeal: (meal: Meal) => void
@@ -74,16 +75,14 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
   return (
     <div className="w-full">
       <div className="mb-8 flex flex-col sm:flex-row items-center gap-4">
-        <div className="relative flex-grow w-full sm:w-auto">
-          <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            search
-          </span>
-          <input
+        <div className="flex-grow w-full sm:w-auto sm:max-w-md">
+          <InputField
+            id="meal-library-search"
+            label="Søk etter middag..."
+            icon="search"
             type="text"
-            placeholder="Søk etter middag..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full max-w-md pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
           />
         </div>
         <div className="relative">
