@@ -160,69 +160,65 @@ export default function ImportMealPage() {
     }
   }
 
+  const TabButton = ({
+    tab,
+    label,
+  }: {
+    tab: 'image' | 'text' | 'generate'
+    label: string
+  }) => (
+    <button
+      onClick={() => setImportType(tab)}
+      className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+        importType === tab
+          ? 'bg-blue-600 text-white shadow-md'
+          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      }`}
+    >
+      {label}
+    </button>
+  )
+
   return (
     <MainLayout>
-      <div className="container mx-auto p-4 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">
-          Importer oppskrift
-        </h1>
+      <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col w-full h-full">
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">
+            Importer eller generer en oppskrift
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Velg en metode for å starte. AI-en vil analysere innholdet og gjøre
+            det om til en middag i biblioteket ditt.
+          </p>
+        </header>
 
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-            <button
-              onClick={() => setImportType('image')}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                importType === 'image'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Importer fra bilde
-            </button>
-            <button
-              onClick={() => setImportType('text')}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                importType === 'text'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Importer fra tekst
-            </button>
-            <button
-              onClick={() => setImportType('generate')}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                importType === 'generate'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Generer fra navn
-            </button>
-          </nav>
+        <div className="flex items-center bg-gray-100 p-1 rounded-lg mb-6 self-start">
+          <TabButton tab="image" label="Fra bilde" />
+          <TabButton tab="text" label="Fra tekst" />
+          <TabButton tab="generate" label="Generer ny" />
         </div>
 
-        <div className="bg-white p-8 rounded-lg shadow-md">
+        <div className="flex-grow space-y-6">
           {importType === 'image' && (
-            <div>
-              <label
-                htmlFor="image-upload"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Velg et bilde av en oppskrift
-              </label>
+            <div
+              className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+              onClick={() => document.getElementById('image-upload')?.click()}
+            >
               <input
                 id="image-upload"
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer"
+                className="hidden"
               />
-              {imageFile && (
-                <p className="text-xs text-gray-500 mt-2">
-                  Valgt fil: {imageFile.name}
-                </p>
-              )}
+              <span className="material-icons text-5xl text-gray-400">
+                add_photo_alternate
+              </span>
+              <p className="mt-2 text-gray-500">
+                {imageFile
+                  ? `Valgt fil: ${imageFile.name}`
+                  : 'Klikk for å velge et bilde, eller dra og slipp'}
+              </p>
             </div>
           )}
 
@@ -232,6 +228,7 @@ export default function ImportMealPage() {
               label="Lim inn oppskriftstekst"
               value={recipeText}
               onChange={(e) => setRecipeText(e.target.value)}
+              rows={10}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                   handleImport()
@@ -241,10 +238,10 @@ export default function ImportMealPage() {
           )}
 
           {importType === 'generate' && (
-            <div className="space-y-6">
+            <div className="space-y-6 max-w-md">
               <InputField
                 id="meal-name"
-                label="Navn på middag"
+                label="Hva vil du lage?"
                 type="text"
                 value={generateName}
                 onChange={(e) => setGenerateName(e.target.value)}
@@ -272,16 +269,17 @@ export default function ImportMealPage() {
               />
             </div>
           )}
+        </div>
 
-          <div className="mt-8 text-right">
-            <button
-              onClick={handleImport}
-              disabled={isLoading}
-              className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
-            >
-              {isLoading ? 'Importerer...' : 'Start import'}
-            </button>
-          </div>
+        <div className="mt-8 flex justify-end">
+          <button
+            onClick={handleImport}
+            disabled={isLoading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm hover:shadow-md transition-shadow disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <span className="material-icons text-base">auto_fix_high</span>
+            {isLoading ? 'Analyserer...' : 'Start med AI'}
+          </button>
         </div>
       </div>
     </MainLayout>
