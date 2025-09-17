@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Meal, Ingredient } from '@/types'
+import { Meal } from '@/types'
 
 interface MealDetailViewProps {
   meal: Meal | null

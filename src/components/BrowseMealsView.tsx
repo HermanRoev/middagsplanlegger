@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { db } from '@/lib/firebase'
 import { doc, deleteDoc } from 'firebase/firestore'
+import { COLLECTIONS } from '@/lib/constants'
 import { useMeals } from '@/hooks/useMeals'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -55,7 +55,7 @@ export function BrowseMealsView() {
     ) {
       const toastId = toast.loading(`Sletter '${mealName}'...`)
       try {
-        await deleteDoc(doc(db, 'meals', mealId))
+        await deleteDoc(doc(db, COLLECTIONS.MEALS, mealId))
         await refetch()
         toast.success(`'${mealName}' ble slettet.`, { id: toastId })
       } catch (error) {

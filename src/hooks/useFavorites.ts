@@ -117,7 +117,10 @@ export function useFavorites() {
     }
   }
 
-  const isFavorite = (mealId: string) => favoriteIds.includes(mealId)
+  const isFavorite = useCallback(
+    (mealId: string) => favoriteIds.includes(mealId),
+    [favoriteIds]
+  )
 
   return {
     favoriteMeals,

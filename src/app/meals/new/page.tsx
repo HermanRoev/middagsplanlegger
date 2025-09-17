@@ -1,6 +1,8 @@
 // Fil: src/app/meals/new/page.tsx
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useRouter } from 'next/navigation'
 import { db, storage } from '@/lib/firebase'
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore'

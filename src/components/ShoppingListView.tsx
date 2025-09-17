@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { db } from '@/lib/firebase'
+import { COLLECTIONS } from '@/lib/constants'
 import {
   collection,
   query,
@@ -70,7 +71,7 @@ export function ShoppingListView() {
     const fetchAllPlans = async () => {
       setIsLoading(true)
       try {
-        const plansQuery = query(collection(db, 'mealPlans'))
+        const plansQuery = query(collection(db, COLLECTIONS.MEAL_PLANS))
         const querySnapshot = await getDocs(plansQuery)
         const plans: PlannedMeal[] = querySnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -168,7 +169,7 @@ export function ShoppingListView() {
       const batch = writeBatch(db)
       const dateStrings = selectedDays.map((day) => format(day, 'yyyy-MM-dd'))
       const plansQuery = query(
-        collection(db, 'mealPlans'),
+        collection(db, COLLECTIONS.MEAL_PLANS),
         where('date', 'in', dateStrings)
       )
       const querySnapshot = await getDocs(plansQuery)

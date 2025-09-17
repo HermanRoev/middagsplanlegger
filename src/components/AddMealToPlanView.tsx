@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { db, storage } from '@/lib/firebase'
 import { collection, addDoc, doc, deleteDoc, setDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { format } from 'date-fns'
-import { Ingredient, Meal } from '@/types'
+import { COLLECTIONS } from '@/lib/constants'
+import { Meal } from '@/types'
 import toast from 'react-hot-toast'
-import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
 import { MealForm } from './MealForm'
 import { Modal } from './Modal'
@@ -20,16 +20,6 @@ interface AddMealToPlanViewProps {
   onPlanSaved: () => void
   existingPlanId?: string
   isInsideModal?: boolean
-}
-
-const formatAmount = (amount: number | null) => {
-  if (amount === null || amount === undefined || isNaN(amount)) {
-    return ''
-  }
-  if (amount === 0) return '0'
-  return Number.isInteger(amount)
-    ? amount.toString()
-    : parseFloat(amount.toFixed(1)).toString()
 }
 
 export function AddMealToPlanView({
@@ -60,7 +50,7 @@ export function AddMealToPlanView({
 
     try {
       if (existingPlanId) {
-        await deleteDoc(doc(db, 'mealPlans', existingPlanId))
+        await deleteDoc(doc(db, COLLECTIONS.MEAL_PLANS, existingPlanId))
       }
 
       const baseServings = currentMeal.servings || 1
@@ -76,7 +66,7 @@ export function AddMealToPlanView({
         }
       )
 
-      await addDoc(collection(db, 'mealPlans'), {
+      await addDoc(collection(db, COLLECTIONS.MEAL_PLANS), {
         date: format(selectedDate, 'yyyy-MM-dd'),
         mealId: currentMeal.id,
         mealName: currentMeal.name,
@@ -132,7 +122,7 @@ export function AddMealToPlanView({
           imageUrl = await getDownloadURL(storageRef)
         }
 
-        const newMealDoc = await addDoc(collection(db, 'meals'), {
+        const newMealDoc = await addDoc(collection(db, COLLECTIONS.MEALS), {
           ...editedMealData,
           imageUrl,
           createdBy: user
@@ -141,7 +131,7 @@ export function AddMealToPlanView({
         })
 
         for (const ingredient of editedMealData.ingredients) {
-          await setDoc(doc(db, 'ingredients', ingredient.name), {})
+          await setDoc(doc(db, COLLECTIONS.INGREDIENTS, ingredient.name), {})
         }
 
         setCurrentMeal({ ...editedMealData, id: newMealDoc.id, imageUrl })

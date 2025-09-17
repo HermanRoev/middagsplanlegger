@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 import './globals.css'
 import { ToastProvider } from '@/components/ui/ToastProvider'
-import { AuthProvider } from '@/contexts/AuthContext'
+import ClientAuthProvider from '@/components/ClientAuthProvider'
 
 export const metadata = {
   title: 'Middagsplanlegger',
@@ -16,10 +16,10 @@ export default function RootLayout({
   return (
     <html lang="no">
       <body>
-        <AuthProvider>
+        <ClientAuthProvider>
           <ToastProvider />
           {children}
-        </AuthProvider>
+        </ClientAuthProvider>
       </body>
     </html>
   )

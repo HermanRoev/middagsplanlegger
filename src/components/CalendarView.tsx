@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '@/lib/firebase'
+import { COLLECTIONS } from '@/lib/constants'
 import {
   collection,
   query,
@@ -26,7 +27,7 @@ import Image from 'next/image'
 import { Modal } from './Modal'
 import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
-import { Meal, PlannedMeal, Ingredient } from '@/types'
+import { Meal, PlannedMeal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
 import { MealDetailView } from './MealDetailView'
 
@@ -51,7 +52,7 @@ export function CalendarView() {
     const start = startOfMonth(currentDate)
     const end = endOfMonth(currentDate)
     const q = query(
-      collection(db, 'mealPlans'),
+      collection(db, COLLECTIONS.MEAL_PLANS),
       where('date', '>=', format(start, 'yyyy-MM-dd')),
       where('date', '<=', format(end, 'yyyy-MM-dd'))
     )
@@ -118,7 +119,7 @@ export function CalendarView() {
   const handleRemoveMeal = async (planId: string) => {
     if (!planId) return
     try {
-      await deleteDoc(doc(db, 'mealPlans', planId))
+      await deleteDoc(doc(db, COLLECTIONS.MEAL_PLANS, planId))
       setIsModalOpen(false)
       fetchPlannedMeals()
     } catch (error) {
