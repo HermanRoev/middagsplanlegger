@@ -249,7 +249,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           />
         </div>
 
-        <div>
+        <div className="max-w-lg">
           <h3 className="text-lg font-medium text-gray-800 mb-2">
             Ingredienser
           </h3>

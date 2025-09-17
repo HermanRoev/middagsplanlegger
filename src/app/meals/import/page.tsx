@@ -202,9 +202,9 @@ export default function ImportMealPage() {
           </nav>
         </div>
 
-        <div>
+        <div className="mt-6">
           {importType === 'image' && (
-            <div>
+            <div className="max-w-lg mx-auto text-center">
               <label
                 htmlFor="image-upload"
                 className="block text-sm font-medium text-gray-700 mb-2"
@@ -223,25 +223,45 @@ export default function ImportMealPage() {
                   Valgt fil: {imageFile.name}
                 </p>
               )}
+              <div className="mt-8">
+                <button
+                  onClick={handleImport}
+                  disabled={isLoading}
+                  className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+                >
+                  {isLoading ? 'Importerer...' : 'Start import'}
+                </button>
+              </div>
             </div>
           )}
 
           {importType === 'text' && (
-            <TextAreaField
-              id="text-upload"
-              label="Lim inn oppskriftstekst"
-              value={recipeText}
-              onChange={(e) => setRecipeText(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                  handleImport()
-                }
-              }}
-            />
+            <div className="max-w-lg mx-auto">
+              <TextAreaField
+                id="text-upload"
+                label="Lim inn oppskriftstekst"
+                value={recipeText}
+                onChange={(e) => setRecipeText(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    handleImport()
+                  }
+                }}
+              />
+              <div className="mt-8 text-center">
+                <button
+                  onClick={handleImport}
+                  disabled={isLoading}
+                  className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+                >
+                  {isLoading ? 'Importerer...' : 'Start import'}
+                </button>
+              </div>
+            </div>
           )}
 
           {importType === 'generate' && (
-            <div className="space-y-6 max-w-lg">
+            <div className="space-y-6 max-w-lg mx-auto">
               <InputField
                 id="meal-name"
                 label="Navn på middag"
@@ -270,18 +290,17 @@ export default function ImportMealPage() {
                 }}
                 min="1"
               />
+              <div className="mt-8 text-center">
+                <button
+                  onClick={handleImport}
+                  disabled={isLoading}
+                  className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+                >
+                  {isLoading ? 'Importerer...' : 'Start import'}
+                </button>
+              </div>
             </div>
           )}
-
-          <div className="mt-8 text-right">
-            <button
-              onClick={handleImport}
-              disabled={isLoading}
-              className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
-            >
-              {isLoading ? 'Importerer...' : 'Start import'}
-            </button>
-          </div>
         </div>
       </div>
     </MainLayout>

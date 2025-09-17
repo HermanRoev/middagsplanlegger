@@ -176,11 +176,10 @@ export default function ProfilePage() {
           </div>
 
           <div className="lg:col-span-2">
-            <h3 className="text-xl font-semibold mb-6 text-gray-700 border-b pb-4">
-              Kontoinnstillinger
-            </h3>
-
             <div className="max-w-lg">
+              <h3 className="text-xl font-semibold mb-6 text-gray-700 border-b pb-4">
+                Kontoinnstillinger
+              </h3>
               <form
                 onSubmit={handleUsernameChange}
                 className="space-y-6 pb-8 mb-8"
@@ -205,7 +204,6 @@ export default function ProfilePage() {
               <h3 className="text-xl font-semibold mb-6 text-gray-700 border-b pb-4">
                 Endre passord
               </h3>
-
               <form onSubmit={handlePasswordChange} className="space-y-6">
                 <InputField
                   id="password"
