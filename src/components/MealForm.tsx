@@ -212,15 +212,17 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           )}
         </div>
 
-        <InputField
-          id="mealName"
-          label="Navn på middag"
-          type="text"
-          value={mealName}
-          onChange={(e) => setMealName(e.target.value)}
-        />
+        <div className="max-w-lg">
+          <InputField
+            id="mealName"
+            label="Navn på middag"
+            type="text"
+            value={mealName}
+            onChange={(e) => setMealName(e.target.value)}
+          />
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-lg">
           <InputField
             id="servings"
             label="Antall porsjoner"
@@ -319,7 +321,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           </button>
         </div>
 
-        <div>
+        <div className="max-w-lg">
           <h3 className="text-lg font-medium text-gray-800 mb-2">
             Fremgangsmåte
           </h3>

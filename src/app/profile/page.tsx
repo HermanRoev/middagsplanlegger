@@ -180,56 +180,58 @@ export default function ProfilePage() {
               Kontoinnstillinger
             </h3>
 
-            <form
-              onSubmit={handleUsernameChange}
-              className="space-y-6 pb-8 mb-8"
-            >
-              <InputField
-                id="username"
-                label="Nytt brukernavn"
-                type="text"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg"
-                disabled={loading || !newUsername}
+            <div className="max-w-lg">
+              <form
+                onSubmit={handleUsernameChange}
+                className="space-y-6 pb-8 mb-8"
               >
-                {isUpdating ? 'Lagrer...' : 'Lagre brukernavn'}
-              </button>
-            </form>
+                <InputField
+                  id="username"
+                  label="Nytt brukernavn"
+                  type="text"
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg"
+                  disabled={loading || !newUsername}
+                >
+                  {isUpdating ? 'Lagrer...' : 'Lagre brukernavn'}
+                </button>
+              </form>
 
-            <h3 className="text-xl font-semibold mb-6 text-gray-700 border-b pb-4">
-              Endre passord
-            </h3>
+              <h3 className="text-xl font-semibold mb-6 text-gray-700 border-b pb-4">
+                Endre passord
+              </h3>
 
-            <form onSubmit={handlePasswordChange} className="space-y-6">
-              <InputField
-                id="password"
-                label="Nytt passord"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={loading}
-              />
-              <InputField
-                id="confirmPassword"
-                label="Bekreft nytt passord"
-                type="password"
-                value={newPasswordConfirm}
-                onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg"
-                disabled={loading || !newPassword}
-              >
-                {isUpdating ? 'Lagrer...' : 'Lagre passord'}
-              </button>
-            </form>
+              <form onSubmit={handlePasswordChange} className="space-y-6">
+                <InputField
+                  id="password"
+                  label="Nytt passord"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <InputField
+                  id="confirmPassword"
+                  label="Bekreft nytt passord"
+                  type="password"
+                  value={newPasswordConfirm}
+                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition shadow-md hover:shadow-lg"
+                  disabled={loading || !newPassword}
+                >
+                  {isUpdating ? 'Lagrer...' : 'Lagre passord'}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>

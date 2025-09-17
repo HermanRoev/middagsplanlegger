@@ -66,7 +66,7 @@ export function BrowseMealsView() {
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col w-full h-full">
+    <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col w-full">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Middagsbibliotek</h1>
         <p className="text-gray-600 mt-1">

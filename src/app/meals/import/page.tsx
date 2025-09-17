@@ -241,7 +241,7 @@ export default function ImportMealPage() {
           )}
 
           {importType === 'generate' && (
-            <div className="space-y-6">
+            <div className="space-y-6 max-w-lg">
               <InputField
                 id="meal-name"
                 label="Navn på middag"
