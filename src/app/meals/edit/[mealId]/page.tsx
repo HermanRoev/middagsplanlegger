@@ -80,11 +80,18 @@ export default function EditMealPage({ params }: any) {
 
   return (
     <MainLayout>
-      <MealForm
-        onSave={handleUpdateMeal}
-        initialData={initialData}
-        isEditing={true}
-      />
+      <div className="bg-white p-8 rounded-xl shadow-xl w-full">
+        <h2 className="text-3xl font-bold mb-6 text-gray-800">
+          Rediger middag
+        </h2>
+        <div className="max-w-4xl mx-auto">
+          <MealForm
+            onSave={handleUpdateMeal}
+            initialData={initialData}
+            isEditing={true}
+          />
+        </div>
+      </div>
     </MainLayout>
   )
 }
