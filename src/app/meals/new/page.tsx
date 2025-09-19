@@ -72,7 +72,7 @@ export default function NewMealPage() {
         <h2 className="text-3xl font-bold mb-6 text-gray-800">
           {initialData ? 'Importert Oppskrift' : 'Legg til ny middag'}
         </h2>
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-2xl mx-auto">
           <MealForm
             onSave={handleCreateMeal}
             isEditing={false}
