@@ -176,10 +176,10 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
             <Image
               src={imagePreview}
               alt="Preview"
-              width={400}
-              height={250}
+              width={512}
+              height={288}
               unoptimized={true}
-              className="rounded-lg object-contain"
+              className="w-full h-auto rounded-lg object-contain"
             />
           ) : (
             <div className="text-center text-gray-500">
@@ -191,7 +191,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           )}
         </div>
 
-        <div className="max-w-lg">
+        <div>
           <InputField
             id="mealName"
             label="Navn på middag"
@@ -201,7 +201,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-lg">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <InputField
             id="servings"
             label="Antall porsjoner"
@@ -228,7 +228,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           />
         </div>
 
-        <div className="max-w-lg">
+        <div>
           <h3 className="text-lg font-medium text-gray-800 mb-2">
             Ingredienser
           </h3>
@@ -300,7 +300,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
           </button>
         </div>
 
-        <div className="max-w-lg">
+        <div>
           <h3 className="text-lg font-medium text-gray-800 mb-2">
             Fremgangsmåte
           </h3>
