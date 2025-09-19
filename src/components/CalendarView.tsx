@@ -159,7 +159,7 @@ export function CalendarView() {
       </div>
 
       {/* Grid view for larger screens */}
-      <div className="hidden md:grid grid-cols-7 gap-2 text-center font-semibold text-gray-600 pb-2 mb-2">
+      <div className="hidden lg:grid grid-cols-7 gap-2 text-center font-semibold text-gray-600 pb-2 mb-2">
         {['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'].map((day) => (
           <div key={day} className="py-2">
             {day}
@@ -167,7 +167,7 @@ export function CalendarView() {
         ))}
       </div>
 
-      <div className="hidden md:grid grid-cols-7 gap-2 flex-grow">
+      <div className="hidden lg:grid grid-cols-7 gap-2 flex-grow">
         {Array.from({ length: startingDayIndex }).map((_, index) => (
           <div
             key={`empty-${index}`}
@@ -253,7 +253,7 @@ export function CalendarView() {
       </div>
 
       {/* List view for smaller screens */}
-      <div className="md:hidden space-y-2">
+      <div className="lg:hidden space-y-2">
         {daysInMonth.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd')
           const plannedMeal = plannedMeals.get(dateKey)
