@@ -101,7 +101,7 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
       </div>
 
       {isLoading ? (
-        <div className="flex flex-wrap justify-start gap-4">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
@@ -119,7 +119,7 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
           ))}
         </div>
       ) : (
-        <div className="flex flex-wrap justify-start gap-4">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
           {renderMealCards(sortedAndFilteredMeals)}
         </div>
       )}

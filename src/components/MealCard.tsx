@@ -25,7 +25,7 @@ export function MealCard({
 
   return (
     <div
-      className={`rounded-lg overflow-hidden group transition-all duration-300 bg-white shadow-md hover:shadow-xl w-[240px] flex flex-col cursor-pointer ${className}`}
+      className={`rounded-lg overflow-hidden group transition-all duration-300 bg-white shadow-md hover:shadow-xl flex flex-col cursor-pointer ${className}`}
       onClick={onClick}
       data-testid="meal-card"
     >
