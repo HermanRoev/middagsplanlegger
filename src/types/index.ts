@@ -30,6 +30,7 @@ export interface PlannedMeal {
   mealName: string
   imageUrl?: string
   isShopped?: boolean
+  isCooked?: boolean
   servings?: number
   scaledIngredients?: Ingredient[]
   instructions?: string[]
@@ -41,4 +42,14 @@ export interface PlannedMeal {
     name: string
   }
   originalMealId?: string
+}
+
+export interface CupboardItem {
+  id: string
+  userId: string
+  ingredientName: string // Links to the 'ingredients' collection by document ID (which is the name)
+  unit: 'g' | 'kg' | 'l' | 'dl' | 'stk' | 'ts' | 'ss'
+  amount: number
+  wantedAmount: number
+  threshold: number
 }

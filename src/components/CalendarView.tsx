@@ -1,4 +1,3 @@
-// Fil: src/components/CalendarView.tsx
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -11,6 +10,7 @@ import {
   getDocs,
   doc,
   deleteDoc,
+  writeBatch,
 } from 'firebase/firestore'
 import {
   format,
@@ -27,9 +27,12 @@ import Image from 'next/image'
 import { Modal } from './Modal'
 import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
-import { Meal, PlannedMeal } from '@/types'
+import { Meal, PlannedMeal, CupboardItem, Ingredient } from '@/types'
 import { Skeleton } from './ui/Skeleton'
 import { MealDetailView } from './MealDetailView'
+import { getCupboardItems, updateCupboardItem } from '@/lib/cupboard'
+import { normalizeIngredient } from '@/lib/utils'
+import toast from 'react-hot-toast'
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -67,6 +70,7 @@ export function CalendarView() {
         mealName: data.mealName,
         imageUrl: data.imageUrl,
         isShopped: data.isShopped || false,
+        isCooked: data.isCooked || false,
         servings: data.servings,
         scaledIngredients: data.scaledIngredients || [],
         instructions: data.instructions,
@@ -124,7 +128,56 @@ export function CalendarView() {
       fetchPlannedMeals()
     } catch (error) {
       console.error('Error removing meal from plan: ', error)
-      // Optionally: show an error message to the user
+    }
+  }
+
+  const handleMarkAsCooked = async (plan: PlannedMeal) => {
+    if (!plan || !plan.scaledIngredients) return
+    const toastId = toast.loading('Marking meal as cooked...')
+
+    try {
+      const cupboardItems = await getCupboardItems()
+      const cupboardMap = new Map(
+        cupboardItems.map((item) => [item.ingredientName, item])
+      )
+      const batch = writeBatch(db)
+
+      for (const ingredient of plan.scaledIngredients) {
+        const normalizedIngredient = normalizeIngredient(ingredient)
+        const cupboardItem = cupboardMap.get(
+          normalizedIngredient.name.toLowerCase()
+        )
+
+        if (cupboardItem) {
+          const normalizedCupboardItem = normalizeIngredient({
+            name: cupboardItem.ingredientName,
+            amount: cupboardItem.amount,
+            unit: cupboardItem.unit,
+          })
+
+          if (
+            normalizedCupboardItem.key.endsWith(normalizedIngredient.key.split('_')[1])
+          ) {
+            const newAmount =
+              normalizedCupboardItem.amount - normalizedIngredient.amount
+            const itemRef = doc(db, COLLECTIONS.CUPBOARD, cupboardItem.id)
+            batch.update(itemRef, { amount: Math.max(0, newAmount) })
+          }
+        }
+      }
+
+      const planRef = doc(db, COLLECTIONS.MEAL_PLANS, plan.id)
+      batch.update(planRef, { isCooked: true })
+
+      await batch.commit()
+      toast.success('Meal marked as cooked! Matlager updated.', {
+        id: toastId,
+      })
+      setIsModalOpen(false)
+      fetchPlannedMeals()
+    } catch (error) {
+      console.error('Error marking meal as cooked:', error)
+      toast.error('Could not mark meal as cooked.', { id: toastId })
     }
   }
 
@@ -158,7 +211,6 @@ export function CalendarView() {
         </div>
       </div>
 
-      {/* Grid view for larger screens */}
       <div className="hidden md:grid grid-cols-7 gap-2 text-center font-semibold text-gray-600 pb-2 mb-2">
         {['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'].map((day) => (
           <div key={day} className="py-2">
@@ -194,11 +246,16 @@ export function CalendarView() {
               return (
                 <div
                   key={dateKey}
-                  className={`border border-gray-200 rounded-xl p-2 flex flex-col cursor-pointer bg-white shadow-sm hover:shadow-lg hover:bg-blue-50 transition-all duration-200 relative w-full h-52 ${isCurrentDay ? 'ring-2 ring-blue-500' : ''}`}
+                  className={`border border-gray-200 rounded-xl p-2 flex flex-col cursor-pointer bg-white shadow-sm hover:shadow-lg hover:bg-blue-50 transition-all duration-200 relative w-full h-52 ${isCurrentDay ? 'ring-2 ring-blue-500' : ''} ${plannedMeal?.isCooked ? 'opacity-50' : ''}`}
                   onClick={() => handleDayClick(day)}
                 >
-                  {plannedMeal?.isShopped && (
+                  {plannedMeal?.isShopped && !plannedMeal.isCooked && (
                     <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow">
+                      ✓
+                    </div>
+                  )}
+                  {plannedMeal?.isCooked && (
+                    <div className="absolute top-1 right-1 bg-gray-400 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow">
                       ✓
                     </div>
                   )}
@@ -252,7 +309,6 @@ export function CalendarView() {
             })}
       </div>
 
-      {/* List view for smaller screens */}
       <div className="md:hidden space-y-2">
         {daysInMonth.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd')
@@ -261,7 +317,7 @@ export function CalendarView() {
           return (
             <div
               key={dateKey}
-              className={`p-4 rounded-lg flex items-center gap-4 ${isCurrentDay ? 'bg-blue-50 ring-2 ring-blue-200' : 'bg-gray-50'}`}
+              className={`p-4 rounded-lg flex items-center gap-4 ${isCurrentDay ? 'bg-blue-50 ring-2 ring-blue-200' : 'bg-gray-50'} ${plannedMeal?.isCooked ? 'opacity-50' : ''}`}
               onClick={() => handleDayClick(day)}
             >
               <div
@@ -313,8 +369,13 @@ export function CalendarView() {
                   <p className="text-gray-500 italic">Ingen middag planlagt</p>
                 )}
               </div>
-              {plannedMeal?.isShopped && (
+              {plannedMeal?.isShopped && !plannedMeal.isCooked && (
                 <div className="bg-green-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm shadow">
+                  ✓
+                </div>
+              )}
+              {plannedMeal?.isCooked && (
+                <div className="bg-gray-400 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm shadow">
                   ✓
                 </div>
               )}
@@ -329,10 +390,12 @@ export function CalendarView() {
           onClose={() => setIsModalOpen(false)}
           title={
             modalView === 'library'
-              ? `Velg middag for ${format(selectedDate, 'eeee d. MMMM', { locale: nb })}`
+              ? `Velg middag for ${format(selectedDate, 'eeee d. MMMM', {
+                  locale: nb,
+                })}`
               : modalView === 'viewMeal'
-                ? activePlannedMeal?.mealName || 'Se planlagt middag'
-                : selectedMeal?.name || 'Legg til i plan'
+              ? activePlannedMeal?.mealName || 'Se planlagt middag'
+              : selectedMeal?.name || 'Legg til i plan'
           }
         >
           {modalView === 'library' && (
@@ -376,7 +439,18 @@ export function CalendarView() {
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  {!activePlannedMeal.isCooked && (
+                    <button
+                      onClick={() => handleMarkAsCooked(activePlannedMeal)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <span className="material-icons text-base align-middle">
+                        done
+                      </span>
+                      Marker som spist
+                    </button>
+                  )}
                   <button
                     onClick={() => setModalView('library')}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
