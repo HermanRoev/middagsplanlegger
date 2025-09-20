@@ -151,7 +151,7 @@ export function CalendarView() {
         if (cupboardItem) {
           const normalizedCupboardItem = normalizeIngredient({
             name: cupboardItem.ingredientName,
-            amount: cupboardItem.amount,
+            amount: cupboardItem.amount ?? 0,
             unit: cupboardItem.unit,
           })
 

@@ -49,7 +49,7 @@ export interface CupboardItem {
   userId: string
   ingredientName: string // Links to the 'ingredients' collection by document ID (which is the name)
   unit: 'g' | 'kg' | 'l' | 'dl' | 'stk' | 'ts' | 'ss'
-  amount: number
-  wantedAmount: number
-  threshold: number
+  amount: number | null
+  wantedAmount: number | null
+  threshold: number | null
 }

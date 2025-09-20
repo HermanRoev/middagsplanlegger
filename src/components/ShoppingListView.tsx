@@ -84,7 +84,7 @@ export function ShoppingListView() {
         cupboardItems.map((item) => {
           const normalized = normalizeIngredient({
             name: item.ingredientName,
-            amount: item.amount,
+            amount: item.amount ?? 0,
             unit: item.unit,
           })
           return [normalized.key, { ...item, normalizedAmount: normalized.amount }]
@@ -92,10 +92,10 @@ export function ShoppingListView() {
       )
 
       cupboardItems.forEach((item) => {
-        if (item.amount <= item.threshold) {
+        if ((item.amount ?? 0) <= (item.threshold ?? 0)) {
           const normalized = normalizeIngredient({
             name: item.ingredientName,
-            amount: item.wantedAmount - item.amount,
+            amount: (item.wantedAmount ?? 0) - (item.amount ?? 0),
             unit: item.unit,
           })
 

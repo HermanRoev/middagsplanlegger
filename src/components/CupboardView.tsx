@@ -20,9 +20,9 @@ import InputField from './ui/InputField'
 const initialFormState: Omit<CupboardItem, 'id' | 'userId'> = {
   ingredientName: '',
   unit: 'stk',
-  amount: 0,
-  wantedAmount: 1,
-  threshold: 0,
+  amount: null,
+  wantedAmount: null,
+  threshold: null,
 }
 
 const units = [
@@ -100,9 +100,10 @@ export function CupboardView() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
+    const isNumeric = ['amount', 'wantedAmount', 'threshold'].includes(name)
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'ingredientName' ? value : parseFloat(value) || 0,
+      [name]: isNumeric ? Number(value) || null : value,
     }))
   }
 
@@ -189,7 +190,9 @@ export function CupboardView() {
         item.ingredientName.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .filter((item) =>
-        showBelowThresholdOnly ? item.amount <= item.threshold : true
+        showBelowThresholdOnly
+          ? (item.amount ?? 0) <= (item.threshold ?? 0)
+          : true
       )
   }, [items, searchTerm, showBelowThresholdOnly])
 
@@ -278,18 +281,18 @@ export function CupboardView() {
                   </td>
                   <td
                     className={`py-4 px-4 ${
-                      item.amount <= item.threshold
+                      (item.amount ?? 0) <= (item.threshold ?? 0)
                         ? 'text-red-500 font-bold'
                         : ''
                     }`}
                   >
-                    {item.amount} {item.unit}
+                    {item.amount ?? 0} {item.unit}
                   </td>
                   <td className="py-4 px-4">
-                    {item.wantedAmount} {item.unit}
+                    {item.wantedAmount ?? 0} {item.unit}
                   </td>
                   <td className="py-4 px-4">
-                    {item.threshold} {item.unit}
+                    {item.threshold ?? 0} {item.unit}
                   </td>
                   <td className="py-4 px-4 flex items-center gap-2">
                     <button
@@ -353,11 +356,17 @@ export function CupboardView() {
                 name="amount"
                 label="Nåværende mengde"
                 type="number"
-                value={formData.amount}
+                value={formData.amount ?? ''}
                 onChange={handleFormChange}
                 required
               />
               <div className="flex items-end">
+                <label
+                  htmlFor="unit"
+                  className="block text-sm font-medium text-gray-700 mb-1 sr-only"
+                >
+                  Enhet
+                </label>
                 <select
                   name="unit"
                   id="unit"
@@ -380,18 +389,16 @@ export function CupboardView() {
                 name="wantedAmount"
                 label="Ønsket mengde"
                 type="number"
-                value={formData.wantedAmount}
+                value={formData.wantedAmount ?? ''}
                 onChange={handleFormChange}
-                required
               />
               <InputField
                 id="threshold"
                 name="threshold"
                 label="Terskel for varsel"
                 type="number"
-                value={formData.threshold}
+                value={formData.threshold ?? ''}
                 onChange={handleFormChange}
-                required
               />
             </div>
           </div>
