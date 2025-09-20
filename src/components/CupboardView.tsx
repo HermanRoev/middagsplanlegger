@@ -67,16 +67,19 @@ export function CupboardView() {
 
   useEffect(() => {
     if (debouncedSearchTerm) {
+      const cupboardIngredientNames = new Set(items.map((i) => i.ingredientName.toLowerCase()))
       const suggestions = masterIngredients
         .map((i) => i.id)
-        .filter((name) =>
-          name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        .filter(
+          (name) =>
+            !cupboardIngredientNames.has(name.toLowerCase()) &&
+            name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
         )
       setIngredientSuggestions(suggestions)
     } else {
       setIngredientSuggestions([])
     }
-  }, [debouncedSearchTerm, masterIngredients])
+  }, [debouncedSearchTerm, masterIngredients, items])
 
   const handleOpenModal = (item: CupboardItem | null = null) => {
     if (item) {
@@ -141,6 +144,13 @@ export function CupboardView() {
         })
         toast.success('Item updated!', { id: toastId })
       } else {
+        const isDuplicate = items.some(
+          (item) => item.ingredientName.toLowerCase() === formData.ingredientName.toLowerCase()
+        )
+        if (isDuplicate) {
+          toast.error('This item is already in your Matlager. Please edit the existing item.', { id: toastId })
+          return
+        }
         await addCupboardItem(formData)
         toast.success('Item added!', { id: toastId })
       }
@@ -219,8 +229,9 @@ export function CupboardView() {
           </label>
           <button
             onClick={() => handleOpenModal()}
-            className="w-full md:w-auto bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+            className="w-full md:w-auto bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
+            <span className="material-icons text-base align-middle">add</span>
             Add New Item
           </button>
         </div>
@@ -276,21 +287,24 @@ export function CupboardView() {
                   <td className="py-3 px-4 flex items-center gap-4">
                     <button
                       onClick={() => handleOpenModal(item)}
-                      className="text-blue-600 hover:underline"
+                      className="p-1 text-blue-600 hover:text-blue-800"
+                      title="Edit"
                     >
-                      Edit
+                      <span className="material-icons">edit</span>
                     </button>
                     <button
                       onClick={() => handleDelete(item.id)}
-                      className="text-red-600 hover:underline"
+                      className="p-1 text-red-600 hover:text-red-800"
+                      title="Delete"
                     >
-                      Delete
+                      <span className="material-icons">delete</span>
                     </button>
                     <button
                       onClick={() => handleSetToEmpty(item)}
-                      className="text-yellow-600 hover:underline"
+                      className="p-1 text-yellow-600 hover:text-yellow-800"
+                      title="Set to Empty"
                     >
-                      Empty
+                      <span className="material-icons">delete_sweep</span>
                     </button>
                   </td>
                 </tr>
