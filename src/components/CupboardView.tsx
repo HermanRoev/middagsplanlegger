@@ -15,7 +15,7 @@ import {
 } from '@/lib/ingredients'
 import { Modal } from './Modal'
 import toast from 'react-hot-toast'
-import { useDebounce } from '@/hooks/useDebounce'
+import InputField from './ui/InputField'
 
 const initialFormState: Omit<CupboardItem, 'id' | 'userId'> = {
   ingredientName: '',
@@ -24,6 +24,16 @@ const initialFormState: Omit<CupboardItem, 'id' | 'userId'> = {
   wantedAmount: 1,
   threshold: 0,
 }
+
+const units = [
+  { value: 'g', label: 'gram' },
+  { value: 'kg', label: 'kg' },
+  { value: 'l', label: 'liter' },
+  { value: 'dl', label: 'dl' },
+  { value: 'stk', label: 'stk' },
+  { value: 'ts', label: 'ts' },
+  { value: 'ss', label: 'ss' },
+]
 
 export function CupboardView() {
   const [items, setItems] = useState<CupboardItem[]>([])
@@ -38,11 +48,6 @@ export function CupboardView() {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [showBelowThresholdOnly, setShowBelowThresholdOnly] = useState(false)
-  const [ingredientSuggestions, setIngredientSuggestions] = useState<string[]>(
-    []
-  )
-
-  const debouncedSearchTerm = useDebounce(formData.ingredientName, 300)
 
   const fetchAllData = async () => {
     try {
@@ -65,21 +70,14 @@ export function CupboardView() {
     fetchAllData()
   }, [])
 
-  useEffect(() => {
-    if (debouncedSearchTerm) {
-      const cupboardIngredientNames = new Set(items.map((i) => i.ingredientName.toLowerCase()))
-      const suggestions = masterIngredients
-        .map((i) => i.id)
-        .filter(
-          (name) =>
-            !cupboardIngredientNames.has(name.toLowerCase()) &&
-            name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-        )
-      setIngredientSuggestions(suggestions)
-    } else {
-      setIngredientSuggestions([])
-    }
-  }, [debouncedSearchTerm, masterIngredients, items])
+  const availableIngredients = useMemo(() => {
+    const cupboardIngredientNames = new Set(
+      items.map((i) => i.ingredientName.toLowerCase())
+    )
+    return masterIngredients.filter(
+      (ing) => !cupboardIngredientNames.has(ing.id.toLowerCase())
+    )
+  }, [items, masterIngredients])
 
   const handleOpenModal = (item: CupboardItem | null = null) => {
     if (item) {
@@ -96,7 +94,6 @@ export function CupboardView() {
     setIsModalOpen(false)
     setEditingItem(null)
     setFormData(initialFormState)
-    setIngredientSuggestions([])
   }
 
   const handleFormChange = (
@@ -107,11 +104,6 @@ export function CupboardView() {
       ...prev,
       [name]: name === 'ingredientName' ? value : parseFloat(value) || 0,
     }))
-  }
-
-  const handleSuggestionClick = (name: string) => {
-    setFormData((prev) => ({ ...prev, ingredientName: name }))
-    setIngredientSuggestions([])
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -126,11 +118,10 @@ export function CupboardView() {
     )
 
     try {
-      // If it's a new ingredient, add it to the master list
-      const isNewIngredient = !masterIngredients.some(
+      const isNewToMasterList = !masterIngredients.some(
         (i) => i.id.toLowerCase() === formData.ingredientName.toLowerCase()
       )
-      if (isNewIngredient) {
+      if (isNewToMasterList) {
         await addIngredientToMasterList(formData.ingredientName)
       }
 
@@ -140,22 +131,26 @@ export function CupboardView() {
           wantedAmount: formData.wantedAmount,
           threshold: formData.threshold,
           unit: formData.unit,
-          ingredientName: formData.ingredientName,
         })
         toast.success('Item updated!', { id: toastId })
       } else {
         const isDuplicate = items.some(
-          (item) => item.ingredientName.toLowerCase() === formData.ingredientName.toLowerCase()
+          (item) =>
+            item.ingredientName.toLowerCase() ===
+            formData.ingredientName.toLowerCase()
         )
         if (isDuplicate) {
-          toast.error('This item is already in your Matlager. Please edit the existing item.', { id: toastId })
+          toast.error(
+            'This item is already in your Matlager. Please edit the existing item.',
+            { id: toastId }
+          )
           return
         }
         await addCupboardItem(formData)
         toast.success('Item added!', { id: toastId })
       }
       handleCloseModal()
-      fetchAllData() // Refresh both cupboard and master list
+      fetchAllData()
     } catch (error) {
       console.error('Error saving item:', error)
       toast.error('An error occurred.', { id: toastId })
@@ -207,104 +202,118 @@ export function CupboardView() {
   }
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg w-full">
-      <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
-        <h2 className="text-3xl font-bold text-gray-800">Matlager</h2>
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <input
+    <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col w-full">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Matlager</h1>
+        <p className="text-gray-600 mt-1">
+          Hold oversikt over ingrediensene du har på kjøkkenet.
+        </p>
+      </header>
+
+      <div className="mb-8 flex flex-col md:flex-row items-center gap-4">
+        <div className="flex-grow w-full md:max-w-md">
+          <InputField
+            id="item-search"
+            label="Søk i matlager..."
+            icon="search"
             type="text"
-            placeholder="Search items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           />
-          <label className="flex items-center space-x-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showBelowThresholdOnly}
-              onChange={(e) => setShowBelowThresholdOnly(e.target.checked)}
-              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-gray-700">Show low stock only</span>
-          </label>
-          <button
-            onClick={() => handleOpenModal()}
-            className="w-full md:w-auto bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <span className="material-icons text-base align-middle">add</span>
-            Add New Item
-          </button>
         </div>
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showBelowThresholdOnly}
+            onChange={(e) => setShowBelowThresholdOnly(e.target.checked)}
+            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-gray-700">Vis varer med lavt lager</span>
+        </label>
+        <button
+          onClick={() => handleOpenModal()}
+          className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm hover:shadow-md transition-shadow flex items-center gap-2"
+        >
+          <span className="material-icons text-base align-middle">add</span>
+          Legg til vare
+        </button>
       </div>
 
       {filteredItems.length === 0 ? (
-        <p className="text-gray-600">
-          {items.length === 0
-            ? 'Your Matlager is empty. Add items to get started.'
-            : 'No items match your search or filter.'}
-        </p>
+        <div className="text-center text-gray-500 mt-12">
+          <p className="text-lg">
+            {items.length === 0
+              ? 'Ditt matlager er tomt.'
+              : 'Ingen varer passer søket ditt.'}
+          </p>
+          <p>Klikk på "Legg til vare" for å starte.</p>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white">
-            <thead className="bg-gray-100">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="text-left py-3 px-4 font-semibold text-sm">
-                  Name
+                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600 uppercase tracking-wider">
+                  Navn
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-sm">
-                  Quantity
+                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600 uppercase tracking-wider">
+                  Mengde
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-sm">
-                  Wanted
+                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600 uppercase tracking-wider">
+                  Ønsket
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-sm">
-                  Threshold
+                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600 uppercase tracking-wider">
+                  Terskel
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-sm">
-                  Actions
+                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600 uppercase tracking-wider">
+                  Handlinger
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200">
               {filteredItems.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="py-3 px-4 capitalize">
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="py-4 px-4 capitalize">
                     {item.ingredientName}
                   </td>
                   <td
-                    className={`py-3 px-4 ${
-                      item.amount <= item.threshold ? 'text-red-500 font-bold' : ''
+                    className={`py-4 px-4 ${
+                      item.amount <= item.threshold
+                        ? 'text-red-500 font-bold'
+                        : ''
                     }`}
                   >
                     {item.amount} {item.unit}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-4 px-4">
                     {item.wantedAmount} {item.unit}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-4 px-4">
                     {item.threshold} {item.unit}
                   </td>
-                  <td className="py-3 px-4 flex items-center gap-4">
+                  <td className="py-4 px-4 flex items-center gap-2">
                     <button
                       onClick={() => handleOpenModal(item)}
-                      className="p-1 text-blue-600 hover:text-blue-800"
-                      title="Edit"
+                      className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100"
+                      title="Rediger"
                     >
-                      <span className="material-icons">edit</span>
+                      <span className="material-icons text-base">edit</span>
                     </button>
                     <button
                       onClick={() => handleDelete(item.id)}
-                      className="p-1 text-red-600 hover:text-red-800"
-                      title="Delete"
+                      className="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-gray-100"
+                      title="Slett"
                     >
-                      <span className="material-icons">delete</span>
+                      <span className="material-icons text-base">delete</span>
                     </button>
                     <button
                       onClick={() => handleSetToEmpty(item)}
-                      className="p-1 text-yellow-600 hover:text-yellow-800"
-                      title="Set to Empty"
+                      className="p-2 text-gray-500 hover:text-yellow-600 rounded-full hover:bg-gray-100"
+                      title="Sett til tom"
                     >
-                      <span className="material-icons">delete_sweep</span>
+                      <span className="material-icons text-base">
+                        delete_sweep
+                      </span>
                     </button>
                   </td>
                 </tr>
@@ -317,128 +326,89 @@ export function CupboardView() {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={editingItem ? 'Edit Item' : 'Add New Item'}
+        title={editingItem ? 'Rediger vare' : 'Legg til ny vare i Matlager'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <label
-              htmlFor="ingredientName"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Name
-            </label>
-            <input
-              type="text"
-              name="ingredientName"
+        <form onSubmit={handleSubmit} className="space-y-8 py-4">
+          <div className="space-y-6">
+            <InputField
               id="ingredientName"
+              name="ingredientName"
+              label="Navn på vare"
+              type="text"
               value={formData.ingredientName}
               onChange={handleFormChange}
-              required
-              autoComplete="off"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              list="available-ingredients"
               disabled={!!editingItem}
-            />
-            {ingredientSuggestions.length > 0 && !editingItem && (
-              <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto">
-                {ingredientSuggestions.map((name) => (
-                  <li
-                    key={name}
-                    onClick={() => handleSuggestionClick(name)}
-                    className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                  >
-                    {name}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div>
-            <label
-              htmlFor="amount"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Current Quantity
-            </label>
-            <input
-              type="number"
-              name="amount"
-              id="amount"
-              value={formData.amount}
-              onChange={handleFormChange}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
+            <datalist id="available-ingredients">
+              {availableIngredients.map((ing) => (
+                <option key={ing.id} value={ing.id} />
+              ))}
+            </datalist>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                id="amount"
+                name="amount"
+                label="Nåværende mengde"
+                type="number"
+                value={formData.amount}
+                onChange={handleFormChange}
+                required
+              />
+              <div className="flex items-end">
+                <select
+                  name="unit"
+                  id="unit"
+                  value={formData.unit}
+                  onChange={handleFormChange}
+                  className="w-full h-[50px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  {units.map((unit) => (
+                    <option key={unit.value} value={unit.value}>
+                      {unit.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                id="wantedAmount"
+                name="wantedAmount"
+                label="Ønsket mengde"
+                type="number"
+                value={formData.wantedAmount}
+                onChange={handleFormChange}
+                required
+              />
+              <InputField
+                id="threshold"
+                name="threshold"
+                label="Terskel for varsel"
+                type="number"
+                value={formData.threshold}
+                onChange={handleFormChange}
+                required
+              />
+            </div>
           </div>
-          <div>
-            <label
-              htmlFor="unit"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Unit
-            </label>
-            <select
-              name="unit"
-              id="unit"
-              value={formData.unit}
-              onChange={handleFormChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="g">g</option>
-              <option value="kg">kg</option>
-              <option value="l">l</option>
-              <option value="dl">dl</option>
-              <option value="stk">stk</option>
-              <option value="ts">ts</option>
-              <option value="ss">ss</option>
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor="wantedAmount"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Wanted Quantity
-            </label>
-            <input
-              type="number"
-              name="wantedAmount"
-              id="wantedAmount"
-              value={formData.wantedAmount}
-              onChange={handleFormChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="threshold"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Warning Threshold
-            </label>
-            <input
-              type="number"
-              name="threshold"
-              id="threshold"
-              value={formData.threshold}
-              onChange={handleFormChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div className="flex justify-end pt-4">
+
+          <div className="flex justify-end gap-4 pt-8 border-t">
             <button
               type="button"
               onClick={handleCloseModal}
-              className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-md hover:bg-gray-300 mr-2"
+              className="px-6 py-2 text-gray-700 rounded-lg hover:bg-gray-100"
             >
-              Cancel
+              Avbryt
             </button>
             <button
               type="submit"
-              className="bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm hover:shadow-md transition-shadow"
             >
-              {editingItem ? 'Save Changes' : 'Add'}
+              {editingItem ? 'Lagre endringer' : 'Legg til i matlager'}
             </button>
           </div>
         </form>
