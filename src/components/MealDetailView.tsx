@@ -86,7 +86,7 @@ export function MealDetailView({
         {children}
         <div className="mt-8">
           <div className="mb-8">
-            <h3 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2 border-gray-200">
               Ingredienser (for {servings || meal.servings || 0} porsjoner)
             </h3>
             <ul className="space-y-2 text-gray-700">
@@ -106,7 +106,7 @@ export function MealDetailView({
             </ul>
           </div>
           <div>
-            <h3 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2 border-gray-200">
               Instruksjoner
             </h3>
             <div className="space-y-4 text-gray-700">

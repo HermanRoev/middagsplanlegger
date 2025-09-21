@@ -337,7 +337,7 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 pt-4 border-t">
+      <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
         <Link
           href="/"
           className="px-6 py-2 text-gray-700 rounded-lg hover:bg-gray-100"

@@ -111,7 +111,7 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
                 <Skeleton className="w-full h-24 rounded-md mb-2" />
                 <Skeleton className="h-4 w-3/4 mt-2" />
               </div>
-              <div className="p-3 bg-gray-50 border-t w-full">
+              <div className="p-3 bg-gray-50 border-t w-full border-gray-200">
                 <Skeleton className="h-3 w-1/2 mx-auto" />
                 <Skeleton className="h-3 w-3/4 mx-auto mt-1" />
               </div>

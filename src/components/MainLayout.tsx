@@ -78,7 +78,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </Link>
               ))}
             </nav>
-            <div className="mt-auto pt-4 border-t">
+            <div className="mt-auto pt-4 border-t border-gray-200">
               <button
                 onClick={() => {
                   logOut()
