@@ -3,4 +3,4 @@ export const COLLECTIONS = {
   MEAL_PLANS: 'mealPlans',
   INGREDIENTS: 'ingredients',
   CUPBOARD: 'cupboard',
-};
+}

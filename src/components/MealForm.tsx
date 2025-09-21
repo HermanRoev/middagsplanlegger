@@ -66,7 +66,9 @@ export function MealForm({ initialData, onSave, isEditing }: MealFormProps) {
 
   useEffect(() => {
     const fetchMasterIngredients = async () => {
-      const querySnapshot = await getDocs(collection(db, COLLECTIONS.INGREDIENTS))
+      const querySnapshot = await getDocs(
+        collection(db, COLLECTIONS.INGREDIENTS)
+      )
       setMasterIngredientList(querySnapshot.docs.map((doc) => doc.id))
     }
     fetchMasterIngredients()

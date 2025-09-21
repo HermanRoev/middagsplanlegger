@@ -249,7 +249,7 @@ export function CupboardView() {
               ? 'Ditt matlager er tomt.'
               : 'Ingen varer passer søket ditt.'}
           </p>
-          <p>Klikk på "Legg til vare" for å starte.</p>
+          <p>Klikk på &quot;Legg til vare&quot; for å starte.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">

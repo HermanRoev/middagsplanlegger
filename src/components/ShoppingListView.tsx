@@ -87,7 +87,10 @@ export function ShoppingListView() {
             amount: item.amount ?? 0,
             unit: item.unit,
           })
-          return [normalized.key, { ...item, normalizedAmount: normalized.amount }]
+          return [
+            normalized.key,
+            { ...item, normalizedAmount: normalized.amount },
+          ]
         })
       )
 
@@ -100,7 +103,7 @@ export function ShoppingListView() {
           })
 
           if (normalized.amount > 0) {
-             aggregatedMap.set(normalized.key, {
+            aggregatedMap.set(normalized.key, {
               name: normalized.name,
               amount: normalized.amount,
               unit: normalized.unit,
@@ -110,9 +113,7 @@ export function ShoppingListView() {
       })
 
       if (selectedDays.length > 0) {
-        const dateStrings = selectedDays.map((day) =>
-          format(day, 'yyyy-MM-dd')
-        )
+        const dateStrings = selectedDays.map((day) => format(day, 'yyyy-MM-dd'))
         const relevantPlans = allPlans.filter(
           (plan) =>
             dateStrings.includes(plan.date) && !plan.isShopped && !plan.isCooked

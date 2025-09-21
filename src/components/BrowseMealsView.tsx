@@ -135,28 +135,28 @@ export function BrowseMealsView() {
           >
             <div className="flex gap-4 mt-6">
               <Link
-                  href={`/meals/edit/${activeMeal.id}`}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <span className="material-icons text-base align-middle">
-                    edit
-                  </span>
-                  Rediger
-                </Link>
-                <button
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow"
-                  onClick={() => {
-                    handleDeleteMeal(activeMeal.id, activeMeal.name)
-                    handleCloseDetail()
-                  }}
-                >
-                  <span className="material-icons text-base align-middle">
-                    delete
-                  </span>
-                  Slett
-                </button>
-              </div>
-            </MealDetailView>
+                href={`/meals/edit/${activeMeal.id}`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <span className="material-icons text-base align-middle">
+                  edit
+                </span>
+                Rediger
+              </Link>
+              <button
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow"
+                onClick={() => {
+                  handleDeleteMeal(activeMeal.id, activeMeal.name)
+                  handleCloseDetail()
+                }}
+              >
+                <span className="material-icons text-base align-middle">
+                  delete
+                </span>
+                Slett
+              </button>
+            </div>
+          </MealDetailView>
         </Modal>
       )}
       {sortedAndFilteredMeals.length === 0 && !isLoading && (

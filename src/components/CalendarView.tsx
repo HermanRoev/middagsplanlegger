@@ -27,10 +27,10 @@ import Image from 'next/image'
 import { Modal } from './Modal'
 import { MealLibrary } from './MealLibrary'
 import { AddMealToPlanView } from './AddMealToPlanView'
-import { Meal, PlannedMeal, CupboardItem, Ingredient } from '@/types'
+import { Meal, PlannedMeal } from '@/types'
 import { Skeleton } from './ui/Skeleton'
 import { MealDetailView } from './MealDetailView'
-import { getCupboardItems, updateCupboardItem } from '@/lib/cupboard'
+import { getCupboardItems } from '@/lib/cupboard'
 import { normalizeIngredient } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
@@ -156,7 +156,9 @@ export function CalendarView() {
           })
 
           if (
-            normalizedCupboardItem.key.endsWith(normalizedIngredient.key.split('_')[1])
+            normalizedCupboardItem.key.endsWith(
+              normalizedIngredient.key.split('_')[1]
+            )
           ) {
             const newAmount =
               normalizedCupboardItem.amount - normalizedIngredient.amount
@@ -401,8 +403,8 @@ export function CalendarView() {
                   locale: nb,
                 })}`
               : modalView === 'viewMeal'
-              ? activePlannedMeal?.mealName || 'Se planlagt middag'
-              : selectedMeal?.name || 'Legg til i plan'
+                ? activePlannedMeal?.mealName || 'Se planlagt middag'
+                : selectedMeal?.name || 'Legg til i plan'
           }
         >
           {modalView === 'library' && (
