@@ -9,10 +9,10 @@ import { useMeals } from '@/hooks/useMeals'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Meal } from '@/types'
-import { Skeleton } from './ui/Skeleton'
 import { Modal } from './Modal'
 import toast from 'react-hot-toast'
 import { MealCard } from './MealCard'
+import { MealCardSkeleton } from './MealCardSkeleton'
 import { MealDetailView } from './MealDetailView'
 import InputField from './ui/InputField'
 
@@ -103,13 +103,7 @@ export function BrowseMealsView() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-md h-64">
-              <Skeleton className="h-40 w-full" />
-              <div className="p-4">
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            </div>
+            <MealCardSkeleton key={i} />
           ))}
         </div>
       ) : (

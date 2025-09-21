@@ -231,12 +231,17 @@ export function CalendarView() {
           ? Array.from({ length: daysInMonth.length }).map((_, index) => (
               <div
                 key={index}
-                className="border border-gray-200 rounded-xl p-2 flex flex-col bg-white shadow-sm hover:shadow-lg transition-all duration-200 relative w-full h-[180px]"
+                className="border border-gray-200 rounded-xl p-2 flex flex-col bg-white shadow-sm w-full h-52"
               >
-                <Skeleton className="w-8 h-8 rounded-full mb-1 mx-auto" />
-                <div className="mt-2 flex-grow flex flex-col items-center text-center w-full h-full justify-center">
+                <Skeleton className="w-8 h-8 rounded-full mb-1" />
+                <div className="mt-2 flex-grow flex flex-col items-center text-center w-full">
                   <Skeleton className="w-full h-24 rounded-md mb-1" />
-                  <Skeleton className="w-3/4 h-4 rounded" />
+                  <Skeleton className="w-3/4 h-4 rounded mt-2" />
+                  <div className="flex-grow" />
+                  <div className="flex justify-between items-center text-xs text-gray-500 mt-1 w-full px-1">
+                    <Skeleton className="w-1/3 h-3 rounded" />
+                    <Skeleton className="w-1/3 h-3 rounded" />
+                  </div>
                 </div>
               </div>
             ))

@@ -5,8 +5,8 @@ import { useMeals } from '@/hooks/useMeals'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Meal } from '@/types'
-import { Skeleton } from './ui/Skeleton'
 import { MealCard } from './MealCard'
+import { MealCardSkeleton } from './MealCardSkeleton'
 import InputField from './ui/InputField'
 
 interface MealLibraryProps {
@@ -103,19 +103,7 @@ export function MealLibrary({ onSelectMeal }: MealLibraryProps) {
       {isLoading ? (
         <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="border border-gray-200 rounded-xl overflow-hidden group flex flex-col justify-between transition-all duration-200 bg-white shadow-sm w-[220px] h-[220px]"
-            >
-              <div className="flex-grow flex flex-col items-center text-center w-full h-full justify-center px-4 pt-8">
-                <Skeleton className="w-full h-24 rounded-md mb-2" />
-                <Skeleton className="h-4 w-3/4 mt-2" />
-              </div>
-              <div className="p-3 bg-gray-50 border-t w-full">
-                <Skeleton className="h-3 w-1/2 mx-auto" />
-                <Skeleton className="h-3 w-3/4 mx-auto mt-1" />
-              </div>
-            </div>
+            <MealCardSkeleton key={i} />
           ))}
         </div>
       ) : (
