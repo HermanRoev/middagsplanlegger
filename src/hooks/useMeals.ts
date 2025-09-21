@@ -15,7 +15,10 @@ export function useMeals() {
     setIsLoading(true)
     setError(null)
     try {
-      const mealsQuery = query(collection(db, COLLECTIONS.MEALS), orderBy('name'))
+      const mealsQuery = query(
+        collection(db, COLLECTIONS.MEALS),
+        orderBy('name')
+      )
       const querySnapshot = await getDocs(mealsQuery)
       const mealsData = querySnapshot.docs.map((doc) => {
         const data = doc.data()

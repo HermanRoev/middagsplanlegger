@@ -4,8 +4,7 @@ import dynamic from 'next/dynamic'
 import React from 'react'
 
 const AuthProvider = dynamic(
-  () =>
-    import('@/contexts/AuthContext.client').then((mod) => mod.AuthProvider),
+  () => import('@/contexts/AuthContext.client').then((mod) => mod.AuthProvider),
   { ssr: false }
 )
 

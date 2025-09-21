@@ -23,7 +23,7 @@ export const getCupboardItems = async (): Promise<CupboardItem[]> => {
   )
   const querySnapshot = await getDocs(q)
   return querySnapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() } as CupboardItem)
+    (doc) => ({ id: doc.id, ...doc.data() }) as CupboardItem
   )
 }
 

@@ -8,12 +8,7 @@ interface TextAreaFieldProps
   label: string
 }
 
-const TextAreaField = ({
-  id,
-  label,
-  value,
-  ...props
-}: TextAreaFieldProps) => {
+const TextAreaField = ({ id, label, value, ...props }: TextAreaFieldProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useLayoutEffect(() => {
