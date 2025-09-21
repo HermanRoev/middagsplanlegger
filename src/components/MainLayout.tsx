@@ -16,8 +16,9 @@ const navigation = [
   { name: 'Middagsbibliotek', href: '/meals/browse', icon: LibraryIcon },
   { name: 'Legg til ny middag', href: '/meals/new', icon: PlusIcon },
   { name: 'Importer oppskrift', href: '/meals/import', icon: UploadIcon },
-  { name: 'Profil', href: '/profile', icon: UserIcon },
+  { name: 'Matlager', href: '/cupboard', icon: ArchiveIcon },
   { name: 'Handleliste', href: '/handleliste', icon: ShoppingCartIcon },
+  { name: 'Profil', href: '/profile', icon: UserIcon },
 ]
 
 export function MainLayout({ children }: MainLayoutProps) {
@@ -127,6 +128,25 @@ function MenuIcon(props: React.SVGProps<SVGSVGElement>) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M4 6h16M4 12h16M4 18h16"
+      />
+    </svg>
+  )
+}
+
+function ArchiveIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
       />
     </svg>
   )

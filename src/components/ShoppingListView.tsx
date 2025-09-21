@@ -1,4 +1,3 @@
-// Fil: src/components/ShoppingListView.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -15,8 +14,10 @@ import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
 import { nb } from 'date-fns/locale'
 import { format } from 'date-fns'
-import { Ingredient, PlannedMeal } from '@/types'
+import { CupboardItem, Ingredient, PlannedMeal } from '@/types'
 import toast from 'react-hot-toast'
+import { getCupboardItems } from '@/lib/cupboard'
+import { normalizeIngredient } from '@/lib/utils'
 
 interface AggregatedIngredient {
   name: string
@@ -24,41 +25,12 @@ interface AggregatedIngredient {
   unit: string
 }
 
-function normalizeIngredient(ing: Ingredient): {
-  name: string
-  amount: number
-  unit: string
-  key: string
-} {
-  let baseAmount = ing.amount || 0
-  let baseUnit = ing.unit
-  let keySuffix = baseUnit
-
-  if (ing.unit === 'kg') {
-    baseAmount *= 1000
-    baseUnit = 'g'
-  } else if (ing.unit === 'l') {
-    baseAmount *= 10
-    baseUnit = 'dl'
-  } else if (ing.unit === 'ss') {
-    baseAmount *= 3
-    baseUnit = 'ts'
-  }
-
-  if (['g', 'kg'].includes(ing.unit)) keySuffix = 'g'
-  if (['dl', 'l'].includes(ing.unit)) keySuffix = 'dl'
-  if (['ts', 'ss'].includes(ing.unit)) keySuffix = 'ts'
-
-  const key = `${ing.name.trim().toLowerCase()}_${keySuffix}`
-
-  return { name: ing.name.trim(), amount: baseAmount, unit: baseUnit, key }
-}
-
 export function ShoppingListView() {
   const [selectedDays, setSelectedDays] = useState<Date[]>([])
   const [shoppedDays, setShoppedDays] = useState<Date[]>([])
   const [plannableDays, setPlannableDays] = useState<Date[]>([])
   const [allPlans, setAllPlans] = useState<PlannedMeal[]>([])
+  const [cupboardItems, setCupboardItems] = useState<CupboardItem[]>([])
   const [shoppingList, setShoppingList] = useState<AggregatedIngredient[]>([])
   const [totalCost, setTotalCost] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -66,17 +38,16 @@ export function ShoppingListView() {
     'Kopier til utklippstavlen'
   )
 
-  // Fetch ALL planned meals once to display in the calendar
   useEffect(() => {
-    const fetchAllPlans = async () => {
+    const fetchData = async () => {
       setIsLoading(true)
       try {
         const plansQuery = query(collection(db, COLLECTIONS.MEAL_PLANS))
-        const querySnapshot = await getDocs(plansQuery)
-        const plans: PlannedMeal[] = querySnapshot.docs.map((doc) => ({
+        const plansSnapshot = await getDocs(plansQuery)
+        const plans: PlannedMeal[] = plansSnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data(),
-        })) as PlannedMeal[]
+          ...(doc.data() as Omit<PlannedMeal, 'id'>),
+        }))
         setAllPlans(plans)
 
         const shopped = plans
@@ -88,62 +59,104 @@ export function ShoppingListView() {
 
         setShoppedDays(shopped)
         setPlannableDays(plannable)
+
+        const items = await getCupboardItems()
+        setCupboardItems(items)
       } catch (error) {
-        console.error('Feil ved henting av måltidsplaner:', error)
-        toast.error('Kunne ikke hente måltidsplaner.')
+        console.error('Error fetching data:', error)
+        toast.error('Could not fetch necessary data.')
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchAllPlans()
+    fetchData()
   }, [])
 
-  // Automatically generate the shopping list when selectedDays changes
   useEffect(() => {
     const generateList = () => {
-      if (selectedDays.length === 0) {
-        setShoppingList([])
-        setTotalCost(0)
-        return
-      }
-
-      const dateStrings = selectedDays.map((day) => format(day, 'yyyy-MM-dd'))
-      const relevantPlans = allPlans.filter(
-        (plan) => dateStrings.includes(plan.date) && !plan.isShopped
-      )
-
-      let cost = 0
       const aggregatedMap = new Map<
         string,
         { amount: number; unit: string; name: string }
       >()
 
-      relevantPlans.forEach((plan) => {
-        cost += plan.costEstimate || 0
-        const ingredients = (plan.scaledIngredients as Ingredient[]) || []
-        ingredients.forEach((ing) => {
-          if (
-            typeof ing === 'object' &&
-            ing !== null &&
-            ing.name &&
-            ing.unit &&
-            ing.amount != null
-          ) {
-            const normalized = normalizeIngredient(ing)
-            const existing = aggregatedMap.get(normalized.key)
-            if (existing) {
-              existing.amount += normalized.amount
-            } else {
-              aggregatedMap.set(normalized.key, {
-                name: normalized.name,
-                amount: normalized.amount,
-                unit: normalized.unit,
-              })
-            }
-          }
+      const cupboardMap = new Map(
+        cupboardItems.map((item) => {
+          const normalized = normalizeIngredient({
+            name: item.ingredientName,
+            amount: item.amount ?? 0,
+            unit: item.unit,
+          })
+          return [normalized.key, { ...item, normalizedAmount: normalized.amount }]
         })
+      )
+
+      cupboardItems.forEach((item) => {
+        if ((item.amount ?? 0) <= (item.threshold ?? 0)) {
+          const normalized = normalizeIngredient({
+            name: item.ingredientName,
+            amount: (item.wantedAmount ?? 0) - (item.amount ?? 0),
+            unit: item.unit,
+          })
+
+          if (normalized.amount > 0) {
+             aggregatedMap.set(normalized.key, {
+              name: normalized.name,
+              amount: normalized.amount,
+              unit: normalized.unit,
+            })
+          }
+        }
       })
+
+      if (selectedDays.length > 0) {
+        const dateStrings = selectedDays.map((day) =>
+          format(day, 'yyyy-MM-dd')
+        )
+        const relevantPlans = allPlans.filter(
+          (plan) =>
+            dateStrings.includes(plan.date) && !plan.isShopped && !plan.isCooked
+        )
+
+        let cost = 0
+        relevantPlans.forEach((plan) => {
+          cost += plan.costEstimate || 0
+          const ingredients = (plan.scaledIngredients as Ingredient[]) || []
+          ingredients.forEach((ing) => {
+            if (
+              typeof ing === 'object' &&
+              ing !== null &&
+              ing.name &&
+              ing.unit &&
+              ing.amount != null
+            ) {
+              const required = normalizeIngredient(ing)
+              const inCupboard = cupboardMap.get(required.key)
+              let neededAmount = required.amount
+
+              if (inCupboard) {
+                neededAmount -= inCupboard.normalizedAmount
+              }
+
+              if (neededAmount > 0) {
+                const existing = aggregatedMap.get(required.key)
+                if (existing) {
+                  existing.amount += neededAmount
+                } else {
+                  aggregatedMap.set(required.key, {
+                    name: required.name,
+                    amount: neededAmount,
+                    unit: required.unit,
+                  })
+                }
+              }
+            }
+          })
+        })
+        setTotalCost(cost)
+      } else {
+        setTotalCost(0)
+      }
 
       const list = Array.from(aggregatedMap.values())
         .map((value) => {
@@ -156,15 +169,14 @@ export function ShoppingListView() {
         .sort((a, b) => a.name.localeCompare(b.name))
 
       setShoppingList(list)
-      setTotalCost(cost)
     }
 
     generateList()
-  }, [selectedDays, allPlans])
+  }, [selectedDays, allPlans, cupboardItems])
 
   const handleMarkAsShopped = async () => {
     if (selectedDays.length === 0) return
-    const toastId = toast.loading('Merker dager som handlet...')
+    const toastId = toast.loading('Marking days as shopped...')
     try {
       const batch = writeBatch(db)
       const dateStrings = selectedDays.map((day) => format(day, 'yyyy-MM-dd'))
@@ -182,10 +194,10 @@ export function ShoppingListView() {
 
       setShoppedDays((prev) => [...prev, ...selectedDays])
       setSelectedDays([])
-      toast.success('Dagene er merket som handlet!', { id: toastId })
+      toast.success('Days marked as shopped!', { id: toastId })
     } catch (error) {
-      console.error('Feil ved merking som handlet:', error)
-      toast.error('En feil oppstod.', { id: toastId })
+      console.error('Error marking as shopped:', error)
+      toast.error('An error occurred.', { id: toastId })
     }
   }
 
@@ -201,12 +213,12 @@ export function ShoppingListView() {
 
     navigator.clipboard.writeText(listAsString).then(
       () => {
-        setCopyButtonText('Kopiert!')
+        setCopyButtonText('Copied!')
         setTimeout(() => setCopyButtonText('Kopier til utklippstavlen'), 2000)
       },
       (err) => {
-        console.error('Kunne ikke kopiere tekst: ', err)
-        toast.error('Kunne ikke kopiere til utklippstavlen.')
+        console.error('Could not copy text: ', err)
+        toast.error('Could not copy to clipboard.')
       }
     )
   }
@@ -264,7 +276,6 @@ export function ShoppingListView() {
           />
         </div>
         <div>
-          {/* The right-side panel logic remains the same */}
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <button
               onClick={handleCopyList}
