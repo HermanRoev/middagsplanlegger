@@ -403,7 +403,7 @@ export function CupboardView() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-8 border-t">
+          <div className="flex justify-end gap-4 pt-8 border-t border-gray-200">
             <button
               type="button"
               onClick={handleCloseModal}
