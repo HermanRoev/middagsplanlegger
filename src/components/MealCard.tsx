@@ -38,6 +38,7 @@ export function MealCard({
             layout="fill"
             objectFit="cover"
             className=""
+            unoptimized
           />
         ) : (
           <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">

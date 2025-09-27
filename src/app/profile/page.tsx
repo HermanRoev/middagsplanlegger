@@ -143,6 +143,7 @@ export default function ProfilePage() {
                   width={128}
                   height={128}
                   className="rounded-full object-cover border-4 border-white shadow-md"
+                  unoptimized
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
