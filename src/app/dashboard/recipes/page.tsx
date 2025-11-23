@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, onSnapshot, query, orderBy, addDoc } from "firebase/firestore"
+import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Meal } from "@/types"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -22,6 +22,7 @@ function RecipesContent() {
   const [searchTerm, setSearchTerm] = useState("")
   const searchParams = useSearchParams()
   const planDate = searchParams.get("planDate")
+  const replaceId = searchParams.get("replaceId")
   const router = useRouter()
 
   useEffect(() => {
@@ -41,7 +42,7 @@ function RecipesContent() {
     if (!planDate) return
 
     try {
-      await addDoc(collection(db, "plannedMeals"), {
+      const mealData = {
         date: planDate,
         mealId: meal.id,
         mealName: meal.name,
@@ -54,8 +55,22 @@ function RecipesContent() {
           id: user.uid,
           name: user.displayName || user.email || 'Unknown'
         } : undefined
-      })
-      toast.success(`Planned ${meal.name} for ${planDate}`)
+      }
+
+      if (replaceId) {
+        await updateDoc(doc(db, "plannedMeals", replaceId), {
+          ...mealData,
+          updatedAt: new Date().toISOString()
+        })
+        toast.success(`Replaced with ${meal.name}`)
+      } else {
+        await addDoc(collection(db, "plannedMeals"), {
+          ...mealData,
+          createdAt: new Date().toISOString()
+        })
+        toast.success(`Planned ${meal.name} for ${planDate}`)
+      }
+
       router.push("/dashboard/planner")
     } catch (error) {
       console.error(error)

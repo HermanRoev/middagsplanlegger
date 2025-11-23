@@ -10,6 +10,7 @@ import { Trash2, Plus, Save } from "lucide-react"
 import toast from 'react-hot-toast'
 import { collection, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { uploadImage } from '@/lib/storage'
 import { Ingredient } from '@/types'
 
 export default function CreateRecipePage() {
@@ -20,6 +21,7 @@ export default function CreateRecipePage() {
   const [prepTime, setPrepTime] = useState(30)
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
   const [instructions, setInstructions] = useState<string[]>([''])
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -72,13 +74,18 @@ export default function CreateRecipePage() {
     if (!name) return toast.error("Please name the recipe")
     setLoading(true)
     try {
+      let imageUrl = null
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile, `meals/${Date.now()}_${imageFile.name}`)
+      }
+
       await addDoc(collection(db, "meals"), {
         name,
         servings,
         prepTime,
         ingredients,
         instructions,
-        imageUrl: null, // TODO: Add image upload here later if needed
+        imageUrl,
         createdAt: new Date().toISOString(),
         createdBy: user ? {
           id: user.uid,
@@ -118,6 +125,14 @@ export default function CreateRecipePage() {
                   placeholder="e.g. Grandma's Pancakes"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Recipe Image</label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">

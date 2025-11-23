@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { ChevronLeft, ChevronRight, Plus, Trash2, X, ArrowRightLeft, Clock, Users, CalendarIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Trash2, X, ArrowRightLeft, Clock, Users, CalendarIcon, ChefHat } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { collection, query, where, onSnapshot, deleteDoc, updateDoc, doc } from "firebase/firestore"
 import { PlannedMeal, Ingredient } from "@/types"
@@ -66,17 +66,9 @@ export default function PlannerPage() {
     }
   }
 
-  const handleReplace = async (meal: PlannedMeal) => {
-     if (confirm("Replace this meal? The current meal will be removed.")) {
-        try {
-            await deleteDoc(doc(db, "plannedMeals", meal.id))
-            setIsDialogOpen(false)
-            router.push(`/dashboard/recipes?planDate=${meal.date}`)
-        } catch (error) {
-            console.error(error)
-            toast.error("Failed to remove meal for replacement")
-        }
-     }
+  const handleReplace = (meal: PlannedMeal) => {
+     setIsDialogOpen(false)
+     router.push(`/dashboard/recipes?planDate=${meal.date}&replaceId=${meal.id}`)
   }
 
   const handleEditClick = (meal: PlannedMeal) => {
@@ -217,106 +209,120 @@ export default function PlannerPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
-          {selectedMeal?.imageUrl && (
-              <div className="relative w-full h-56 sm:h-72 bg-gray-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={selectedMeal.imageUrl}
-                    alt={selectedMeal.mealName}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-6 right-6 text-white">
-                      <h2 className="text-2xl font-bold shadow-sm">{selectedMeal.mealName}</h2>
-                  </div>
-              </div>
-          )}
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white border-0 shadow-2xl gap-0 block">
+            {/* Header Image */}
+            <div className="relative h-64 w-full bg-gray-200">
+                {selectedMeal?.imageUrl ? (
+                    <img
+                        src={selectedMeal.imageUrl}
+                        alt={selectedMeal.mealName}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
+                        <ChefHat className="w-20 h-20 text-white/50" />
+                    </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 pt-12 text-white">
+                    <h2 className="text-3xl font-bold leading-tight">{selectedMeal?.mealName}</h2>
+                    <div className="flex items-center gap-4 mt-2 text-white/80 text-sm font-medium">
+                        <span className="flex items-center gap-1"><Users className="w-4 h-4"/> {selectedMeal?.plannedServings} servings</span>
+                    </div>
+                </div>
+                <button
+                    onClick={() => setIsDialogOpen(false)}
+                    className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
 
-          <div className="p-6 space-y-6">
-            {!selectedMeal?.imageUrl && (
-                <DialogHeader>
-                    <DialogTitle className="text-2xl">{selectedMeal?.mealName}</DialogTitle>
-                </DialogHeader>
-            )}
-
-            <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-4">
-                     <div className="space-y-2">
-                        <Label>Notes for this meal</Label>
+            {/* Body */}
+            <div className="p-6 grid gap-8 md:grid-cols-2">
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <Label className="text-gray-500 font-medium">Notes</Label>
                         <Textarea
-                            placeholder="Add notes..."
+                            placeholder="Add specific notes for this meal..."
                             value={editNotes}
                             onChange={(e) => setEditNotes(e.target.value)}
-                            className="resize-none h-32"
+                            className="min-h-[120px] bg-gray-50 border-gray-200 focus:bg-white transition-colors resize-none"
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label>Servings</Label>
-                        <Input
-                            type="number"
-                            value={editServings}
-                            onChange={(e) => setEditServings(Number(e.target.value))}
-                        />
+                     <div className="space-y-2">
+                        <Label className="text-gray-500 font-medium">Servings</Label>
+                        <div className="flex items-center gap-3">
+                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setEditServings(Math.max(1, editServings - 1))}>-</Button>
+                            <span className="text-xl font-bold w-12 text-center">{editServings}</span>
+                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setEditServings(editServings + 1)}>+</Button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                        <Label className="text-base font-semibold">Ingredients</Label>
-                        <Button size="sm" variant="ghost" onClick={handleAddIngredient} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b pb-2">
+                        <Label className="text-gray-900 font-semibold flex items-center gap-2">
+                            <div className="w-1 h-4 bg-indigo-500 rounded-full"></div>
+                            Ingredients
+                        </Label>
+                        <Button variant="ghost" size="sm" onClick={handleAddIngredient} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8">
                             <Plus className="w-4 h-4 mr-1" /> Add
                         </Button>
                     </div>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+
+                    <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                         {editIngredients.map((ing, i) => (
-                            <div key={i} className="flex gap-2 items-center bg-gray-50 p-2 rounded-md">
+                            <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={i} className="flex gap-2 items-center group">
                                 <Input
-                                    className="flex-1 h-8 text-sm bg-white"
+                                    className="flex-1 h-9 bg-gray-50 border-transparent focus:bg-white focus:border-indigo-200 transition-colors"
                                     value={ing.name}
+                                    placeholder="Ingredient"
                                     onChange={(e) => handleIngredientChange(i, 'name', e.target.value)}
                                 />
-                                <Input
-                                    type="number"
-                                    className="w-16 h-8 text-sm bg-white"
-                                    value={ing.amount || ''}
-                                    onChange={(e) => handleIngredientChange(i, 'amount', Number(e.target.value))}
-                                />
-                                <select
-                                    className="w-16 h-8 rounded-md border border-input bg-white px-1 text-xs"
-                                    value={ing.unit}
-                                    onChange={(e) => handleIngredientChange(i, 'unit', e.target.value)}
-                                >
-                                    {['g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'].map(u => (
-                                    <option key={u} value={u}>{u}</option>
-                                    ))}
-                                </select>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500" onClick={() => handleRemoveIngredient(i)}>
+                                 <div className="flex gap-1 w-32">
+                                    <Input
+                                        type="number"
+                                        className="w-16 h-9 bg-gray-50 border-transparent focus:bg-white focus:border-indigo-200 text-center px-1"
+                                        value={ing.amount || ''}
+                                        placeholder="0"
+                                        onChange={(e) => handleIngredientChange(i, 'amount', Number(e.target.value))}
+                                    />
+                                    <select
+                                        className="w-16 h-9 rounded-md bg-gray-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs px-1"
+                                        value={ing.unit}
+                                        onChange={(e) => handleIngredientChange(i, 'unit', e.target.value)}
+                                    >
+                                        {['g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'].map(u => (
+                                        <option key={u} value={u}>{u}</option>
+                                        ))}
+                                    </select>
+                                 </div>
+                                <button className="text-gray-300 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveIngredient(i)}>
                                     <X className="w-4 h-4" />
-                                </Button>
-                            </div>
+                                </button>
+                            </motion.div>
                         ))}
                     </div>
                 </div>
             </div>
-          </div>
 
-          <DialogFooter className="bg-gray-50 p-6 flex flex-col sm:flex-row gap-3 justify-between items-center border-t">
-             <div className="flex gap-2 w-full sm:w-auto">
-                <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => selectedMeal && handleDelete(selectedMeal.id)}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Remove
-                </Button>
-                <Button variant="outline" onClick={() => selectedMeal && handleReplace(selectedMeal)}>
-                    <ArrowRightLeft className="w-4 h-4 mr-2" />
-                    Replace
-                </Button>
-             </div>
-             <div className="flex gap-2 w-full sm:w-auto">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleSaveEdit} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save Changes</Button>
-             </div>
-          </DialogFooter>
+            {/* Footer */}
+            <div className="p-4 bg-gray-50 border-t flex items-center justify-between">
+                 <div className="flex gap-2">
+                    <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => selectedMeal && handleDelete(selectedMeal.id)}>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Remove
+                    </Button>
+                    <Button variant="outline" onClick={() => selectedMeal && handleReplace(selectedMeal)}>
+                        <ArrowRightLeft className="w-4 h-4 mr-2" />
+                        Replace
+                    </Button>
+                 </div>
+                 <Button onClick={handleSaveEdit} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-all px-8">
+                    Save Changes
+                 </Button>
+            </div>
         </DialogContent>
       </Dialog>
     </div>
