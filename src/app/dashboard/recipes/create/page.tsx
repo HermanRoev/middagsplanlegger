@@ -124,11 +124,11 @@ export default function CreateRecipePage() {
              <CardHeader className="pb-0">
                <CardTitle>Cover Image</CardTitle>
              </CardHeader>
-             <CardContent className="pt-6">
+             <CardContent className="pt-6 pb-6">
                 <ImageUpload
                    value={imageFile}
                    onChange={setImageFile}
-                   className="h-64"
+                   className="min-h-[16rem] w-full"
                 />
              </CardContent>
            </Card>
