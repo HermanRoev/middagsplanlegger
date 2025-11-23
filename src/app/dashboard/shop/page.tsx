@@ -46,14 +46,8 @@ export default function ShopPage() {
 
   // Fetch planned meals for aggregation (simplified for this step)
   useEffect(() => {
-    const startDate = startOfWeek(new Date(), { weekStartsOn: 1 })
-    const endStr = format(addDays(startDate, 14), 'yyyy-MM-dd') // Next 2 weeks
-    const startStr = format(startDate, 'yyyy-MM-dd')
-
     const q = query(
       collection(db, "plannedMeals"), 
-      where("date", ">=", startStr),
-      where("date", "<=", endStr),
       where("isShopped", "==", false)
     )
 
