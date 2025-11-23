@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Trash2, Plus, Save, Upload } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Trash2, Plus, Save } from "lucide-react"
 import toast from 'react-hot-toast'
 import { collection, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { uploadImage } from '@/lib/storage'
 import { Ingredient } from '@/types'
+import { ImageUpload } from '@/components/ImageUpload'
 
 export default function CreateRecipePage() {
   const router = useRouter()
@@ -24,20 +25,7 @@ export default function CreateRecipePage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
-      if (e.clipboardData && e.clipboardData.files.length > 0) {
-        const file = e.clipboardData.files[0]
-        if (file.type.startsWith('image/')) {
-          setImageFile(file)
-          toast.success("Image pasted!")
-        }
-      }
-    }
-    window.addEventListener('paste', handlePaste)
-    return () => window.removeEventListener('paste', handlePaste)
-  }, [])
-
+  // UseEffect for loading draft
   useEffect(() => {
     const draft = sessionStorage.getItem('recipeDraft')
     if (draft) {
@@ -117,92 +105,107 @@ export default function CreateRecipePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 pb-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Create Recipe</h1>
-        <Button onClick={handleSave} disabled={loading} variant="premium">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Create Recipe</h1>
+          <p className="text-gray-500">Add a new meal to your collection.</p>
+        </div>
+        <Button onClick={handleSave} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 shadow-md">
           <Save className="w-4 h-4 mr-2" />
           Save Recipe
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="flex flex-col items-center gap-2">
-              <Upload className="w-10 h-10 text-gray-400" />
-              <p className="text-sm text-gray-600">
-                {imageFile ? imageFile.name : "Drop image here, paste, or click to upload"}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Left Column: Image & Basic Info */}
+        <div className="space-y-8 lg:col-span-1">
+           <Card className="border-0 shadow-md overflow-hidden">
+             <CardHeader className="pb-0">
+               <CardTitle>Cover Image</CardTitle>
+             </CardHeader>
+             <CardContent className="pt-6">
+                <ImageUpload
+                   value={imageFile}
+                   onChange={setImageFile}
+                   className="h-64"
+                />
+             </CardContent>
+           </Card>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
-          <Card>
+           <Card className="border-0 shadow-md">
             <CardHeader>
-              <CardTitle>Basic Info</CardTitle>
+              <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Recipe Name</label>
+                <label className="text-sm font-medium text-gray-700">Recipe Name</label>
                 <Input 
                   placeholder="e.g. Grandma's Pancakes"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className="bg-gray-50/50"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Servings</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Servings</label>
                   <Input 
                     type="number" 
                     value={servings}
                     onChange={(e) => setServings(Number(e.target.value))}
+                    className="bg-gray-50/50"
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Prep Time (min)</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Prep Time (m)</label>
                   <Input 
                     type="number" 
                     value={prepTime}
                     onChange={(e) => setPrepTime(Number(e.target.value))}
+                    className="bg-gray-50/50"
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Ingredients</CardTitle>
+        {/* Right Column: Ingredients & Instructions */}
+        <div className="space-y-8 lg:col-span-2">
+          <Card className="border-0 shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Ingredients</CardTitle>
+                <CardDescription>List everything needed for this dish.</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleAddIngredient} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
+                <Plus className="w-4 h-4 mr-2" /> Add Item
+              </Button>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
+              {ingredients.length === 0 && (
+                <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
+                  No ingredients added yet.
+                </div>
+              )}
               {ingredients.map((ing, i) => (
-                <div key={i} className="flex gap-2">
+                <div key={i} className="flex gap-2 items-start group">
                   <Input 
-                    placeholder="Name" 
-                    className="flex-1"
+                    placeholder="Ingredient name"
+                    className="flex-1 bg-gray-50/50"
                     value={ing.name}
                     onChange={(e) => handleIngredientChange(i, 'name', e.target.value)}
                   />
                   <Input 
                     type="number" 
-                    placeholder="Qty" 
-                    className="w-20"
+                    placeholder="0"
+                    className="w-20 bg-gray-50/50 text-center"
                     value={ing.amount || ''}
                     onChange={(e) => handleIngredientChange(i, 'amount', Number(e.target.value))}
                   />
                   <select 
-                    className="w-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="w-24 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={ing.unit}
                     onChange={(e) => handleIngredientChange(i, 'unit', e.target.value)}
                   >
@@ -210,38 +213,41 @@ export default function CreateRecipePage() {
                       <option key={u} value={u}>{u}</option>
                     ))}
                   </select>
-                  <Button variant="ghost" size="icon" onClick={() => handleRemoveIngredient(i)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                  <Button variant="ghost" size="icon" onClick={() => handleRemoveIngredient(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500">
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={handleAddIngredient} className="w-full">
-                <Plus className="w-4 h-4 mr-2" /> Add Ingredient
-              </Button>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Instructions</CardTitle>
+          <Card className="border-0 shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Instructions</CardTitle>
+                <CardDescription>Step-by-step cooking guide.</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleAddInstruction} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
+                <Plus className="w-4 h-4 mr-2" /> Add Step
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {instructions.map((inst, i) => (
-                <div key={i} className="flex gap-2">
-                   <span className="mt-2 text-sm font-medium text-gray-500 w-6">{i+1}.</span>
+                <div key={i} className="flex gap-4 group">
+                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mt-1">
+                      {i + 1}
+                   </div>
                    <textarea
-                    className="flex-1 min-h-[80px] p-3 rounded-md border border-input bg-transparent text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex-1 min-h-[80px] p-3 rounded-md border border-input bg-gray-50/50 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
                     value={inst}
+                    placeholder={`Step ${i + 1} details...`}
                     onChange={(e) => handleInstructionChange(i, e.target.value)}
                    />
-                   <Button variant="ghost" size="icon" onClick={() => handleRemoveInstruction(i)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                   <Button variant="ghost" size="icon" onClick={() => handleRemoveInstruction(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 mt-2">
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={handleAddInstruction} className="w-full">
-                <Plus className="w-4 h-4 mr-2" /> Add Step
-              </Button>
             </CardContent>
           </Card>
         </div>

@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, Sparkles, Loader2, PenTool } from "lucide-react"
+import { Sparkles, Loader2, PenTool } from "lucide-react"
+import { ImageUpload } from '@/components/ImageUpload'
 
 export default function NewRecipePage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -86,14 +87,6 @@ export default function NewRecipePage() {
       const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim()
       const parsedData = JSON.parse(jsonString)
 
-      // Store in session storage to pre-fill the form on the next page (or just save directly? User might want to edit)
-      // Let's go to an edit page. Since I haven't built the edit page yet, I'll assume the user wants to review it.
-      // I'll construct a "draft" object.
-      
-      // Since we don't have a "drafts" collection, I'll use localStorage/sessionStorage to pass data to the /recipes/create page
-      // Actually, let's just create the recipe document directly but maybe with an "isDraft" flag? 
-      // Or better, redirect to a manual entry form pre-filled with this data.
-      
       sessionStorage.setItem('recipeDraft', JSON.stringify(parsedData))
       
       toast.success('Recipe analyzed! Review details.', { id: toastId })
@@ -126,20 +119,10 @@ export default function NewRecipePage() {
               <CardTitle>Upload Recipe Image</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
-                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="w-10 h-10 text-gray-400" />
-                  <p className="text-sm text-gray-600">
-                    {imageFile ? imageFile.name : "Drop image here or click to upload"}
-                  </p>
-                </div>
-              </div>
+              <ImageUpload
+                value={imageFile}
+                onChange={setImageFile}
+              />
               <Button 
                 className="w-full" 
                 disabled={!imageFile || isLoading}
