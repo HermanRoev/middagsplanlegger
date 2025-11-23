@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { getAI, getGenerativeModel } from 'firebase/ai'
 import { app, db } from '@/lib/firebase'
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, Sparkles, Loader2 } from "lucide-react"
+import { Upload, Sparkles, Loader2, PenTool } from "lucide-react"
 
 export default function NewRecipePage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -112,10 +113,11 @@ export default function NewRecipePage() {
       <h1 className="text-3xl font-bold mb-8">Add New Recipe</h1>
       
       <Tabs defaultValue="image" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsList className="grid w-full grid-cols-4 mb-8">
           <TabsTrigger value="image">Image Import</TabsTrigger>
           <TabsTrigger value="text">Paste Text</TabsTrigger>
           <TabsTrigger value="generate">AI Generate</TabsTrigger>
+          <TabsTrigger value="manual">Manual</TabsTrigger>
         </TabsList>
 
         <TabsContent value="image">
@@ -192,6 +194,23 @@ export default function NewRecipePage() {
               >
                 {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Sparkles className="mr-2" />}
                 Generate Recipe
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <Card>
+            <CardHeader>
+              <CardTitle>Manual Entry</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-500">Create a recipe from scratch without AI assistance.</p>
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/dashboard/recipes/create">
+                  <PenTool className="mr-2 w-4 h-4" />
+                  Create Manually
+                </Link>
               </Button>
             </CardContent>
           </Card>

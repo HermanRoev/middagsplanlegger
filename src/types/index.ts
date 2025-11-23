@@ -43,6 +43,7 @@ export interface PlannedMeal {
     name: string
   }
   originalMealId?: string
+  notes?: string
 }
 
 export interface CupboardItem {

@@ -12,10 +12,12 @@ import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { motion } from "framer-motion"
+import { useAuth } from "@/contexts/AuthContext"
 
 import { Suspense } from 'react'
 
 function RecipesContent() {
+  const { user } = useAuth()
   const [recipes, setRecipes] = useState<Meal[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const searchParams = useSearchParams()
@@ -47,7 +49,11 @@ function RecipesContent() {
         plannedServings: meal.servings || 4,
         isShopped: false,
         isCooked: false,
-        ingredients: meal.ingredients // Copy ingredients for shopping list scaling
+        ingredients: meal.ingredients, // Copy ingredients for shopping list scaling
+        plannedBy: user ? {
+          id: user.uid,
+          name: user.displayName || user.email || 'Unknown'
+        } : undefined
       })
       toast.success(`Planned ${meal.name} for ${planDate}`)
       router.push("/dashboard/planner")
@@ -71,21 +77,21 @@ function RecipesContent() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Link href="/dashboard/recipes/new">
-            <Button variant="premium">
+          <Button asChild variant="premium">
+            <Link href="/dashboard/recipes/new">
               <Plus className="w-4 h-4 mr-2" />
               New
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
       {planDate && (
         <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg flex items-center justify-between">
           <p className="text-indigo-900 font-medium">Select a recipe for {planDate}</p>
-          <Link href="/dashboard/planner">
-            <Button variant="ghost" size="sm">Cancel</Button>
-          </Link>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/dashboard/planner">Cancel</Link>
+          </Button>
         </div>
       )}
 
@@ -137,9 +143,9 @@ function RecipesContent() {
                     Select
                   </Button>
                 ) : (
-                  <Link href={`/dashboard/recipes/${recipe.id}`} className="w-full">
-                    <Button variant="outline" className="w-full">View Details</Button>
-                  </Link>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={`/dashboard/recipes/${recipe.id}`}>View Details</Link>
+                  </Button>
                 )}
               </CardFooter>
             </Card>

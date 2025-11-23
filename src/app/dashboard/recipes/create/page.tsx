@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +14,7 @@ import { Ingredient } from '@/types'
 
 export default function CreateRecipePage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [name, setName] = useState('')
   const [servings, setServings] = useState(4)
   const [prepTime, setPrepTime] = useState(30)
@@ -77,7 +79,11 @@ export default function CreateRecipePage() {
         ingredients,
         instructions,
         imageUrl: null, // TODO: Add image upload here later if needed
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        createdBy: user ? {
+          id: user.uid,
+          name: user.displayName || user.email || 'Unknown'
+        } : undefined
       })
       toast.success("Recipe saved!")
       router.push("/dashboard/recipes")

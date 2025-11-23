@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Calendar, ChefHat, ShoppingCart, LogOut } from "lucide-react"
+import { Home, Calendar, ChefHat, ShoppingCart, LogOut, User } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ const navItems = [
   { href: "/dashboard/recipes", icon: ChefHat, label: "Recipes" },
   { href: "/dashboard/shop", icon: ShoppingCart, label: "Shop" },
   { href: "/dashboard/cupboard", icon: Package, label: "Cupboard" },
+  { href: "/dashboard/profile", icon: User, label: "Profile" },
 ]
 
 export function Sidebar() {
