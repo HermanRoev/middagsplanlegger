@@ -1,100 +1,65 @@
-'use client'
+"use client"
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import {
-  signIn as authSignIn,
-  signOut as authSignOut,
-  signUp as authSignUp,
-  subscribeToAuthChanges,
-  type AuthUser,
-} from '@/lib/auth'
-import toast from 'react-hot-toast'
+import * as React from "react"
+import { createContext, useContext, useEffect, useState } from "react"
+import { User, onAuthStateChanged, signOut } from "firebase/auth"
+import { auth } from "@/lib/firebase"
+import { useRouter, usePathname } from "next/navigation"
 
 interface AuthContextType {
-  user: AuthUser | null
+  user: User | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (
-    email: string,
-    password: string,
-    displayName: string
-  ) => Promise<void>
-  logOut: () => Promise<void>
+  logout: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | null>(null)
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  logout: async () => {},
+})
+
+export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
-    const unsubscribe = subscribeToAuthChanges((user) => {
-      setUser(user)
-      setLoading(false)
-
-      // Don't redirect if we're already on the correct page
-      if (user && pathname === '/login') {
-        router.replace('/')
-      } else if (!user && pathname !== '/login') {
-        router.replace('/login')
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser)
+      } else {
+        setUser(null)
       }
+      setLoading(false)
     })
 
     return () => unsubscribe()
-  }, [router, pathname])
+  }, [])
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      await authSignIn(email, password)
-      toast.success('Vellykket login.')
-      router.push('/')
-    } catch (error) {
-      toast.error('Innlogging feilet. Sjekk dine påloggingsdetaljer.')
-      throw error
+  useEffect(() => {
+    if (!loading) {
+      const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/register")
+      const isPublicPage = pathname === "/"
+      
+      if (!user && !isAuthPage && !isPublicPage) {
+        router.push("/") // Redirect to landing page instead of login
+      } else if (user && (isAuthPage || isPublicPage)) {
+        router.push("/dashboard")
+      }
     }
-  }
+  }, [user, loading, pathname, router])
 
-  const signUp = async (
-    email: string,
-    password: string,
-    displayName: string
-  ) => {
-    try {
-      await authSignUp(email, password, displayName)
-      toast.success('Konto opprettet.')
-      router.push('/')
-    } catch (error) {
-      toast.error('Registrering feilet. Prøv igjen.')
-      throw error
-    }
-  }
-
-  const logOut = async () => {
-    try {
-      await authSignOut()
-      toast.success('Utlogging vellykket.')
-      router.push('/login')
-    } catch (error) {
-      toast.error('Utlogging feilet. Vennligst prøv igjen.')
-      console.error('Logout error:', error)
-    }
+  const logout = async () => {
+    await signOut(auth)
+    router.push("/")
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, logOut }}>
+    <AuthContext.Provider value={{ user, loading, logout }}>
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }

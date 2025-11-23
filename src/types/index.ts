@@ -33,6 +33,7 @@ export interface PlannedMeal {
   isCooked?: boolean
   servings?: number
   scaledIngredients?: Ingredient[]
+  ingredients?: Ingredient[]
   instructions?: string[]
   plannedServings: number
   prepTime?: number
