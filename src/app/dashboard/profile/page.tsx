@@ -146,7 +146,7 @@ export default function ProfilePage() {
                     </div>
                 </CardContent>
                 <CardFooter className="flex justify-end bg-gray-50/50 p-4 border-t border-gray-100">
-                    <Button onClick={handleUpdateProfile} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
+                    <Button onClick={handleUpdateProfile} disabled={loading} variant="premium">
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Save Changes
                     </Button>

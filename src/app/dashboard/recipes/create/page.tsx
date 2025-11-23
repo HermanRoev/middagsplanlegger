@@ -111,7 +111,7 @@ export default function CreateRecipePage() {
           <h1 className="text-3xl font-bold tracking-tight">Create Recipe</h1>
           <p className="text-gray-500">Add a new meal to your collection.</p>
         </div>
-        <Button onClick={handleSave} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 shadow-md">
+        <Button onClick={handleSave} disabled={loading} variant="premium">
           <Save className="w-4 h-4 mr-2" />
           Save Recipe
         </Button>

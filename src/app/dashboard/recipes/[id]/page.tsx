@@ -52,15 +52,21 @@ export default function RecipeDetailsPage() {
         setPlannedMeal(data)
         setEditNotes(data.notes || "")
         setEditServings(data.plannedServings || 4)
+        // Fallback to recipe ingredients will be handled in handleEditMode
         setEditIngredients(data.ingredients || [])
       } else {
-        // If planned meal is deleted, maybe just go back to recipe or planner
-        // For now, let's just stay but clear state
         setPlannedMeal(null)
       }
     })
     return () => unsubscribe()
   }, [plannedId])
+
+  const handleEnterEditMode = () => {
+    setIsEditing(true)
+    if (editIngredients.length === 0 && recipe?.ingredients) {
+        setEditIngredients(recipe.ingredients)
+    }
+  }
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this recipe?")) return
@@ -170,13 +176,13 @@ export default function RecipeDetailsPage() {
                 </Link>
             )}
             {isPlannedMode && !isEditing && (
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
+                <Button variant="outline" onClick={handleEnterEditMode}>
                     <Edit className="w-4 h-4 mr-2" /> Edit Plan Details
                 </Button>
             )}
             {isPlannedMode && isEditing && (
                  <>
-                    <Button onClick={handleSavePlanChanges} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
+                    <Button onClick={handleSavePlanChanges} disabled={loading} variant="premium">
                         <Save className="w-4 h-4 mr-2" /> Save Changes
                     </Button>
                     <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
