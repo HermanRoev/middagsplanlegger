@@ -35,7 +35,7 @@ export default function RecipeDetailsPage() {
       await deleteDoc(doc(db, "meals", id as string))
       toast.success("Recipe deleted")
       router.push("/dashboard/recipes")
-    } catch (e) {
+    } catch {
       toast.error("Failed to delete")
     }
   }

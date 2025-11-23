@@ -108,7 +108,17 @@ export default function ShopPage() {
   }
 
   const toggleItem = async (id: string, checked: boolean) => {
-    await updateDoc(doc(db, "shoppingList", id), { checked })
+    // Determine if it's a manual item or a planned item
+    // For now, we only support persisting checked state for manual items
+    // Planned items check state is local only in this simplified version, or we could store it in a separate collection
+
+    const item = items.find(i => i.id === id)
+    if (item && item.source === 'manual') {
+       await updateDoc(doc(db, "shoppingList", id), { checked })
+    } else {
+       // Local toggle for planned items (will reset on refresh in this simple version)
+       setItems(prev => prev.map(i => i.id === id ? { ...i, checked } : i))
+    }
   }
   
   // const deleteItem = async (id: string) => {
