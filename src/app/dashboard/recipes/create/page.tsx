@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Trash2, Plus, Save } from "lucide-react"
+import { Trash2, Plus, Save, Upload } from "lucide-react"
 import toast from 'react-hot-toast'
 import { collection, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -23,6 +23,20 @@ export default function CreateRecipePage() {
   const [instructions, setInstructions] = useState<string[]>([''])
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (e.clipboardData && e.clipboardData.files.length > 0) {
+        const file = e.clipboardData.files[0]
+        if (file.type.startsWith('image/')) {
+          setImageFile(file)
+          toast.success("Image pasted!")
+        }
+      }
+    }
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [])
 
   useEffect(() => {
     const draft = sessionStorage.getItem('recipeDraft')
@@ -105,12 +119,31 @@ export default function CreateRecipePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Edit Recipe</h1>
+        <h1 className="text-3xl font-bold">Create Recipe</h1>
         <Button onClick={handleSave} disabled={loading} variant="premium">
           <Save className="w-4 h-4 mr-2" />
           Save Recipe
         </Button>
       </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="flex flex-col items-center gap-2">
+              <Upload className="w-10 h-10 text-gray-400" />
+              <p className="text-sm text-gray-600">
+                {imageFile ? imageFile.name : "Drop image here, paste, or click to upload"}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
@@ -125,14 +158,6 @@ export default function CreateRecipePage() {
                   placeholder="e.g. Grandma's Pancakes"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Recipe Image</label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">

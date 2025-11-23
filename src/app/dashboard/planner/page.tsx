@@ -211,98 +211,107 @@ export default function PlannerPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white border-0 shadow-2xl gap-0 block">
             {/* Header Image */}
-            <div className="relative h-64 w-full bg-gray-200">
-                {selectedMeal?.imageUrl ? (
+            {selectedMeal?.imageUrl && (
+                <div className="relative h-64 w-full bg-gray-200">
                     <img
                         src={selectedMeal.imageUrl}
                         alt={selectedMeal.mealName}
                         className="w-full h-full object-cover"
                     />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
-                        <ChefHat className="w-20 h-20 text-white/50" />
-                    </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-6 pt-12 text-white">
-                    <h2 className="text-3xl font-bold leading-tight">{selectedMeal?.mealName}</h2>
-                    <div className="flex items-center gap-4 mt-2 text-white/80 text-sm font-medium">
-                        <span className="flex items-center gap-1"><Users className="w-4 h-4"/> {selectedMeal?.plannedServings} servings</span>
-                    </div>
+                    <button
+                        onClick={() => setIsDialogOpen(false)}
+                        className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
-                <button
-                    onClick={() => setIsDialogOpen(false)}
-                    className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-            </div>
+            )}
 
             {/* Body */}
-            <div className="p-6 grid gap-8 md:grid-cols-2">
-                <div className="space-y-6">
-                    <div className="space-y-2">
-                        <Label className="text-gray-500 font-medium">Notes</Label>
-                        <Textarea
-                            placeholder="Add specific notes for this meal..."
-                            value={editNotes}
-                            onChange={(e) => setEditNotes(e.target.value)}
-                            className="min-h-[120px] bg-gray-50 border-gray-200 focus:bg-white transition-colors resize-none"
-                        />
+            <div className="p-6">
+                {!selectedMeal?.imageUrl && (
+                    <div className="flex justify-end mb-2">
+                        <button
+                            onClick={() => setIsDialogOpen(false)}
+                            className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
-                     <div className="space-y-2">
-                        <Label className="text-gray-500 font-medium">Servings</Label>
-                        <div className="flex items-center gap-3">
-                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setEditServings(Math.max(1, editServings - 1))}>-</Button>
-                            <span className="text-xl font-bold w-12 text-center">{editServings}</span>
-                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setEditServings(editServings + 1)}>+</Button>
+                )}
+
+                <DialogHeader className="mb-6 text-left">
+                    <DialogTitle className="text-3xl font-bold text-gray-900">{selectedMeal?.mealName}</DialogTitle>
+                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+                        <span className="flex items-center gap-1"><Users className="w-4 h-4"/> {selectedMeal?.plannedServings} servings</span>
+                    </div>
+                </DialogHeader>
+
+                <div className="grid gap-8 md:grid-cols-2">
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-gray-500 font-medium">Notes</Label>
+                            <Textarea
+                                placeholder="Add specific notes for this meal..."
+                                value={editNotes}
+                                onChange={(e) => setEditNotes(e.target.value)}
+                                className="min-h-[120px] bg-gray-50 border-gray-200 focus:bg-white transition-colors resize-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-gray-500 font-medium">Servings</Label>
+                            <div className="flex items-center gap-3">
+                                <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setEditServings(Math.max(1, editServings - 1))}>-</Button>
+                                <span className="text-xl font-bold w-12 text-center">{editServings}</span>
+                                <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setEditServings(editServings + 1)}>+</Button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b pb-2">
-                        <Label className="text-gray-900 font-semibold flex items-center gap-2">
-                            <div className="w-1 h-4 bg-indigo-500 rounded-full"></div>
-                            Ingredients
-                        </Label>
-                        <Button variant="ghost" size="sm" onClick={handleAddIngredient} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8">
-                            <Plus className="w-4 h-4 mr-1" /> Add
-                        </Button>
-                    </div>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between border-b pb-2">
+                            <Label className="text-gray-900 font-semibold flex items-center gap-2">
+                                <div className="w-1 h-4 bg-indigo-500 rounded-full"></div>
+                                Ingredients
+                            </Label>
+                            <Button variant="ghost" size="sm" onClick={handleAddIngredient} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8">
+                                <Plus className="w-4 h-4 mr-1" /> Add
+                            </Button>
+                        </div>
 
-                    <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                        {editIngredients.map((ing, i) => (
-                            <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={i} className="flex gap-2 items-center group">
-                                <Input
-                                    className="flex-1 h-9 bg-gray-50 border-transparent focus:bg-white focus:border-indigo-200 transition-colors"
-                                    value={ing.name}
-                                    placeholder="Ingredient"
-                                    onChange={(e) => handleIngredientChange(i, 'name', e.target.value)}
-                                />
-                                 <div className="flex gap-1 w-32">
+                        <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                            {editIngredients.map((ing, i) => (
+                                <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={i} className="flex gap-2 items-center group">
                                     <Input
-                                        type="number"
-                                        className="w-16 h-9 bg-gray-50 border-transparent focus:bg-white focus:border-indigo-200 text-center px-1"
-                                        value={ing.amount || ''}
-                                        placeholder="0"
-                                        onChange={(e) => handleIngredientChange(i, 'amount', Number(e.target.value))}
+                                        className="flex-1 h-9 bg-gray-50 border-transparent focus:bg-white focus:border-indigo-200 transition-colors"
+                                        value={ing.name}
+                                        placeholder="Ingredient"
+                                        onChange={(e) => handleIngredientChange(i, 'name', e.target.value)}
                                     />
-                                    <select
-                                        className="w-16 h-9 rounded-md bg-gray-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs px-1"
-                                        value={ing.unit}
-                                        onChange={(e) => handleIngredientChange(i, 'unit', e.target.value)}
-                                    >
-                                        {['g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'].map(u => (
-                                        <option key={u} value={u}>{u}</option>
-                                        ))}
-                                    </select>
-                                 </div>
-                                <button className="text-gray-300 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveIngredient(i)}>
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </motion.div>
-                        ))}
+                                    <div className="flex gap-1 w-32">
+                                        <Input
+                                            type="number"
+                                            className="w-16 h-9 bg-gray-50 border-transparent focus:bg-white focus:border-indigo-200 text-center px-1"
+                                            value={ing.amount || ''}
+                                            placeholder="0"
+                                            onChange={(e) => handleIngredientChange(i, 'amount', Number(e.target.value))}
+                                        />
+                                        <select
+                                            className="w-16 h-9 rounded-md bg-gray-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs px-1"
+                                            value={ing.unit}
+                                            onChange={(e) => handleIngredientChange(i, 'unit', e.target.value)}
+                                        >
+                                            {['g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'].map(u => (
+                                            <option key={u} value={u}>{u}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button className="text-gray-300 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveIngredient(i)}>
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </motion.div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
