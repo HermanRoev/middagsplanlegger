@@ -16,7 +16,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-          Welcome back, <span className="text-indigo-600">{user?.email?.split('@')[0]}</span>
+          Welcome back, <span className="text-indigo-600">{user?.displayName || user?.email?.split('@')[0] || 'Chef'}</span>
         </h1>
         <p className="text-gray-500 mt-2 text-lg">{today}</p>
       </header>

@@ -13,6 +13,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
+import { useDebounce } from "use-debounce"
 
 import { Suspense } from 'react'
 
@@ -20,6 +21,7 @@ function RecipesContent() {
   const { user } = useAuth()
   const [recipes, setRecipes] = useState<Meal[]>([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300)
   const searchParams = useSearchParams()
   const planDate = searchParams.get("planDate")
   const replaceId = searchParams.get("replaceId")
@@ -35,7 +37,7 @@ function RecipesContent() {
   }, [])
 
   const filteredRecipes = recipes.filter(recipe => 
-    recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
+    recipe.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   )
 
   const handlePlanMeal = async (meal: Meal) => {
@@ -111,61 +113,72 @@ function RecipesContent() {
       )}
 
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredRecipes.map((recipe, index) => (
-          <motion.div
-            key={recipe.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card className="h-full flex flex-col overflow-hidden group hover:shadow-lg transition-all border-0 bg-white">
-              <div className="aspect-video bg-gray-100 relative overflow-hidden">
-                {recipe.imageUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img 
-                    src={recipe.imageUrl} 
-                    alt={recipe.name} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                    <ChefHat className="w-12 h-12 text-gray-300" />
-                  </div>
-                )}
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
-                <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <h3 className="font-bold text-lg leading-tight">{recipe.name}</h3>
-                </div>
-              </div>
-              
-              <CardContent className="p-4 flex-1">
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {recipe.prepTime || 30} min
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {recipe.servings || 4}
+        {filteredRecipes.length === 0 ? (
+           <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed">
+             <ChefHat className="w-12 h-12 mb-4 text-gray-300" />
+             <p className="text-lg font-medium">No recipes found</p>
+             <p className="text-sm">Try adjusting your search or add a new recipe.</p>
+             <Button asChild variant="link" className="mt-2">
+                <Link href="/dashboard/recipes/new">Create Recipe</Link>
+             </Button>
+           </div>
+        ) : (
+          filteredRecipes.map((recipe, index) => (
+            <motion.div
+              key={recipe.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card className="h-full flex flex-col overflow-hidden group hover:shadow-lg transition-all border-0 bg-white">
+                <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                  {recipe.imageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={recipe.imageUrl}
+                      alt={recipe.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                      <ChefHat className="w-12 h-12 text-gray-300" />
+                    </div>
+                  )}
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h3 className="font-bold text-lg leading-tight">{recipe.name}</h3>
                   </div>
                 </div>
-              </CardContent>
 
-              <CardFooter className="p-4 pt-0 gap-2">
-                {planDate ? (
-                  <Button className="w-full" onClick={() => handlePlanMeal(recipe)}>
-                    Select
-                  </Button>
-                ) : (
-                  <Button asChild variant="outline" className="w-full">
-                    <Link href={`/dashboard/recipes/${recipe.id}`}>View Details</Link>
-                  </Button>
-                )}
-              </CardFooter>
-            </Card>
-          </motion.div>
-        ))}
+                <CardContent className="p-4 flex-1">
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {recipe.prepTime || 30} min
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {recipe.servings || 4}
+                    </div>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="p-4 pt-0 gap-2">
+                  {planDate ? (
+                    <Button className="w-full" onClick={() => handlePlanMeal(recipe)}>
+                      Select
+                    </Button>
+                  ) : (
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href={`/dashboard/recipes/${recipe.id}`}>View Details</Link>
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            </motion.div>
+          ))
+        )}
       </div>
     </div>
   )

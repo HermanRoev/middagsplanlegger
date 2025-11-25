@@ -1,50 +1,62 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, onSnapshot, query, where, doc, updateDoc, addDoc } from "firebase/firestore"
+import { collection, onSnapshot, query, where, doc, updateDoc, addDoc, setDoc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { PlannedMeal } from "@/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Check, Plus, ShoppingCart } from "lucide-react"
+import { Check, Plus, ShoppingCart, Trash2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { format, startOfWeek, addDays } from "date-fns"
 import { normalizeUnit, formatUnit, Unit } from "@/lib/units"
 
-export default function ShopPage() {
-  const [items, setItems] = useState<{ id: string, name: string, amount: number, unit: string, checked: boolean, source?: string }[]>([])
-  const [newItem, setNewItem] = useState("")
-  
-  // Logic: 
-  // 1. Fetch planned meals for the week.
-  // 2. Aggregate ingredients.
-  // 3. Fetch "extra" shopping list items (maybe stored in a 'shoppingList' collection).
-  // For simplicity in this rework, I'll stick to a local aggregation + 'shoppingList' collection for persistent items.
-  
-  // Let's assume 'cupboardItems' with 'wantedAmount' > 0 act as the shopping list too? 
-  // Or just a simple 'shoppingList' collection. I'll create a simple 'shoppingList' collection for manual items.
+interface ShopItem {
+    id: string;
+    name: string;
+    amount: number;
+    unit: string;
+    checked: boolean;
+    source?: string;
+}
 
+export default function ShopPage() {
+  const [items, setItems] = useState<ShopItem[]>([])
+  const [newItem, setNewItem] = useState("")
+  const [plannedCheckedState, setPlannedCheckedState] = useState<Record<string, boolean>>({})
+
+  // 1. Fetch manually added items
   useEffect(() => {
-    // Listen to manual shopping list items
     const q = query(collection(db, "shoppingList"))
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const manualItems = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data(),
         source: 'manual'
-      })) as any[] // eslint-disable-line @typescript-eslint/no-explicit-any
-      setItems(() => {
-        // Merge manual items with planned items (which we need to fetch separately or just keep simple for now)
-        // To fully implement the feature "Shopping List from Planned Meals":
-        // We need to fetch planned meals, extract ingredients, and display them.
-        return manualItems
+      })) as ShopItem[]
+
+      setItems(prev => {
+        const plannedOnly = prev.filter(i => i.source === 'planned')
+        return [...plannedOnly, ...manualItems]
       })
     })
     return () => unsubscribe()
   }, [])
 
-  // Fetch planned meals for aggregation (simplified for this step)
+  // 2. Fetch persistent checked state for planned items (Using a separate collection 'shoppingChecked')
+  useEffect(() => {
+    const q = query(collection(db, "shoppingChecked"))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+       const checkedMap: Record<string, boolean> = {}
+       snapshot.docs.forEach(doc => {
+         checkedMap[doc.id] = doc.data().checked
+       })
+       setPlannedCheckedState(checkedMap)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  // 3. Fetch planned meals and aggregate
   useEffect(() => {
     const q = query(
       collection(db, "plannedMeals"), 
@@ -59,7 +71,7 @@ export default function ShopPage() {
         meal.ingredients?.forEach(ing => {
           if (!ing.amount || !ing.unit) return
           const { amount: normalizedAmount, unit: normalizedUnit } = normalizeUnit(ing.amount, ing.unit)
-          const key = `${ing.name.toLowerCase()}-${normalizedUnit}` // Aggregate by name + unit
+          const key = `${ing.name.toLowerCase()}-${normalizedUnit}`
           
           if (!aggregated[key]) {
             aggregated[key] = { amount: 0, unit: normalizedUnit }
@@ -70,25 +82,27 @@ export default function ShopPage() {
 
       const plannedList = Object.entries(aggregated).map(([key, val]) => {
         const name = key.split('-')[0]
+        // Check if this item ID is in our persistent checked map
+        const isChecked = plannedCheckedState[key] || false
+
         return {
           id: key,
           name: name.charAt(0).toUpperCase() + name.slice(1),
           amount: val.amount,
           unit: val.unit,
-          checked: false,
+          checked: isChecked,
           source: 'planned'
         }
       })
       
       setItems(prev => {
-         // Remove old planned items and add new ones
          const manualOnly = prev.filter(i => i.source === 'manual')
          return [...manualOnly, ...plannedList]
       })
     })
     
     return () => unsubscribe()
-  }, [])
+  }, [plannedCheckedState]) // Re-run when plannedCheckedState updates
 
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,25 +115,20 @@ export default function ShopPage() {
     setNewItem("")
   }
 
-  const toggleItem = async (id: string, checked: boolean) => {
-    // Determine if it's a manual item or a planned item
-    // For now, we only support persisting checked state for manual items
-    // Planned items check state is local only in this simplified version, or we could store it in a separate collection
-
-    const item = items.find(i => i.id === id)
-    if (item && item.source === 'manual') {
+  const toggleItem = async (id: string, checked: boolean, source: string = 'manual') => {
+    if (source === 'manual') {
        await updateDoc(doc(db, "shoppingList", id), { checked })
     } else {
-       // Local toggle for planned items (will reset on refresh in this simple version)
-       setItems(prev => prev.map(i => i.id === id ? { ...i, checked } : i))
+       // Persist checked state for planned items
+       await setDoc(doc(db, "shoppingChecked", id), { checked })
     }
   }
-  
-  // const deleteItem = async (id: string) => {
-  //    await updateDoc(doc(db, "shoppingList", id), { delete: true }) // actually deleteDoc is better
-  //    // But waiting for import... let's use the delete function from props or context if available.
-  //    // Since I didn't import deleteDoc, let me just skip delete for now or re-import.
-  // }
+
+  const deleteManualItem = async (id: string) => {
+      await deleteDoc(doc(db, "shoppingList", id))
+  }
+
+  const sortedItems = items.sort((a,b) => Number(a.checked) - Number(b.checked))
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -146,22 +155,24 @@ export default function ShopPage() {
 
           <div className="space-y-2">
              {items.length === 0 && (
-                <div className="text-center text-gray-500 py-8">
-                  Your list is empty.
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                  <ShoppingCart className="w-12 h-12 mb-4 opacity-20" />
+                  <p>Your list is empty.</p>
                 </div>
              )}
              <AnimatePresence>
-              {items.sort((a,b) => Number(a.checked) - Number(b.checked)).map((item) => (
+              {sortedItems.map((item) => (
                 <motion.div
                   key={item.id}
+                  layout
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   className={`flex items-center justify-between p-3 rounded-lg transition-colors ${item.checked ? 'bg-gray-50 opacity-60' : 'bg-white shadow-sm'}`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     <button 
-                      onClick={() => toggleItem(item.id, !item.checked)}
+                      onClick={() => toggleItem(item.id, !item.checked, item.source)}
                       className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${item.checked ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-indigo-500'}`}
                     >
                       {item.checked && <Check className="w-4 h-4" />}
@@ -175,16 +186,17 @@ export default function ShopPage() {
                       )}
                     </div>
                   </div>
+                  {item.source === 'manual' && (
+                      <Button variant="ghost" size="icon" onClick={() => deleteManualItem(item.id)} className="text-gray-300 hover:text-red-400 hover:bg-red-50">
+                          <Trash2 className="w-4 h-4" />
+                      </Button>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         </CardContent>
       </Card>
-      
-      <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
-        <p>Note: Ingredients from planned meals will appear here automatically in the full version.</p>
-      </div>
     </div>
   )
 }

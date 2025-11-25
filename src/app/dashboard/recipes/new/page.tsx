@@ -4,15 +4,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { getAI, getGenerativeModel } from 'firebase/ai'
-import { app, db } from '@/lib/firebase'
-import { collection, getDocs } from 'firebase/firestore'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sparkles, Loader2, PenTool } from "lucide-react"
 import { ImageUpload } from '@/components/ImageUpload'
+import { generateRecipeFromText } from '@/lib/gemini'
 
 export default function NewRecipePage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -26,71 +24,28 @@ export default function NewRecipePage() {
     const toastId = toast.loading('Consulting with AI Chef...', { duration: Infinity })
 
     try {
-      let prompt
-      let result
-      const ai = getAI(app)
-      // Note: Ensure this model is enabled in your Firebase project
-      const model = getGenerativeModel(ai, { model: 'gemini-2.0-flash' })
-
-      // Context for standardized ingredients
-      const ingredientsSnapshot = await getDocs(collection(db, 'ingredients'))
-      const masterIngredientList = ingredientsSnapshot.docs.map(doc => doc.data().name)
-      const ingredientContext = `Existing ingredients in database (try to match these): ${masterIngredientList.join(', ')}.`
-
-      const baseSystemPrompt = `
-        You are an expert chef and nutritionist. Analyze the input and extract a structured recipe.
-        ${ingredientContext}
-        Output Format: JSON only. No markdown code blocks.
-        Structure: { 
-          "name": "string", 
-          "ingredients": [{ "name": "string", "amount": number, "unit": "g"|"kg"|"l"|"dl"|"stk"|"ts"|"ss" }], 
-          "instructions": ["string"], 
-          "costEstimate": number (NOK),
-          "prepTime": number (minutes),
-          "servings": number
-        }
-        Ensure units are normalized. Instructions should be clear steps.
-      `
+      let parsedData;
 
       if (importType === 'image' && imageFile) {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.readAsDataURL(imageFile)
-          reader.onload = () => resolve((reader.result as string).split(',')[1])
-          reader.onerror = (error) => reject(error)
-        })
-
-        const imagePart = {
-          inlineData: {
-            data: base64,
-            mimeType: imageFile.type,
-          },
-        }
-        prompt = `${baseSystemPrompt} Analyze this image of a recipe or meal.`
-        result = await model.generateContent([prompt, imagePart])
+        toast.error("Image analysis for full recipes coming soon! Try Text import.", { id: toastId });
+        setIsLoading(false);
+        return;
 
       } else if (importType === 'text' && recipeText.trim()) {
-        prompt = `${baseSystemPrompt} Analyze this recipe text: ${recipeText}`
-        result = await model.generateContent(prompt)
+        parsedData = await generateRecipeFromText(recipeText)
 
       } else if (importType === 'generate' && generateName.trim()) {
-        prompt = `${baseSystemPrompt} Create a recipe for: ${generateName}. Make it family friendly.`
-        result = await model.generateContent(prompt)
+        parsedData = await generateRecipeFromText(`Create a recipe for: ${generateName}. Make it family friendly.`)
+
       } else {
         throw new Error("Missing input")
       }
 
-      const response = result.response
-      const text = response.text()
-      
-      // Clean up JSON (sometimes AI adds markdown blocks)
-      const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim()
-      const parsedData = JSON.parse(jsonString)
-
-      sessionStorage.setItem('recipeDraft', JSON.stringify(parsedData))
-      
-      toast.success('Recipe analyzed! Review details.', { id: toastId })
-      router.push('/dashboard/recipes/create') // This page will read the draft
+      if (parsedData) {
+          sessionStorage.setItem('recipeDraft', JSON.stringify(parsedData))
+          toast.success('Recipe analyzed! Review details.', { id: toastId })
+          router.push('/dashboard/recipes/create')
+      }
 
     } catch (error: unknown) {
       console.error(error)
@@ -105,11 +60,11 @@ export default function NewRecipePage() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Add New Recipe</h1>
       
-      <Tabs defaultValue="image" className="w-full">
+      <Tabs defaultValue="text" className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-8">
-          <TabsTrigger value="image">Image Import</TabsTrigger>
-          <TabsTrigger value="text">Paste Text</TabsTrigger>
+          <TabsTrigger value="text">Paste Text/URL</TabsTrigger>
           <TabsTrigger value="generate">AI Generate</TabsTrigger>
+          <TabsTrigger value="image" disabled>Image (Soon)</TabsTrigger>
           <TabsTrigger value="manual">Manual</TabsTrigger>
         </TabsList>
 
@@ -143,7 +98,7 @@ export default function NewRecipePage() {
             <CardContent className="space-y-4">
               <textarea
                 className="w-full min-h-[200px] p-4 rounded-md border border-input bg-transparent text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="Paste ingredients and instructions here..."
+                placeholder="Paste ingredients and instructions here (or a description)..."
                 value={recipeText}
                 onChange={(e) => setRecipeText(e.target.value)}
               />

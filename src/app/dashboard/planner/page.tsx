@@ -11,7 +11,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore"
 import { PlannedMeal } from "@/types"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, Plus, CalendarIcon, Users, Clock } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, CalendarIcon, Users, Clock, RefreshCw } from "lucide-react"
 
 export default function PlannerPage() {
   const router = useRouter()
@@ -41,7 +41,6 @@ export default function PlannerPage() {
 
   const handleMealClick = (meal: PlannedMeal) => {
     // Navigate to the recipe view with the planned meal context
-    // We assume meal.mealId is the original recipe ID and meal.id is the planned meal ID
     router.push(`/dashboard/recipes/${meal.mealId}?plannedId=${meal.id}`)
   }
 
@@ -74,7 +73,7 @@ export default function PlannerPage() {
           const dateKey = format(day, 'yyyy-MM-dd')
           const mealsForDay = plannedMeals.filter(m => m.date === dateKey)
           const isToday = isSameDay(day, new Date())
-          const meal = mealsForDay[0]
+          const meal = mealsForDay[0] // "One meal per day" logic: we only take the first one
 
           return (
             <motion.div
@@ -97,10 +96,9 @@ export default function PlannerPage() {
                 <CardContent className="p-3 flex-1 flex flex-col min-h-[180px]">
                   {meal ? (
                      <div
-                        onClick={() => handleMealClick(meal)}
-                        className="flex-1 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group flex flex-col"
+                        className="relative flex-1 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group flex flex-col"
                       >
-                         <div className="flex-1">
+                         <div onClick={() => handleMealClick(meal)} className="flex-1">
                            <h3 className="font-bold text-gray-900 leading-tight mb-2 group-hover:text-indigo-700 transition-colors">
                              {meal.mealName}
                            </h3>
@@ -109,6 +107,15 @@ export default function PlannerPage() {
                                &quot;{meal.notes}&quot;
                              </div>
                            )}
+                         </div>
+
+                         {/* Replace Button - Only shows on hover */}
+                         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Link href={`/dashboard/recipes?planDate=${dateKey}&replaceId=${meal.id}`}>
+                               <div className="p-1.5 bg-white rounded-full shadow-sm border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-400" title="Replace Meal">
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                               </div>
+                            </Link>
                          </div>
 
                          <div className="pt-3 mt-auto border-t border-gray-100 flex items-center justify-between text-xs font-medium text-gray-500">
