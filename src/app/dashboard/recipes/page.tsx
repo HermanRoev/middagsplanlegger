@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react"
 import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { Meal } from "@/types"
+import { Meal, CupboardItem } from "@/types"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Plus, Clock, Users, ChefHat, Filter } from "lucide-react"
+import { Search, Plus, Clock, Users, ChefHat, Filter, PackageCheck } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import toast from "react-hot-toast"
@@ -22,6 +22,7 @@ import { Suspense } from 'react'
 function RecipesContent() {
   const { user } = useAuth()
   const [recipes, setRecipes] = useState<Meal[]>([])
+  const [cupboardItems, setCupboardItems] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300)
@@ -41,10 +42,40 @@ function RecipesContent() {
     return () => unsubscribe()
   }, [])
 
+  // Fetch cupboard for "Use First" logic
+  useEffect(() => {
+      if (!user) return
+      const q = query(collection(db, "cupboard"))
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+          const names = new Set<string>()
+          snapshot.docs.forEach(doc => {
+              const data = doc.data() as CupboardItem
+              if (data.ingredientName) {
+                  names.add(data.ingredientName.toLowerCase())
+              }
+          })
+          setCupboardItems(names)
+      })
+      return () => unsubscribe()
+  }, [user])
+
+  const checkCanCook = (recipe: Meal): boolean => {
+      if (!recipe.ingredients || recipe.ingredients.length === 0) return false
+      // Simple check: if we have > 50% of ingredients
+      let matchCount = 0
+      recipe.ingredients.forEach(ing => {
+          if (cupboardItems.has(ing.name.toLowerCase())) {
+              matchCount++
+          }
+      })
+      return matchCount >= (recipe.ingredients.length / 2)
+  }
+
   const filters = [
     { id: 'quick', label: 'Quick (< 30m)', check: (m: Meal) => (m.prepTime || 0) <= 30 },
     { id: 'few-ingredients', label: 'Simple (< 6 items)', check: (m: Meal) => (m.ingredients?.length || 0) < 6 },
     { id: 'family', label: 'Family (4+ servings)', check: (m: Meal) => (m.servings || 0) >= 4 },
+    { id: 'pantry', label: 'Use Pantry', check: (m: Meal) => checkCanCook(m) },
   ]
 
   const filteredRecipes = recipes.filter(recipe => {
@@ -172,7 +203,9 @@ function RecipesContent() {
              </Button>
            </div>
         ) : (
-          filteredRecipes.map((recipe, index) => (
+          filteredRecipes.map((recipe, index) => {
+            const canCook = checkCanCook(recipe)
+            return (
             <motion.div
               key={recipe.id}
               initial={{ opacity: 0, y: 20 }}
@@ -199,6 +232,13 @@ function RecipesContent() {
                   <div className="absolute bottom-4 left-4 right-4 text-white z-10">
                     <h3 className="font-bold text-lg leading-tight">{recipe.name}</h3>
                   </div>
+
+                  {/* Pantry Badge */}
+                  {canCook && (
+                      <div className="absolute top-3 right-3 z-10 bg-green-500/90 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-sm">
+                          <PackageCheck className="w-3 h-3" /> Pantry Ready
+                      </div>
+                  )}
                 </div>
 
                 <CardContent className="p-4 flex-1">
@@ -227,7 +267,7 @@ function RecipesContent() {
                 </CardFooter>
               </Card>
             </motion.div>
-          ))
+          )})
         )}
       </div>
     </div>

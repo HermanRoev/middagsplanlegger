@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, X, Plus, Utensils, Check } from "lucide-react"
+import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, X, Plus, Utensils, Check, Minus, Smartphone } from "lucide-react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
 import Link from "next/link"
@@ -34,6 +34,11 @@ export default function RecipeDetailsPage() {
   const [recipe, setRecipe] = useState<Meal | null>(null)
   const [plannedMeal, setPlannedMeal] = useState<PlannedMeal | null>(null)
 
+  // Display State
+  const [currentServings, setCurrentServings] = useState(4)
+  const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null)
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set())
+
   // Edit State for Planned Meal
   const [editNotes, setEditNotes] = useState("")
   const [editServings, setEditServings] = useState(4)
@@ -50,14 +55,16 @@ export default function RecipeDetailsPage() {
     if (!id) return
     const unsubscribe = onSnapshot(doc(db, "meals", id as string), (doc) => {
       if (doc.exists()) {
-        setRecipe({ id: doc.id, ...doc.data() } as Meal)
+        const data = { id: doc.id, ...doc.data() } as Meal
+        setRecipe(data)
+        if (!plannedId) setCurrentServings(data.servings || 4)
       } else {
         toast.error("Recipe not found")
         router.push("/dashboard/recipes")
       }
     })
     return () => unsubscribe()
-  }, [id, router])
+  }, [id, router, plannedId])
 
   useEffect(() => {
     if (!plannedId) return
@@ -69,12 +76,43 @@ export default function RecipeDetailsPage() {
         setEditServings(data.plannedServings || 4)
         setEditIngredients(data.ingredients || [])
         setIsCooked(data.isCooked || false)
+        setCurrentServings(data.plannedServings || 4)
       } else {
         setPlannedMeal(null)
       }
     })
     return () => unsubscribe()
   }, [plannedId])
+
+  useEffect(() => {
+      return () => {
+          if (wakeLock) wakeLock.release()
+      }
+  }, [wakeLock])
+
+  const toggleWakeLock = async () => {
+      if (wakeLock) {
+          await wakeLock.release()
+          setWakeLock(null)
+          toast("Cook mode disabled", { icon: "🌙" })
+      } else {
+          try {
+              const sentinel = await navigator.wakeLock.request('screen')
+              setWakeLock(sentinel)
+              toast("Cook mode enabled! Screen will stay on.", { icon: "☀️" })
+          } catch (err) {
+              console.error(err)
+              toast.error("Wake Lock not supported")
+          }
+      }
+  }
+
+  const toggleIngredientCheck = (index: number) => {
+      const next = new Set(checkedIngredients)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      setCheckedIngredients(next)
+  }
 
   const handleEnterEditMode = () => {
     setIsEditing(true)
@@ -160,9 +198,32 @@ export default function RecipeDetailsPage() {
   if (!recipe) return <div className="p-8 text-center">Loading recipe...</div>
 
   const isPlannedMode = !!plannedMeal
-  const displayedIngredients = isPlannedMode ? (isEditing ? editIngredients : (plannedMeal?.ingredients || recipe.ingredients)) : recipe.ingredients
-  const displayedServings = isPlannedMode ? (isEditing ? editServings : plannedMeal?.plannedServings) : recipe.servings
+
+  // Ingredient Scaling Logic
+  const baseServings = isPlannedMode ? (plannedMeal?.plannedServings || 4) : (recipe.servings || 4)
+  const scaleFactor = currentServings / baseServings
+
+  const baseIngredients = isPlannedMode ? (plannedMeal?.ingredients || recipe.ingredients) : recipe.ingredients
+
+  const displayedIngredients = isEditing
+      ? editIngredients
+      : baseIngredients?.map(ing => ({
+          ...ing,
+          amount: ing.amount ? Number((ing.amount * scaleFactor).toFixed(1)) : 0
+      }))
+
   const displayedNotes = isPlannedMode ? (isEditing ? editNotes : plannedMeal?.notes) : null
+
+  // Helper to render rich text (basic markdown: **bold**)
+  const renderRichText = (text: string) => {
+      const parts = text.split(/(\*\*.*?\*\*)/g);
+      return parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={i}>{part.slice(2, -2)}</strong>
+          }
+          return part
+      })
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
@@ -201,7 +262,8 @@ export default function RecipeDetailsPage() {
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 shadow-sm">{recipe.name}</h1>
                 <div className="flex flex-wrap gap-4 text-white/90 font-medium">
                     <span className="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full"><Clock className="w-4 h-4"/> {recipe.prepTime} min</span>
-                    <span className="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full"><Users className="w-4 h-4"/> {displayedServings} servings</span>
+                    {/* Servings Badge (Non-interactive here, controlled below) */}
+                    <span className="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full"><Users className="w-4 h-4"/> {currentServings} servings</span>
                 </div>
            </div>
         </div>
@@ -244,6 +306,17 @@ export default function RecipeDetailsPage() {
          </div>
 
          <div className="flex gap-2">
+             {/* Wake Lock Toggle */}
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleWakeLock}
+                className={wakeLock ? "text-amber-500 bg-amber-50" : "text-gray-400 hover:text-amber-500"}
+                title={wakeLock ? "Screen will stay on" : "Keep screen on"}
+             >
+                 <Smartphone className="w-5 h-5" />
+             </Button>
+
              {isPlannedMode ? (
                  <>
                     <Dialog open={showRemovePlanDialog} onOpenChange={setShowRemovePlanDialog}>
@@ -315,11 +388,39 @@ export default function RecipeDetailsPage() {
               </Card>
           )}
 
-           {/* Servings Adjuster (Only for Editing Plan) */}
+           {/* Servings Adjuster */}
+           {!isEditing && (
+               <Card className="bg-gray-50 border-dashed">
+                   <CardContent className="p-4 flex items-center justify-between">
+                       <span className="font-medium text-gray-700">Calculate ingredients for:</span>
+                       <div className="flex items-center gap-3 bg-white rounded-lg border px-2 py-1 shadow-sm">
+                           <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 hover:bg-gray-100 rounded-full"
+                                onClick={() => setCurrentServings(Math.max(1, currentServings - 1))}
+                            >
+                                <Minus className="w-3 h-3" />
+                           </Button>
+                           <span className="font-bold w-4 text-center">{currentServings}</span>
+                           <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 hover:bg-gray-100 rounded-full"
+                                onClick={() => setCurrentServings(currentServings + 1)}
+                            >
+                                <Plus className="w-3 h-3" />
+                           </Button>
+                       </div>
+                   </CardContent>
+               </Card>
+           )}
+
+           {/* Servings Adjuster (For Editing Plan - Updates the PLAN itself) */}
            {isPlannedMode && isEditing && (
                <Card>
                    <CardHeader className="pb-2">
-                       <CardTitle className="text-lg">Adjust Servings</CardTitle>
+                       <CardTitle className="text-lg">Adjust Planned Servings</CardTitle>
                    </CardHeader>
                    <CardContent>
                        <div className="flex items-center gap-4">
@@ -343,53 +444,61 @@ export default function RecipeDetailsPage() {
             <CardContent>
               <ul className="space-y-3">
                 <AnimatePresence>
-                {displayedIngredients?.map((ing, i) => (
-                  <motion.li
-                    layout
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    key={i}
-                    className="flex items-center justify-between border-b border-gray-100 pb-2 last:border-0 text-sm"
-                  >
-                    {isEditing ? (
-                        <div className="flex gap-2 w-full items-center">
-                            <Input
-                                value={ing.name}
-                                onChange={(e) => handleIngredientChange(i, 'name', e.target.value)}
-                                className="h-8 text-xs"
-                                placeholder="Name"
-                            />
-                            <div className="flex gap-1">
+                {displayedIngredients?.map((ing, i) => {
+                  const isChecked = checkedIngredients.has(i)
+                  return (
+                    <motion.li
+                        layout
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        key={i}
+                        className={`flex items-center justify-between border-b border-gray-100 pb-2 last:border-0 text-sm transition-colors ${isChecked && !isEditing ? 'text-gray-400 line-through' : ''}`}
+                        onClick={() => !isEditing && toggleIngredientCheck(i)}
+                        style={{ cursor: !isEditing ? 'pointer' : 'default' }}
+                    >
+                        {isEditing ? (
+                            <div className="flex gap-2 w-full items-center">
                                 <Input
-                                    type="number"
-                                    value={ing.amount || ''}
-                                    onChange={(e) => handleIngredientChange(i, 'amount', Number(e.target.value))}
-                                    className="h-8 w-14 text-xs px-1 text-center"
-                                    placeholder="#"
+                                    value={ing.name}
+                                    onChange={(e) => handleIngredientChange(i, 'name', e.target.value)}
+                                    className="h-8 text-xs"
+                                    placeholder="Name"
                                 />
-                                <select
-                                    value={ing.unit}
-                                    onChange={(e) => handleIngredientChange(i, 'unit', e.target.value)}
-                                    className="h-8 w-14 rounded-md border text-xs px-0"
-                                >
-                                     {['g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'].map(u => (
-                                        <option key={u} value={u}>{u}</option>
-                                    ))}
-                                </select>
+                                <div className="flex gap-1">
+                                    <Input
+                                        type="number"
+                                        value={ing.amount || ''}
+                                        onChange={(e) => handleIngredientChange(i, 'amount', Number(e.target.value))}
+                                        className="h-8 w-14 text-xs px-1 text-center"
+                                        placeholder="#"
+                                    />
+                                    <select
+                                        value={ing.unit}
+                                        onChange={(e) => handleIngredientChange(i, 'unit', e.target.value)}
+                                        className="h-8 w-14 rounded-md border text-xs px-0"
+                                    >
+                                        {['g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'].map(u => (
+                                            <option key={u} value={u}>{u}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button onClick={() => handleRemoveIngredient(i)} className="text-gray-400 hover:text-red-500">
+                                    <X className="w-3 h-3" />
+                                </button>
                             </div>
-                            <button onClick={() => handleRemoveIngredient(i)} className="text-gray-400 hover:text-red-500">
-                                <X className="w-3 h-3" />
-                            </button>
-                        </div>
-                    ) : (
-                        <>
-                            <span className="font-medium text-gray-700">{ing.name}</span>
-                            <span className="text-gray-500 whitespace-nowrap">{ing.amount} {ing.unit}</span>
-                        </>
-                    )}
-                  </motion.li>
-                ))}
+                        ) : (
+                            <>
+                                <span className="font-medium flex items-center gap-2">
+                                    {isChecked && <Check className="w-3 h-3" />}
+                                    {ing.name}
+                                </span>
+                                <span className="whitespace-nowrap">{ing.amount} {ing.unit}</span>
+                            </>
+                        )}
+                    </motion.li>
+                  )
+                })}
                 </AnimatePresence>
               </ul>
             </CardContent>
@@ -410,7 +519,7 @@ export default function RecipeDetailsPage() {
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
                       {i + 1}
                     </div>
-                    <p className="text-gray-700 mt-1 leading-relaxed text-lg">{step}</p>
+                    <p className="text-gray-700 mt-1 leading-relaxed text-lg">{renderRichText(step)}</p>
                   </div>
                 ))}
               </div>

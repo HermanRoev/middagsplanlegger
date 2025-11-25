@@ -18,8 +18,9 @@ export default function CreateRecipePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [name, setName] = useState('')
-  const [servings, setServings] = useState(4)
-  const [prepTime, setPrepTime] = useState(30)
+  // Changed defaults from 4/30 to '' to force user entry (or use placeholders)
+  const [servings, setServings] = useState<number | ''>('')
+  const [prepTime, setPrepTime] = useState<number | ''>('')
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
   const [instructions, setInstructions] = useState<string[]>([''])
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -32,7 +33,7 @@ export default function CreateRecipePage() {
       try {
         const data = JSON.parse(draft)
         setName(data.name || '')
-        setServings(data.servings || 4)
+        setServings(data.servings || 4) // Drafts can default to 4 if missing
         setPrepTime(data.prepTime || 30)
         setIngredients(data.ingredients || [])
         setInstructions(data.instructions || [''])
@@ -74,6 +75,9 @@ export default function CreateRecipePage() {
 
   const handleSave = async () => {
     if (!name) return toast.error("Please name the recipe")
+    if (!servings) return toast.error("Please enter servings")
+    if (!prepTime) return toast.error("Please enter prep time")
+
     setLoading(true)
     try {
       let imageUrl = null
@@ -83,8 +87,8 @@ export default function CreateRecipePage() {
 
       await addDoc(collection(db, "meals"), {
         name,
-        servings,
-        prepTime,
+        servings: Number(servings),
+        prepTime: Number(prepTime),
         ingredients,
         instructions,
         imageUrl,
@@ -139,7 +143,7 @@ export default function CreateRecipePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Recipe Name</label>
+                <label className="text-sm font-medium text-gray-700">Recipe Name <span className="text-red-500">*</span></label>
                 <Input 
                   placeholder="e.g. Grandma's Pancakes"
                   value={name}
@@ -149,21 +153,23 @@ export default function CreateRecipePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Servings</label>
+                  <label className="text-sm font-medium text-gray-700">Servings <span className="text-red-500">*</span></label>
                   <Input 
                     type="number" 
                     value={servings}
-                    onChange={(e) => setServings(Number(e.target.value))}
+                    onChange={(e) => setServings(e.target.value === '' ? '' : Number(e.target.value))}
                     className="bg-gray-50/50"
+                    placeholder="4"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Prep Time (m)</label>
+                  <label className="text-sm font-medium text-gray-700">Prep Time (m) <span className="text-red-500">*</span></label>
                   <Input 
                     type="number" 
                     value={prepTime}
-                    onChange={(e) => setPrepTime(Number(e.target.value))}
+                    onChange={(e) => setPrepTime(e.target.value === '' ? '' : Number(e.target.value))}
                     className="bg-gray-50/50"
+                    placeholder="30"
                   />
                 </div>
               </div>
