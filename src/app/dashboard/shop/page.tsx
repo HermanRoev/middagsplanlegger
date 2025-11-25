@@ -7,9 +7,10 @@ import { PlannedMeal } from "@/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Check, Plus, ShoppingCart, Trash2 } from "lucide-react"
+import { Check, Plus, ShoppingCart, Trash2, Copy, ClipboardList } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { normalizeUnit, formatUnit, Unit } from "@/lib/units"
+import toast from "react-hot-toast"
 
 interface ShopItem {
     id: string;
@@ -19,6 +20,10 @@ interface ShopItem {
     checked: boolean;
     source?: string;
 }
+
+const STAPLES = [
+    "Milk", "Bread", "Eggs", "Butter", "Cheese", "Coffee", "Rice", "Pasta"
+]
 
 export default function ShopPage() {
   const [items, setItems] = useState<ShopItem[]>([])
@@ -104,15 +109,19 @@ export default function ShopPage() {
     return () => unsubscribe()
   }, [plannedCheckedState]) // Re-run when plannedCheckedState updates
 
-  const addItem = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newItem.trim()) return
+  const addItem = async (name: string) => {
+    if (!name.trim()) return
     await addDoc(collection(db, "shoppingList"), {
-      name: newItem,
+      name: name,
       checked: false,
       createdAt: new Date().toISOString()
     })
-    setNewItem("")
+  }
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+      e.preventDefault()
+      addItem(newItem)
+      setNewItem("")
   }
 
   const toggleItem = async (id: string, checked: boolean, source: string = 'manual') => {
@@ -128,20 +137,52 @@ export default function ShopPage() {
       await deleteDoc(doc(db, "shoppingList", id))
   }
 
+  const copyToClipboard = () => {
+      const uncheckedItems = items.filter(i => !i.checked)
+      if (uncheckedItems.length === 0) {
+          toast.error("No items to copy")
+          return
+      }
+      const text = "Shopping List:\n" + uncheckedItems.map(i => `- ${i.name} ${i.source === 'planned' ? `(${formatUnit(i.amount, i.unit as Unit)})` : ''}`).join('\n')
+      navigator.clipboard.writeText(text)
+      toast.success("List copied to clipboard")
+  }
+
   const sortedItems = items.sort((a,b) => Number(a.checked) - Number(b.checked))
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Shopping List</h1>
-        <div className="p-2 bg-indigo-100 text-indigo-700 rounded-full">
-          <ShoppingCart className="w-6 h-6" />
+        <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={copyToClipboard}>
+                <Copy className="w-4 h-4 mr-2" /> Copy List
+            </Button>
+            <div className="p-2 bg-indigo-100 text-indigo-700 rounded-full">
+                <ShoppingCart className="w-6 h-6" />
+            </div>
         </div>
+      </div>
+
+      {/* Staples Quick Add */}
+      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex items-center gap-1 text-sm text-gray-500 mr-2 whitespace-nowrap">
+              <ClipboardList className="w-4 h-4" /> Quick Add:
+          </div>
+          {STAPLES.map(staple => (
+              <button
+                  key={staple}
+                  onClick={() => addItem(staple)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-white text-gray-600 border border-gray-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors whitespace-nowrap"
+              >
+                  + {staple}
+              </button>
+          ))}
       </div>
 
       <Card className="glass border-0 shadow-lg">
         <CardContent className="p-6">
-          <form onSubmit={addItem} className="flex gap-2 mb-6">
+          <form onSubmit={handleFormSubmit} className="flex gap-2 mb-6">
             <Input 
               placeholder="Add item (e.g. Milk, Bread)" 
               value={newItem}

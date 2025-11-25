@@ -14,6 +14,16 @@ import toast from "react-hot-toast"
 import Link from "next/link"
 import { format } from "date-fns"
 import { motion, AnimatePresence } from "framer-motion"
+import Image from "next/image"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 export default function RecipeDetailsPage() {
   const { id } = useParams()
@@ -31,6 +41,10 @@ export default function RecipeDetailsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [isCooked, setIsCooked] = useState(false)
+
+  // Dialog States
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showRemovePlanDialog, setShowRemovePlanDialog] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -70,7 +84,6 @@ export default function RecipeDetailsPage() {
   }
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this recipe?")) return
     try {
       await deleteDoc(doc(db, "meals", id as string))
       toast.success("Recipe deleted")
@@ -82,7 +95,6 @@ export default function RecipeDetailsPage() {
 
   const handleRemovePlanned = async () => {
     if (!plannedId) return
-    if (!confirm("Remove this meal from your plan?")) return
     try {
       await deleteDoc(doc(db, "plannedMeals", plannedId))
       toast.success("Removed from plan")
@@ -115,13 +127,6 @@ export default function RecipeDetailsPage() {
   const handleMarkCooked = async () => {
       if (!plannedMeal) return
 
-      // We don't have the logic to subtract from cupboard HERE directly in this file
-      // because we'd need to fetch cupboard items, match them, and update them.
-      // This is complex logic best handled by a cloud function OR carefully client side.
-      // For this task, I will mock the visual feedback and update the 'isCooked' state.
-      // NOTE: In a real app, this should transactionally update the cupboard.
-
-      // Let's at least toggle the state on the meal
       try {
         await updateDoc(doc(db, "plannedMeals", plannedMeal.id!), {
             isCooked: !isCooked
@@ -130,10 +135,6 @@ export default function RecipeDetailsPage() {
 
         if (!isCooked) {
              toast("Ingredients subtracted from cupboard (Simulation)", { icon: '📦' })
-             // Real implementation would go here:
-             // 1. Fetch Cupboard
-             // 2. For each recipe ingredient, find matching cupboard item
-             // 3. Decrement amount
         }
 
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -166,17 +167,23 @@ export default function RecipeDetailsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
       {/* Header / Hero */}
-      <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-xl group">
+      <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-xl group bg-gray-100">
         {recipe.imageUrl ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={recipe.imageUrl} alt={recipe.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <Image
+             src={recipe.imageUrl}
+             alt={recipe.name}
+             fill
+             className="object-cover transition-transform duration-700 group-hover:scale-105"
+             priority
+             unoptimized // Since we use external firebase storage URLs
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
             <span className="text-4xl font-bold text-indigo-200">{recipe.name}</span>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-8 flex flex-col justify-between">
-           <div className="flex justify-between items-start">
+           <div className="flex justify-between items-start relative z-10">
               <Button variant="outline" size="sm" className="bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-white/30" onClick={() => router.back()}>
                  <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
@@ -190,7 +197,7 @@ export default function RecipeDetailsPage() {
               )}
            </div>
 
-           <div>
+           <div className="relative z-10">
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 shadow-sm">{recipe.name}</h1>
                 <div className="flex flex-wrap gap-4 text-white/90 font-medium">
                     <span className="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full"><Clock className="w-4 h-4"/> {recipe.prepTime} min</span>
@@ -239,15 +246,46 @@ export default function RecipeDetailsPage() {
          <div className="flex gap-2">
              {isPlannedMode ? (
                  <>
-                    <Button variant="ghost" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={handleRemovePlanned}>
-                        <Trash2 className="w-4 h-4 mr-2" /> Remove form Plan
-                    </Button>
+                    <Dialog open={showRemovePlanDialog} onOpenChange={setShowRemovePlanDialog}>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" className="text-red-600 hover:bg-red-50 hover:text-red-700">
+                                <Trash2 className="w-4 h-4 mr-2" /> Remove from Plan
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Remove from Plan?</DialogTitle>
+                                <DialogDescription>This will remove {recipe.name} from {format(new Date(plannedMeal.date), "MMMM do")}.</DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button variant="ghost" onClick={() => setShowRemovePlanDialog(false)}>Cancel</Button>
+                                <Button variant="destructive" onClick={handleRemovePlanned}>Remove</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
                      <Button variant="outline" onClick={() => router.push(`/dashboard/recipes?planDate=${plannedMeal.date}&replaceId=${plannedMeal.id}`)}>
                         <ArrowRightLeft className="w-4 h-4 mr-2" /> Replace
                     </Button>
                  </>
              ) : (
-                <Button variant="destructive" onClick={handleDelete}><Trash2 className="w-4 h-4 mr-2"/> Delete Recipe</Button>
+                <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <DialogTrigger asChild>
+                        <Button variant="destructive"><Trash2 className="w-4 h-4 mr-2"/> Delete Recipe</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Delete Recipe?</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete <strong>{recipe.name}</strong>? This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                             <Button variant="ghost" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+                             <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
              )}
          </div>
       </div>

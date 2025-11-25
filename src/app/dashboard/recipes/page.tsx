@@ -7,21 +7,25 @@ import { Meal } from "@/types"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Plus, Clock, Users, ChefHat } from "lucide-react"
+import { Search, Plus, Clock, Users, ChefHat, Filter } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
 import { useDebounce } from "use-debounce"
+import Image from "next/image"
+import { RecipeCardSkeleton } from "@/components/skeletons/RecipeCardSkeleton"
 
 import { Suspense } from 'react'
 
 function RecipesContent() {
   const { user } = useAuth()
   const [recipes, setRecipes] = useState<Meal[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300)
+  const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const planDate = searchParams.get("planDate")
   const replaceId = searchParams.get("replaceId")
@@ -32,13 +36,24 @@ function RecipesContent() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const meals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Meal))
       setRecipes(meals)
+      setLoading(false)
     })
     return () => unsubscribe()
   }, [])
 
-  const filteredRecipes = recipes.filter(recipe => 
-    recipe.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-  )
+  const filters = [
+    { id: 'quick', label: 'Quick (< 30m)', check: (m: Meal) => (m.prepTime || 0) <= 30 },
+    { id: 'few-ingredients', label: 'Simple (< 6 items)', check: (m: Meal) => (m.ingredients?.length || 0) < 6 },
+    { id: 'family', label: 'Family (4+ servings)', check: (m: Meal) => (m.servings || 0) >= 4 },
+  ]
+
+  const filteredRecipes = recipes.filter(recipe => {
+    const matchesSearch = recipe.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    const matchesFilter = activeFilter
+       ? filters.find(f => f.id === activeFilter)?.check(recipe)
+       : true
+    return matchesSearch && matchesFilter
+  })
 
   const handlePlanMeal = async (meal: Meal) => {
     if (!planDate) return
@@ -82,24 +97,54 @@ function RecipesContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Recipes</h1>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-            <Input
-              placeholder="Search recipes..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button asChild variant="premium">
-            <Link href="/dashboard/recipes/new">
-              <Plus className="w-4 h-4 mr-2" />
-              New
-            </Link>
-          </Button>
+      <div className="flex flex-col space-y-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <h1 className="text-3xl font-bold text-gray-900">Recipes</h1>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                placeholder="Search recipes..."
+                className="pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+            <Button asChild variant="premium">
+                <Link href="/dashboard/recipes/new">
+                <Plus className="w-4 h-4 mr-2" />
+                New
+                </Link>
+            </Button>
+            </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+            <div className="flex items-center gap-1 text-sm text-gray-500 mr-2">
+                <Filter className="w-4 h-4" /> Filters:
+            </div>
+            {filters.map(filter => (
+                <button
+                    key={filter.id}
+                    onClick={() => setActiveFilter(activeFilter === filter.id ? null : filter.id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap border ${
+                        activeFilter === filter.id
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                    }`}
+                >
+                    {filter.label}
+                </button>
+            ))}
+            {activeFilter && (
+                <button
+                    onClick={() => setActiveFilter(null)}
+                    className="text-xs text-gray-400 hover:text-gray-600 underline ml-2"
+                >
+                    Clear
+                </button>
+            )}
         </div>
       </div>
 
@@ -113,7 +158,11 @@ function RecipesContent() {
       )}
 
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredRecipes.length === 0 ? (
+        {loading ? (
+           Array.from({ length: 8 }).map((_, i) => (
+             <RecipeCardSkeleton key={i} />
+           ))
+        ) : filteredRecipes.length === 0 ? (
            <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed">
              <ChefHat className="w-12 h-12 mb-4 text-gray-300" />
              <p className="text-lg font-medium">No recipes found</p>
@@ -133,11 +182,12 @@ function RecipesContent() {
               <Card className="h-full flex flex-col overflow-hidden group hover:shadow-lg transition-all border-0 bg-white">
                 <div className="aspect-video bg-gray-100 relative overflow-hidden">
                   {recipe.imageUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
+                    <Image
                       src={recipe.imageUrl}
                       alt={recipe.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-50">
@@ -146,7 +196,7 @@ function RecipesContent() {
                   )}
                   {/* Overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
-                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                  <div className="absolute bottom-4 left-4 right-4 text-white z-10">
                     <h3 className="font-bold text-lg leading-tight">{recipe.name}</h3>
                   </div>
                 </div>
