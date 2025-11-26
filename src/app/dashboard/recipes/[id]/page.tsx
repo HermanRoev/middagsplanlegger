@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, X, Plus, Utensils, Check, Minus, Smartphone } from "lucide-react"
+import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, X, Plus, Utensils, Check, Minus, Smartphone, Star } from "lucide-react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
 import Link from "next/link"
@@ -163,20 +163,39 @@ export default function RecipeDetailsPage() {
   }
 
   const handleMarkCooked = async () => {
-      if (!plannedMeal) return
+      if (!plannedMeal || !recipe) return
 
       try {
+        const newCookedState = !isCooked
         await updateDoc(doc(db, "plannedMeals", plannedMeal.id!), {
-            isCooked: !isCooked
+            isCooked: newCookedState
         })
-        toast.success(isCooked ? "Marked as uncooked" : "Meal marked as cooked!")
 
-        if (!isCooked) {
+        // Update lastCooked on the original recipe only when marking AS cooked
+        if (newCookedState) {
+            await updateDoc(doc(db, "meals", recipe.id), {
+                lastCooked: new Date().toISOString()
+            })
+        }
+
+        toast.success(newCookedState ? "Meal marked as cooked!" : "Marked as uncooked")
+
+        if (!newCookedState) {
              toast("Ingredients subtracted from cupboard (Simulation)", { icon: '📦' })
         }
 
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
           toast.error("Failed to update status")
+      }
+  }
+
+  const handleRate = async (rating: number) => {
+      if (!recipe) return
+      try {
+          await updateDoc(doc(db, "meals", recipe.id), { rating })
+          toast.success("Rating updated")
+      } catch {
+          toast.error("Failed to rate")
       }
   }
 
@@ -236,7 +255,7 @@ export default function RecipeDetailsPage() {
              fill
              className="object-cover transition-transform duration-700 group-hover:scale-105"
              priority
-             unoptimized // Since we use external firebase storage URLs
+             unoptimized
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
@@ -259,18 +278,53 @@ export default function RecipeDetailsPage() {
            </div>
 
            <div className="relative z-10">
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 shadow-sm">{recipe.name}</h1>
-                <div className="flex flex-wrap gap-4 text-white/90 font-medium">
-                    <span className="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full"><Clock className="w-4 h-4"/> {recipe.prepTime} min</span>
-                    {/* Servings Badge (Non-interactive here, controlled below) */}
-                    <span className="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full"><Users className="w-4 h-4"/> {currentServings} servings</span>
+                <div className="flex items-end justify-between">
+                    <div>
+                        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 shadow-sm">{recipe.name}</h1>
+                        <div className="flex flex-wrap gap-4 text-white/90 font-medium">
+                            <span className="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full"><Clock className="w-4 h-4"/> {recipe.prepTime} min</span>
+                            <span className="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full"><Users className="w-4 h-4"/> {currentServings} servings</span>
+                        </div>
+                    </div>
+
+                    {/* Rating Stars */}
+                    <div className="flex gap-1 bg-black/20 backdrop-blur-sm p-2 rounded-full">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <button key={star} onClick={() => handleRate(star)} className="focus:outline-none transition-transform hover:scale-110">
+                                <Star className={`w-5 h-5 ${recipe.rating && recipe.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                            </button>
+                        ))}
+                    </div>
                 </div>
            </div>
         </div>
       </div>
 
+      {/* Nutrition Badge (If available) */}
+      {recipe.nutrition && (
+          <div className="grid grid-cols-4 gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
+              <div>
+                  <div className="text-xs text-gray-500 uppercase font-bold">Calories</div>
+                  <div className="font-semibold text-gray-900">{recipe.nutrition.calories || '-'} kcal</div>
+              </div>
+              <div>
+                  <div className="text-xs text-gray-500 uppercase font-bold">Protein</div>
+                  <div className="font-semibold text-gray-900">{recipe.nutrition.protein || '-'} g</div>
+              </div>
+              <div>
+                  <div className="text-xs text-gray-500 uppercase font-bold">Carbs</div>
+                  <div className="font-semibold text-gray-900">{recipe.nutrition.carbs || '-'} g</div>
+              </div>
+              <div>
+                  <div className="text-xs text-gray-500 uppercase font-bold">Fat</div>
+                  <div className="font-semibold text-gray-900">{recipe.nutrition.fat || '-'} g</div>
+              </div>
+          </div>
+      )}
+
       {/* Actions Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+         {/* ... Same actions as before ... */}
          <div className="flex gap-2">
             {!isPlannedMode && (
                  <Link href={`/dashboard/recipes/${id}/edit`}>
@@ -306,7 +360,6 @@ export default function RecipeDetailsPage() {
          </div>
 
          <div className="flex gap-2">
-             {/* Wake Lock Toggle */}
              <Button
                 variant="ghost"
                 size="icon"
@@ -416,7 +469,7 @@ export default function RecipeDetailsPage() {
                </Card>
            )}
 
-           {/* Servings Adjuster (For Editing Plan - Updates the PLAN itself) */}
+           {/* Servings Adjuster (For Editing Plan) */}
            {isPlannedMode && isEditing && (
                <Card>
                    <CardHeader className="pb-2">

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Calendar, ChefHat, ShoppingCart, LogOut, User, PlusCircle, Package } from "lucide-react"
+import { Home, Calendar, ChefHat, ShoppingCart, LogOut, User, PlusCircle, Package, Inbox } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/dashboard/recipes", icon: ChefHat, label: "Recipes" },
   { href: "/dashboard/recipes/new", icon: PlusCircle, label: "New Recipe" },
   { href: "/dashboard/shop", icon: ShoppingCart, label: "Shop" },
+  { href: "/dashboard/inbox", icon: Inbox, label: "Inbox" },
   { href: "/dashboard/cupboard", icon: Package, label: "Cupboard" },
   { href: "/dashboard/profile", icon: User, label: "Profile" },
 ]
@@ -32,7 +33,7 @@ export function Sidebar() {
           </h1>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href
             return (
@@ -62,7 +63,7 @@ export function Sidebar() {
       {/* Mobile Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex justify-around items-center p-2">
-          {navItems.filter(item => !["New Recipe", "Cupboard"].includes(item.label)).map((item) => {
+          {navItems.filter(item => !["New Recipe", "Cupboard", "Inbox"].includes(item.label)).map((item) => {
             const isActive = pathname === item.href
             return (
               <Link key={item.href} href={item.href} className="p-2">

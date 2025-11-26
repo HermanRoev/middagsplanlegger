@@ -58,7 +58,15 @@ export async function parseReceiptImage(imageFile: File): Promise<{ name: string
     }
 }
 
-export async function generateRecipeFromText(text: string): Promise<{ name: string, description: string, prepTime: number, servings: number, ingredients: { name: string, amount: number, unit: string }[], instructions: string[] }> {
+export async function generateRecipeFromText(text: string): Promise<{
+    name: string,
+    description: string,
+    prepTime: number,
+    servings: number,
+    ingredients: { name: string, amount: number, unit: string }[],
+    instructions: string[],
+    nutrition: { calories: number, protein: number, carbs: number, fat: number }
+}> {
     if (!API_KEY) {
         throw new Error("Missing Google AI Key");
     }
@@ -77,6 +85,7 @@ export async function generateRecipeFromText(text: string): Promise<{ name: stri
             - "servings": Number of servings (number).
             - "ingredients": Array of objects { "name", "amount" (number), "unit" (string) }.
             - "instructions": Array of strings, each being a step.
+            - "nutrition": Object with estimates per serving: { "calories" (number), "protein" (number g), "carbs" (number g), "fat" (number g) }.
 
             If the input is vague, improvise a good recipe that matches the intent.
             Return ONLY valid JSON. No markdown code blocks.

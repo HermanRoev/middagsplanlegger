@@ -4,7 +4,14 @@
 export interface Ingredient {
   name: string
   amount: number | null
-  unit: 'g' | 'kg' | 'l' | 'dl' | 'stk' | 'ts' | 'ss'
+  unit: string // Relaxed from literal union to string to allow flexible units from AI
+}
+
+export interface Nutrition {
+  calories?: number // kcal
+  protein?: number // g
+  carbs?: number // g
+  fat?: number // g
 }
 
 // Definerer den komplette typen for en middag
@@ -17,6 +24,9 @@ export interface Meal {
   instructions: string[]
   prepTime: number | null // Preparation time in minutes
   costEstimate: number | null // Estimated cost in NOK
+  nutrition?: Nutrition
+  rating?: number // 0-5
+  lastCooked?: string // ISO Date string
   createdBy?: {
     id: string
     name: string
@@ -38,6 +48,7 @@ export interface PlannedMeal {
   plannedServings: number
   prepTime?: number
   costEstimate?: number
+  nutrition?: Nutrition
   plannedBy?: {
     id: string
     name: string
@@ -49,9 +60,21 @@ export interface PlannedMeal {
 export interface CupboardItem {
   id: string
   userId: string
-  ingredientName: string // Links to the 'ingredients' collection by document ID (which is the name)
-  unit: 'g' | 'kg' | 'l' | 'dl' | 'stk' | 'ts' | 'ss'
+  ingredientName: string
+  unit: string
   amount: number | null
   wantedAmount: number | null
   threshold: number | null
+}
+
+export interface Suggestion {
+  id: string
+  text: string
+  votes: number
+  status: 'pending' | 'approved' | 'rejected'
+  suggestedBy?: {
+    id: string
+    name: string
+  }
+  createdAt: string
 }
