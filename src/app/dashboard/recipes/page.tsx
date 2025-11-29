@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Meal, CupboardItem } from "@/types"
@@ -13,11 +13,9 @@ import { useSearchParams, useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
-import { useDebounce } from "use-debounce"
+import { useDebounce } from "@/hooks/useDebounce"
 import Image from "next/image"
 import { RecipeCardSkeleton } from "@/components/skeletons/RecipeCardSkeleton"
-
-import { Suspense } from 'react'
 
 function RecipesContent() {
   const { user } = useAuth()
@@ -276,7 +274,7 @@ function RecipesContent() {
 
 export default function RecipesPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<p>Loading...</p>}>
       <RecipesContent />
     </Suspense>
   )
