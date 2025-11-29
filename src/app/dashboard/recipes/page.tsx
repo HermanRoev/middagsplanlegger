@@ -77,7 +77,7 @@ function RecipesContent() {
   ]
 
   const filteredRecipes = recipes.filter(recipe => {
-    const matchesSearch = recipe.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    const matchesSearch = recipe && recipe.name && recipe.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     const matchesFilter = activeFilter
        ? filters.find(f => f.id === activeFilter)?.check(recipe)
        : true
