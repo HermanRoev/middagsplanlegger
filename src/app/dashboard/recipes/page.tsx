@@ -33,8 +33,17 @@ function RecipesContent() {
   useEffect(() => {
     const q = query(collection(db, "meals"), orderBy("name"))
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const meals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Meal))
-      setRecipes(meals)
+      const mealsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const validMeals = mealsData.filter(meal => {
+        if (typeof meal.name !== 'string' || meal.name.trim() === '') {
+          console.warn('Filtered out malformed recipe data:', meal);
+          return false;
+        }
+        return true;
+      }) as Meal[];
+
+      setRecipes(validMeals);
       setLoading(false)
     })
     return () => unsubscribe()
