@@ -5,6 +5,9 @@ export function normalizeUnit(amount: number, unit: string): { amount: number, u
   const normalizedUnit = unit.toLowerCase() as Unit
   
   // Weight
+  if (normalizedUnit === 'g' && amount >= 1000) {
+    return { amount: amount / 1000, unit: 'kg' };
+  }
   if (normalizedUnit === 'kg') {
     return { amount: amount * 1000, unit: 'g' }
   }

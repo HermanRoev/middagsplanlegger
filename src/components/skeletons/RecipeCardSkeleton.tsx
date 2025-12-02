@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 
 export function RecipeCardSkeleton() {
   return (
-    <Card className="h-full flex flex-col overflow-hidden border-0 bg-white">
+    <Card data-testid="recipe-card-skeleton" className="h-full flex flex-col overflow-hidden border-0 bg-white">
       <div className="aspect-video bg-gray-100 relative">
         <Skeleton className="w-full h-full" />
       </div>

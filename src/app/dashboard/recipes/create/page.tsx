@@ -185,7 +185,7 @@ export default function CreateRecipePage() {
                 <CardTitle>Ingredients</CardTitle>
                 <CardDescription>List everything needed for this dish.</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleAddIngredient} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
+              <Button data-testid="add-ingredient-button" variant="ghost" size="sm" onClick={handleAddIngredient} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
                 <Plus className="w-4 h-4 mr-2" /> Add Item
               </Button>
             </CardHeader>

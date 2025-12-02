@@ -5,14 +5,19 @@ test.use({ viewport: { width: 1280, height: 720 } });
 test.describe('Full Application Flow', () => {
 
   test.skip('Complete User Journey: Create Recipe -> Plan -> Shop -> Inbox', async ({ page }) => {
+    test.setTimeout(60000); // Extend timeout for debugging
     await page.goto('/dashboard/recipes/create');
 
-    const uniqueRecipeName = `E2E Recipe ${Date.now()}`;
+    // Wait for the page to be ready
+    await expect(page.getByRole('heading', { name: 'Create Recipe' })).toBeVisible();
+
+    const uniqueRecipeName = `E.g. Grandma's Pancakes ${Date.now()}`;
     await page.getByPlaceholder("e.g. Grandma's Pancakes").fill(uniqueRecipeName);
     await page.getByPlaceholder("4").fill('4');
     await page.getByPlaceholder("30").fill('45');
 
-    await page.getByRole('button', { name: 'Add Item' }).click();
+    await page.getByTestId('add-ingredient-button').click();
+
     await page.getByPlaceholder('Ingredient name').fill('Test Flour');
     await page.getByPlaceholder('0', { exact: true }).last().fill('500');
 

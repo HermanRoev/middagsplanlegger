@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { doc, onSnapshot, deleteDoc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Meal, PlannedMeal, Ingredient } from "@/types"
+import { firestoreMealSchema, firestorePlannedMealSchema } from "@/lib/validations"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -55,12 +56,19 @@ export default function RecipeDetailsPage() {
     if (!id) return
     const unsubscribe = onSnapshot(doc(db, "meals", id as string), (doc) => {
       if (doc.exists()) {
-        const data = { id: doc.id, ...doc.data() } as Meal
-        setRecipe(data)
-        if (!plannedId) setCurrentServings(data.servings || 4)
+        const rawData = { id: doc.id, ...doc.data() };
+        const result = firestoreMealSchema.safeParse(rawData);
+        if (result.success) {
+          setRecipe(result.data as Meal);
+          if (!plannedId) setCurrentServings(result.data.servings || 4);
+        } else {
+          toast.error("Failed to load recipe data.");
+          console.warn("Recipe validation error:", result.error.flatten(), "Data:", rawData);
+          router.push("/dashboard/recipes");
+        }
       } else {
-        toast.error("Recipe not found")
-        router.push("/dashboard/recipes")
+        toast.error("Recipe not found");
+        router.push("/dashboard/recipes");
       }
     })
     return () => unsubscribe()
@@ -70,13 +78,20 @@ export default function RecipeDetailsPage() {
     if (!plannedId) return
     const unsubscribe = onSnapshot(doc(db, "plannedMeals", plannedId), (doc) => {
       if (doc.exists()) {
-        const data = { id: doc.id, ...doc.data() } as PlannedMeal
-        setPlannedMeal(data)
-        setEditNotes(data.notes || "")
-        setEditServings(data.plannedServings || 4)
-        setEditIngredients(data.ingredients || [])
-        setIsCooked(data.isCooked || false)
-        setCurrentServings(data.plannedServings || 4)
+        const rawData = { id: doc.id, ...doc.data() };
+        const result = firestorePlannedMealSchema.safeParse(rawData);
+        if (result.success) {
+          const data = result.data as PlannedMeal;
+          setPlannedMeal(data);
+          setEditNotes(data.notes || "");
+          setEditServings(data.plannedServings || 4);
+          setEditIngredients(data.ingredients || []);
+          setIsCooked(data.isCooked || false);
+          setCurrentServings(data.plannedServings || 4);
+        } else {
+          console.warn("Planned meal validation error:", result.error.flatten(), "Data:", rawData);
+          setPlannedMeal(null);
+        }
       } else {
         setPlannedMeal(null)
       }
