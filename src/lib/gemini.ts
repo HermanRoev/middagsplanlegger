@@ -1,16 +1,12 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
+import { app } from "./firebase";
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_AI_KEY || "";
-
-const genAI = new GoogleGenerativeAI(API_KEY);
+// Initialize Gemini Developer API backend
+const ai = getAI(app, { backend: new GoogleAIBackend() });
 
 export async function parseReceiptImage(imageFile: File): Promise<{ name: string, amount: number, unit: string }[]> {
-    if (!API_KEY) {
-        throw new Error("Missing Google AI Key");
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
 
         // Convert file to base64
         const base64Data = await new Promise<string>((resolve, reject) => {
@@ -37,7 +33,7 @@ export async function parseReceiptImage(imageFile: File): Promise<{ name: string
         `;
 
         const result = await model.generateContent([
-            prompt,
+            { text: prompt },
             {
                 inlineData: {
                     data: base64Data,
@@ -67,12 +63,8 @@ export async function generateRecipeFromText(text: string): Promise<{
     instructions: string[],
     nutrition: { calories: number, protein: number, carbs: number, fat: number }
 }> {
-    if (!API_KEY) {
-        throw new Error("Missing Google AI Key");
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
 
         const prompt = `
             You are a professional chef. Create a structured recipe based on the following description or URL content:
