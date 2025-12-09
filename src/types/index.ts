@@ -71,6 +71,7 @@ export interface Suggestion {
   id: string
   text: string
   votes: number
+  votedBy?: string[]
   status: 'pending' | 'approved' | 'rejected'
   suggestedBy?: {
     id: string

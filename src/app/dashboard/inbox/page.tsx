@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, query, orderBy } from "firebase/firestore"
+import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, query, orderBy, arrayUnion } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Suggestion } from "@/types"
 import { Button } from "@/components/ui/button"
@@ -35,7 +35,8 @@ export default function InboxPage() {
     try {
         await addDoc(collection(db, "suggestions"), {
             text: newSuggestion,
-            votes: 0,
+            votes: 1,
+            votedBy: [user.uid],
             status: 'pending',
             suggestedBy: {
                 id: user.uid,
@@ -51,9 +52,21 @@ export default function InboxPage() {
   }
 
   const handleVote = async (suggestion: Suggestion) => {
+      if (!user) return
+
+      const currentVoters = suggestion.votedBy || []
+      const hasVoted = currentVoters.includes(user.uid)
+
+      // Prevent upvoting if already voted
+      if (hasVoted) {
+          toast.error("You already voted for this!")
+          return
+      }
+
       try {
           await updateDoc(doc(db, "suggestions", suggestion.id), {
-              votes: (suggestion.votes || 0) + 1
+              votes: (suggestion.votes || 0) + 1,
+              votedBy: arrayUnion(user.uid)
           })
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
           toast.error("Failed to vote")
@@ -143,9 +156,14 @@ export default function InboxPage() {
                                       </>
                                   )}
                                   {item.status === 'approved' && (
-                                      <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold flex items-center gap-1">
-                                          <Check className="w-3 h-3" /> Approved
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold flex items-center gap-1">
+                                            <Check className="w-3 h-3" /> Approved
+                                        </span>
+                                        <Button size="icon" variant="ghost" className="text-red-400 hover:bg-red-100" onClick={() => handleReject(item.id)} title="Remove">
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </div>
                                   )}
                               </div>
                           </CardContent>

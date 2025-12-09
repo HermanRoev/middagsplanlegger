@@ -23,8 +23,8 @@ export type MealFormData = z.infer<typeof mealSchema>
 // Stricter validation for data coming from Firestore
 export const firestoreIngredientSchema = z.object({
   name: z.string(),
-  amount: z.number().nullable(),
-  unit: z.string(),
+  amount: z.number().nullish(), // Changed from nullable to nullish to accept undefined/null
+  unit: z.string().optional(), // Changed to optional as some old data might miss it
 });
 
 export const nutritionSchema = z.object({
@@ -42,12 +42,12 @@ export const createdBySchema = z.object({
 export const firestoreMealSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Recipe name cannot be empty"),
-  imageUrl: z.string().nullable(),
-  servings: z.number().nullable(),
-  ingredients: z.array(firestoreIngredientSchema),
-  instructions: z.array(z.string()),
-  prepTime: z.number().nullable(),
-  costEstimate: z.number().nullable(),
+  imageUrl: z.string().nullish(),
+  servings: z.number().nullish(),
+  ingredients: z.array(firestoreIngredientSchema).optional().default([]),
+  instructions: z.array(z.string()).optional().default([]),
+  prepTime: z.number().nullish(),
+  costEstimate: z.number().nullish(),
   nutrition: nutritionSchema.optional(),
   rating: z.number().min(0).max(5).optional(),
   lastCooked: z.string().optional(),

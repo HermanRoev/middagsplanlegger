@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sparkles, Loader2, PenTool } from "lucide-react"
 import { ImageUpload } from '@/components/ImageUpload'
-import { generateRecipeFromText } from '@/lib/gemini'
+import { generateRecipeFromText, generateRecipeFromImage } from '@/lib/gemini'
 
 export default function NewRecipePage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -27,9 +27,7 @@ export default function NewRecipePage() {
       let parsedData;
 
       if (importType === 'image' && imageFile) {
-        toast.error("Image analysis for full recipes coming soon! Try Text import.", { id: toastId });
-        setIsLoading(false);
-        return;
+        parsedData = await generateRecipeFromImage(imageFile)
 
       } else if (importType === 'text' && recipeText.trim()) {
         parsedData = await generateRecipeFromText(recipeText)
@@ -64,7 +62,7 @@ export default function NewRecipePage() {
         <TabsList className="grid w-full grid-cols-4 mb-8">
           <TabsTrigger value="text">Paste Text/URL</TabsTrigger>
           <TabsTrigger value="generate">AI Generate</TabsTrigger>
-          <TabsTrigger value="image" disabled>Image (Soon)</TabsTrigger>
+          <TabsTrigger value="image">Image</TabsTrigger>
           <TabsTrigger value="manual">Manual</TabsTrigger>
         </TabsList>
 

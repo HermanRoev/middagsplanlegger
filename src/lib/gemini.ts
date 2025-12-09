@@ -93,3 +93,62 @@ export async function generateRecipeFromText(text: string): Promise<{
         throw new Error("Failed to generate recipe.");
     }
 }
+
+export async function generateRecipeFromImage(imageFile: File): Promise<{
+    name: string,
+    description: string,
+    prepTime: number,
+    servings: number,
+    ingredients: { name: string, amount: number, unit: string }[],
+    instructions: string[],
+    nutrition: { calories: number, protein: number, carbs: number, fat: number }
+}> {
+    try {
+        const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
+
+        // Convert file to base64
+        const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(imageFile);
+            reader.onload = () => {
+                const result = reader.result as string;
+                const base64 = result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = error => reject(error);
+        });
+
+        const prompt = `
+            Analyze this image of food or a recipe. Identify the dish and create a structured recipe for it.
+
+            Return a JSON object with the following fields:
+            - "name": Recipe title.
+            - "description": A short, appetizing description.
+            - "prepTime": Preparation time in minutes (number).
+            - "servings": Number of servings (number).
+            - "ingredients": Array of objects { "name", "amount" (number), "unit" (string) }.
+            - "instructions": Array of strings, each being a step.
+            - "nutrition": Object with estimates per serving: { "calories" (number), "protein" (number g), "carbs" (number g), "fat" (number g) }.
+
+            Return ONLY valid JSON. No markdown code blocks.
+        `;
+
+        const result = await model.generateContent([
+            { text: prompt },
+            {
+                inlineData: {
+                    data: base64Data,
+                    mimeType: imageFile.type
+                }
+            }
+        ]);
+
+        const responseText = result.response.text();
+        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.error("Error generating recipe from image:", error);
+        throw new Error("Failed to generate recipe from image.");
+    }
+}
