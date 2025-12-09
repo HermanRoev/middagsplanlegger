@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, query, orderBy, arrayUnion } from "firebase/firestore"
+import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, query, orderBy, arrayUnion, arrayRemove } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Suggestion } from "@/types"
 import { Button } from "@/components/ui/button"
@@ -57,31 +57,31 @@ export default function InboxPage() {
       const currentVoters = suggestion.votedBy || []
       const hasVoted = currentVoters.includes(user.uid)
 
-      // Prevent upvoting if already voted
-      if (hasVoted) {
-          toast.error("You already voted for this!")
-          return
-      }
-
       try {
-          await updateDoc(doc(db, "suggestions", suggestion.id), {
-              votes: (suggestion.votes || 0) + 1,
-              votedBy: arrayUnion(user.uid)
-          })
+          if (hasVoted) {
+               // Remove vote
+               await updateDoc(doc(db, "suggestions", suggestion.id), {
+                   votes: (suggestion.votes || 1) - 1,
+                   votedBy: arrayRemove(user.uid)
+               })
+          } else {
+               // Add vote
+               await updateDoc(doc(db, "suggestions", suggestion.id), {
+                   votes: (suggestion.votes || 0) + 1,
+                   votedBy: arrayUnion(user.uid)
+               })
+          }
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
           toast.error("Failed to vote")
       }
   }
 
   const handleApprove = async (suggestion: Suggestion) => {
-      // Approve: Mark as approved AND potentially navigate to create/plan it
       try {
           await updateDoc(doc(db, "suggestions", suggestion.id), {
               status: 'approved'
           })
-          toast.success("Approved! Taking you to plan it...")
-          // Redirect to recipes search with the suggestion text to find a match or create new
-          router.push(`/dashboard/recipes?search=${encodeURIComponent(suggestion.text)}`)
+          toast.success("Marked as approved!")
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
           toast.error("Failed to approve")
       }

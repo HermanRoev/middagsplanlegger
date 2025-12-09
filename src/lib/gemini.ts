@@ -1,12 +1,11 @@
-import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
-import { app } from "./firebase";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize Gemini Developer API backend
-const ai = getAI(app, { backend: new GoogleAIBackend() });
+const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function parseReceiptImage(imageFile: File): Promise<{ name: string, amount: number, unit: string }[]> {
     try {
-        const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         // Convert file to base64
         const base64Data = await new Promise<string>((resolve, reject) => {
@@ -64,7 +63,7 @@ export async function generateRecipeFromText(text: string): Promise<{
     nutrition: { calories: number, protein: number, carbs: number, fat: number }
 }> {
     try {
-        const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `
             You are a professional chef. Create a structured recipe based on the following description or URL content:
@@ -104,7 +103,7 @@ export async function generateRecipeFromImage(imageFile: File): Promise<{
     nutrition: { calories: number, protein: number, carbs: number, fat: number }
 }> {
     try {
-        const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         // Convert file to base64
         const base64Data = await new Promise<string>((resolve, reject) => {
