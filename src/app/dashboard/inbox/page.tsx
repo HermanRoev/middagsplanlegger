@@ -7,7 +7,7 @@ import { Suggestion } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { ThumbsUp, Check, X, MessageSquarePlus, Plus } from "lucide-react"
+import { ThumbsUp, Check, X, MessageSquarePlus, Plus, Trash } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import toast from "react-hot-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -161,7 +161,7 @@ export default function InboxPage() {
                                             <Check className="w-3 h-3" /> Approved
                                         </span>
                                         <Button size="icon" variant="ghost" className="text-red-400 hover:bg-red-100" onClick={() => handleReject(item.id)} title="Remove">
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash className="w-4 h-4" />
                                         </Button>
                                       </div>
                                   )}
