@@ -17,7 +17,7 @@ export default function InboxPage() {
   const { user } = useAuth()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [newSuggestion, setNewSuggestion] = useState("")
-  const router = useRouter()
+  // const router = useRouter() // Removed unused router
 
   useEffect(() => {
     const q = query(collection(db, "suggestions"), orderBy("createdAt", "desc"))
