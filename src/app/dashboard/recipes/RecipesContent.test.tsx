@@ -12,6 +12,7 @@ const mockMeals = [
 
 // Mock Firebase
 vi.mock('firebase/firestore', () => ({
+  getFirestore: vi.fn(),
   collection: vi.fn(),
   onSnapshot: vi.fn(),
   query: vi.fn(),
@@ -21,8 +22,18 @@ vi.mock('firebase/firestore', () => ({
   addDoc: vi.fn(),
 }));
 
+vi.mock('firebase/auth', () => ({
+  getAuth: vi.fn(),
+}));
+
+vi.mock('firebase/storage', () => ({
+  getStorage: vi.fn(),
+}));
+
 vi.mock('@/lib/firebase', () => ({
   db: {}, // Mock db object
+  auth: {},
+  storage: {},
 }));
 
 // Mock Auth Context
