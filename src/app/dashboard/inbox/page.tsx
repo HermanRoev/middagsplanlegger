@@ -1,13 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, query, orderBy } from "firebase/firestore"
+import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, query, orderBy, arrayUnion, arrayRemove } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Suggestion } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { ThumbsUp, Check, X, MessageSquarePlus, Plus } from "lucide-react"
+import { ThumbsUp, Check, X, MessageSquarePlus, Plus, Trash } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import toast from "react-hot-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -17,7 +17,7 @@ export default function InboxPage() {
   const { user } = useAuth()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [newSuggestion, setNewSuggestion] = useState("")
-  const router = useRouter()
+  // const router = useRouter() // Removed unused router
 
   useEffect(() => {
     const q = query(collection(db, "suggestions"), orderBy("createdAt", "desc"))
@@ -35,7 +35,8 @@ export default function InboxPage() {
     try {
         await addDoc(collection(db, "suggestions"), {
             text: newSuggestion,
-            votes: 0,
+            votes: 1,
+            votedBy: [user.uid],
             status: 'pending',
             suggestedBy: {
                 id: user.uid,
@@ -51,24 +52,36 @@ export default function InboxPage() {
   }
 
   const handleVote = async (suggestion: Suggestion) => {
+      if (!user) return
+
+      const currentVoters = suggestion.votedBy || []
+      const hasVoted = currentVoters.includes(user.uid)
+
       try {
-          await updateDoc(doc(db, "suggestions", suggestion.id), {
-              votes: (suggestion.votes || 0) + 1
-          })
+          if (hasVoted) {
+               // Remove vote
+               await updateDoc(doc(db, "suggestions", suggestion.id), {
+                   votes: (suggestion.votes || 1) - 1,
+                   votedBy: arrayRemove(user.uid)
+               })
+          } else {
+               // Add vote
+               await updateDoc(doc(db, "suggestions", suggestion.id), {
+                   votes: (suggestion.votes || 0) + 1,
+                   votedBy: arrayUnion(user.uid)
+               })
+          }
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
           toast.error("Failed to vote")
       }
   }
 
   const handleApprove = async (suggestion: Suggestion) => {
-      // Approve: Mark as approved AND potentially navigate to create/plan it
       try {
           await updateDoc(doc(db, "suggestions", suggestion.id), {
               status: 'approved'
           })
-          toast.success("Approved! Taking you to plan it...")
-          // Redirect to recipes search with the suggestion text to find a match or create new
-          router.push(`/dashboard/recipes?search=${encodeURIComponent(suggestion.text)}`)
+          toast.success("Marked as approved!")
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
           toast.error("Failed to approve")
       }
@@ -143,9 +156,14 @@ export default function InboxPage() {
                                       </>
                                   )}
                                   {item.status === 'approved' && (
-                                      <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold flex items-center gap-1">
-                                          <Check className="w-3 h-3" /> Approved
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold flex items-center gap-1">
+                                            <Check className="w-3 h-3" /> Approved
+                                        </span>
+                                        <Button size="icon" variant="ghost" className="text-red-400 hover:bg-red-100" onClick={() => handleReject(item.id)} title="Remove">
+                                            <Trash className="w-4 h-4" />
+                                        </Button>
+                                      </div>
                                   )}
                               </div>
                           </CardContent>

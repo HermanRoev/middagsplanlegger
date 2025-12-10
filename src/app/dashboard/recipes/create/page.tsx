@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Trash2, Plus, Save } from "lucide-react"
+import { Trash, Plus, Save } from "lucide-react"
 import toast from 'react-hot-toast'
 import { collection, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -220,7 +220,7 @@ export default function CreateRecipePage() {
                     ))}
                   </select>
                   <Button variant="ghost" size="icon" onClick={() => handleRemoveIngredient(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
+                    <Trash className="w-4 h-4" />
                   </Button>
                 </div>
               ))}
@@ -250,7 +250,7 @@ export default function CreateRecipePage() {
                     onChange={(e) => handleInstructionChange(i, e.target.value)}
                    />
                    <Button variant="ghost" size="icon" onClick={() => handleRemoveInstruction(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 mt-2">
-                    <Trash2 className="w-4 h-4" />
+                    <Trash className="w-4 h-4" />
                   </Button>
                 </div>
               ))}
