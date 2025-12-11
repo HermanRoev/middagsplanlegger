@@ -7,7 +7,7 @@ import { CupboardItem } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Plus, Trash2, Search, Package, Camera, Loader2, Receipt } from "lucide-react"
+import { Plus, Trash2, Search, Package, Camera, Loader2, Receipt, Video } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import toast from "react-hot-toast"
-import { parseReceiptImage } from "@/lib/gemini"
+import { parseReceiptImage, parseCupboardVideo } from "@/lib/gemini"
 
 export default function CupboardPage() {
   const { user } = useAuth()
@@ -31,11 +31,13 @@ export default function CupboardPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  // Receipt Scanning State
+  // Scanning State
   const [isScanning, setIsScanning] = useState(false)
+  const [scanType, setScanType] = useState<'receipt' | 'video'>('receipt')
   const [scannedItems, setScannedItems] = useState<{ name: string, amount: number, unit: string }[]>([])
   const [scanLoading, setScanLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!user) return
@@ -72,6 +74,7 @@ export default function CupboardPage() {
      const file = e.target.files?.[0]
      if (!file) return
 
+     setScanType('receipt')
      setScanLoading(true)
      setIsScanning(true)
 
@@ -87,6 +90,28 @@ export default function CupboardPage() {
          setScanLoading(false)
          if (fileInputRef.current) fileInputRef.current.value = ''
      }
+  }
+
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+
+      setScanType('video')
+      setScanLoading(true)
+      setIsScanning(true)
+
+      try {
+          const items = await parseCupboardVideo(file)
+          setScannedItems(items)
+          toast.success(`Found ${items.length} items!`)
+      } catch (error) {
+          toast.error("Failed to analyze video")
+          console.error(error)
+          setIsScanning(false)
+      } finally {
+          setScanLoading(false)
+          if (videoInputRef.current) videoInputRef.current.value = ''
+      }
   }
 
   const handleSaveScanned = async () => {
@@ -131,22 +156,32 @@ export default function CupboardPage() {
             <h1 className="text-3xl font-bold text-gray-900">Cupboard</h1>
         </div>
 
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Camera className="w-4 h-4 mr-2" /> Scan Receipt
+            </Button>
+            <Button variant="outline" onClick={() => videoInputRef.current?.click()}>
+                <Video className="w-4 h-4 mr-2" /> Scan Video
+            </Button>
+        </div>
+
         <Dialog open={isScanning} onOpenChange={setIsScanning}>
-            <DialogTrigger asChild>
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                    <Camera className="w-4 h-4 mr-2" /> Scan Receipt
-                </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-md">
                  <DialogHeader>
-                     <DialogTitle>Scan Receipt</DialogTitle>
-                     <DialogDescription>Upload a photo of your grocery receipt to automatically add items.</DialogDescription>
+                     <DialogTitle>{scanType === 'receipt' ? 'Scan Receipt' : 'Scan Video'}</DialogTitle>
+                     <DialogDescription>
+                         {scanType === 'receipt'
+                             ? 'Upload a photo of your grocery receipt to automatically add items.'
+                             : 'Upload a video of your cupboard to automatically count items.'}
+                     </DialogDescription>
                  </DialogHeader>
 
                  {scanLoading ? (
                      <div className="py-12 flex flex-col items-center justify-center space-y-4">
                          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-                         <p className="text-sm text-gray-500">Analyzing receipt with AI...</p>
+                         <p className="text-sm text-gray-500">
+                             {scanType === 'receipt' ? 'Analyzing receipt with AI...' : 'Analyzing video with AI...'}
+                         </p>
                      </div>
                  ) : (
                      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
@@ -162,8 +197,12 @@ export default function CupboardPage() {
                              </div>
                          ) : (
                              <div className="text-center py-8 text-gray-400 border-2 border-dashed rounded-xl">
-                                 <Receipt className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                                 <p>Upload an image to start</p>
+                                 {scanType === 'receipt' ? (
+                                     <Receipt className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                                 ) : (
+                                     <Video className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                                 )}
+                                 <p>Upload a file to start</p>
                              </div>
                          )}
                      </div>
@@ -178,7 +217,7 @@ export default function CupboardPage() {
             </DialogContent>
         </Dialog>
 
-        {/* Hidden Input for File Upload */}
+        {/* Hidden Inputs for File Upload */}
         <input
             type="file"
             hidden
@@ -186,6 +225,14 @@ export default function CupboardPage() {
             accept="image/*"
             capture="environment"
             onChange={handleFileSelect}
+        />
+        <input
+            type="file"
+            hidden
+            ref={videoInputRef}
+            accept="video/*"
+            capture="environment"
+            onChange={handleVideoSelect}
         />
       </div>
 

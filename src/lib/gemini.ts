@@ -37,6 +37,56 @@ async function getPromptInstructions(): Promise<string> {
     `;
 }
 
+export async function parseCupboardVideo(videoFile: File): Promise<{ name: string, amount: number, unit: string }[]> {
+    try {
+        const model = getGenerativeModel(ai, { model: "gemini-3.0-pro" });
+
+        // Convert file to base64
+        const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(videoFile);
+            reader.onload = () => {
+                const result = reader.result as string;
+                // Remove data URL prefix
+                const base64 = result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = error => reject(error);
+        });
+
+        const instructions = await getPromptInstructions();
+        const prompt = `
+            Analyze this video of a cupboard/pantry and identify the food items and their approximate quantities.
+            Return a JSON array where each object has:
+            - "name": The name of the ingredient.
+            - "amount": A numeric estimate of the quantity.
+            - "unit": The unit.
+
+            Ignore non-food items.
+
+            ${instructions}
+        `;
+
+        const result = await model.generateContent([
+            { text: prompt },
+            {
+                inlineData: {
+                    data: base64Data,
+                    mimeType: videoFile.type
+                }
+            }
+        ]);
+
+        const responseText = result.response.text();
+        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.error("Error parsing video:", error);
+        throw new Error("Failed to analyze video.");
+    }
+}
+
 export async function parseReceiptImage(imageFile: File): Promise<{ name: string, amount: number, unit: string }[]> {
     try {
         const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
