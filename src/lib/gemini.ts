@@ -39,7 +39,7 @@ async function getPromptInstructions(): Promise<string> {
 
 export async function parseCupboardVideo(videoFile: File): Promise<{ name: string, amount: number, unit: string }[]> {
     try {
-        const model = getGenerativeModel(ai, { model: "gemini-3.0-pro" });
+        const model = getGenerativeModel(ai, { model: "gemini-3-pro-preview" });
 
         // Convert file to base64
         const base64Data = await new Promise<string>((resolve, reject) => {
