@@ -1,34 +1,38 @@
-import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
-import { app } from "./firebase";
-import { getAllIngredients } from "./ingredients";
+import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase/ai'
+import { app } from './firebase'
+import { getAllIngredients } from './ingredients'
 
-// Initialize the Gemini Developer API backend service
 const ai = getAI(app, { backend: new GoogleAIBackend() });
 
 const VALID_UNITS = ['g', 'kg', 'l', 'dl', 'stk', 'ss', 'ts'];
 
 async function getPromptInstructions(): Promise<string> {
-    let ingredientNames = "";
-    try {
-        const ingredients = await getAllIngredients();
-        ingredientNames = ingredients.map(i => i.id).join(", ");
-    } catch (error) {
-        console.warn("Failed to fetch ingredients for AI prompt:", error);
-        // Fallback or empty list if firestore fails, so we don't break the whole feature
-    }
+    const ingredients = await getAllIngredients();
+    const ingredientNames = ingredients.map(i => i.id).join(', ');
 
     return `
-    STRICT OUTPUT FORMATTING:
-    1. Return ONLY valid JSON. Do not wrap it in markdown code blocks (e.g. \`\`\`json). Just the raw JSON string.
-    2. Use ONLY these units: ${VALID_UNITS.join(", ")}.
-       - Map 'tablespoon', 'tbsp' -> 'ss'
-       - Map 'teaspoon', 'tsp' -> 'ts'
-       - Map 'pcs', 'each', 'count' -> 'stk'
-       - Map 'liters' -> 'l', 'deciliters' -> 'dl', 'grams' -> 'g', 'kilograms' -> 'kg'
-       - If unit is unknown or missing, default to 'stk'.
-    3. Ingredient Naming:
-       Below is a list of existing ingredients in the database.
-       If an identified ingredient closely matches one in this list (case-insensitive, singular/plural), use the EXACT name from the list.
+       IMPORTANT: Return ONLY valid JSON. Do not include any markdown formatting like \`\`\`json or \`\`\`.
+
+       Strictly adhere to these rules for units:
+       - Allowed units: ${VALID_UNITS.join(', ')}.
+       - MAPPING RULES:
+         - Countable items (e.g., eggs, tortillas, buns, cans, jars, taco shells, avocados, onions, fruits, vegetables when whole) MUST use 'stk'.
+         - Liquids (e.g., milk, water, oil, juice, salsa, cream, soy sauce, broth) MUST use 'dl' or 'l'.
+         - Spices/small amounts (e.g., salt, pepper, cumin, sugar, baking powder) often use 'ts' or 'ss'.
+         - Bulk solids (e.g., flour, meat, cheese, rice, pasta, chopped vegetables) usually use 'g' or 'kg'.
+
+       - UNIT CONVERSIONS:
+         - 'ml', 'cl' -> 'dl'
+         - 'tbsp', 'tablespoon' -> 'ss'
+         - 'tsp', 'teaspoon' -> 'ts'
+         - 'lb', 'oz' -> 'g' (approximate conversion)
+         - 'cup' -> 'dl' (approx 2.4 dl)
+         - 'pcs', 'ea', 'unit', 'slice' -> 'stk'
+
+       - If the unit is missing or implies a count (like "1 onion", "2 tomatoes"), use 'stk'.
+       - NEVER default to 'g' for countable items like shells, tortillas, or whole produce.
+
+       If an extracted ingredient closely matches one in this list (case-insensitive, singular/plural), use the EXACT name from the list.
        Existing Ingredients List: [${ingredientNames}]
     `;
 }

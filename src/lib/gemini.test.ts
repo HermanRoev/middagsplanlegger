@@ -32,7 +32,7 @@ describe('gemini', () => {
     });
   });
 
-  it('should include ingredients and units in the prompt', async () => {
+  it('should include ingredients and new unit rules in the prompt', async () => {
     // Setup mock ingredients
     vi.mocked(getAllIngredients).mockResolvedValue([
       { id: 'Tomato' },
@@ -46,7 +46,12 @@ describe('gemini', () => {
     const promptArg = calls[0][0];
 
     // Check for units
-    expect(promptArg).toContain("Use ONLY these units: g, kg, l, dl, stk, ss, ts");
+    expect(promptArg).toContain("Allowed units: g, kg, l, dl, stk, ss, ts");
+
+    // Check for specific mapping rules (ensures new prompt is used)
+    expect(promptArg).toContain("Countable items (e.g., eggs, tortillas, buns, cans, jars, taco shells");
+    expect(promptArg).toContain("Liquids (e.g., milk, water, oil, juice");
+    expect(promptArg).toContain("NEVER default to 'g' for countable items");
 
     // Check for ingredients
     expect(promptArg).toContain("Existing Ingredients List: [Tomato, Cheese]");
