@@ -19,37 +19,51 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-const reactNativePersistence = (storage: typeof AsyncStorage): Persistence => {
-  return {
-    type: 'LOCAL',
-    _isAvailable: async () => true,
-    _set: async (key: string, value: unknown) => {
-      try {
-        await storage.setItem(key, JSON.stringify(value));
-      } catch {}
-    },
-    _get: async (key: string) => {
-      try {
-        const json = await storage.getItem(key);
-        return json ? JSON.parse(json) : null;
-      } catch {
-        return null;
-      }
-    },
-    _remove: async (key: string) => {
-      try {
-        await storage.removeItem(key);
-      } catch {}
-    },
-    _addListener: () => {},
-    _removeListener: () => {},
-  } as unknown as Persistence;
-};
+class ReactNativePersistence implements Persistence {
+  static type: 'LOCAL' = 'LOCAL';
+  type: 'LOCAL' = 'LOCAL';
+
+  constructor(private storage: typeof AsyncStorage) {}
+
+  async _isAvailable() {
+    return true;
+  }
+
+  async _set(key: string, value: unknown) {
+    try {
+      await this.storage.setItem(key, JSON.stringify(value));
+    } catch {}
+  }
+
+  async _get(key: string) {
+    try {
+      const json = await this.storage.getItem(key);
+      return json ? JSON.parse(json) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async _remove(key: string) {
+    try {
+      await this.storage.removeItem(key);
+    } catch {}
+  }
+
+  _addListener(_key: string, _listener: (value: unknown) => void) {
+    // Listener implementation if needed, but usually not for local storage persistence in this context
+  }
+
+  _removeListener(_key: string, _listener: (value: unknown) => void) {
+    // Listener implementation if needed
+  }
+}
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
-  auth = initializeAuth(app);
-  auth.setPersistence(reactNativePersistence(AsyncStorage));
+  auth = initializeAuth(app, {
+    persistence: new ReactNativePersistence(AsyncStorage),
+  });
   db = getFirestore(app);
   storage = getStorage(app);
 } else {

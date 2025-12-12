@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 
 interface AuthContextType {
@@ -18,8 +18,12 @@ export function useAuth() {
 function useProtectedRoute(user: User | null) {
   const segments = useSegments();
   const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
 
   useEffect(() => {
+    // Check if the root navigation is ready
+    if (!rootNavigationState?.key) return;
+
     const inAuthGroup = segments[0] === '(tabs)';
 
     if (!user && inAuthGroup) {
@@ -27,7 +31,7 @@ function useProtectedRoute(user: User | null) {
     } else if (user && segments[0] === 'login') {
       router.replace('/(tabs)');
     }
-  }, [user, segments]);
+  }, [user, segments, rootNavigationState]);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
