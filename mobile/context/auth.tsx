@@ -15,13 +15,15 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-function useProtectedRoute(user: User | null) {
+function useProtectedRoute(user: User | null, loading: boolean) {
   const segments = useSegments();
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
 
   useEffect(() => {
-    // Check if the root navigation is ready
+
+    if (loading) return;
+
     if (!rootNavigationState?.key) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
@@ -31,14 +33,15 @@ function useProtectedRoute(user: User | null) {
     } else if (user && segments[0] === 'login') {
       router.replace('/(tabs)');
     }
-  }, [user, segments, rootNavigationState]);
+  }, [user, segments, rootNavigationState, loading]);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useProtectedRoute(user);
+  // Update: Pass the loading state to the hook
+  useProtectedRoute(user, loading);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
