@@ -15,7 +15,8 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "../src/**/*",
+    "../src/types/**/*",
+    "../src/lib/firebase-config.ts",
     "nativewind-env.d.ts"
   ]
 }
