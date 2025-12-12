@@ -4,7 +4,6 @@ import { initializeAuth, getAuth, Auth, browserLocalPersistence, inMemoryPersist
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
-// In Expo (SDK 49+), variables starting with EXPO_PUBLIC_ are automatically inlined
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -22,7 +21,6 @@ let storage: FirebaseStorage;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
-  // @ts-ignore - Types mismatch between expo-firebase versions sometimes, casting usually safe here
   auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage),
   });
