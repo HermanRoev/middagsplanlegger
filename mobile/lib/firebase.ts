@@ -19,13 +19,11 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-// Manual implementation of React Native Persistence for Firebase v11+
-// as getReactNativePersistence is no longer exported in the JS SDK.
 const reactNativePersistence = (storage: typeof AsyncStorage): Persistence => {
   return {
     type: 'LOCAL',
     _isAvailable: async () => true,
-    _set: async (key: string, value: any) => {
+    _set: async (key: string, value: unknown) => {
       try {
         await storage.setItem(key, JSON.stringify(value));
       } catch {}
@@ -50,9 +48,8 @@ const reactNativePersistence = (storage: typeof AsyncStorage): Persistence => {
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
-  auth = initializeAuth(app, {
-    persistence: reactNativePersistence(AsyncStorage),
-  });
+  auth = initializeAuth(app);
+  auth.setPersistence(reactNativePersistence(AsyncStorage));
   db = getFirestore(app);
   storage = getStorage(app);
 } else {
