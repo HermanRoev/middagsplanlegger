@@ -1,0 +1,6 @@
+# Mobile specific gitignore
+node_modules/
+.env
+.expo/
+dist/
+web-build/

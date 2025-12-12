@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Middagsplan",
+    "slug": "middagsplan-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.middagsplan.mobile"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "scheme": "middagsplan"
+  }
+}

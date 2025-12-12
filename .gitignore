@@ -38,3 +38,4 @@ ts-debug.log*
 next-env.d.ts
 
 dev.log
+mobile/node_modules
