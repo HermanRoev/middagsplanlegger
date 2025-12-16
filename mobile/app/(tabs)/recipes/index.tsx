@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/auth';
 import { getUserRecipes } from '../../../lib/api';
 import { Meal } from '../../../../src/types';
 import { RecipeCard } from '../../../components/RecipeCard';
-import { Search, Plus, Inbox, Link as LinkIcon, Camera, Type } from 'lucide-react-native';
+import { Search, Plus, Inbox, Link as LinkIcon, Camera, Type, ChefHat } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { generateRecipeFromImageMobile, generateRecipeFromTextMobile } from '../../../lib/gemini-mobile';
@@ -55,6 +55,7 @@ export default function RecipesList() {
      if (status !== 'granted') return Alert.alert('Permission needed');
 
      const result = await ImagePicker.launchCameraAsync({
+         mediaTypes: ImagePicker.MediaType.Images,
          quality: 0.5,
          base64: false
      });
@@ -171,24 +172,24 @@ export default function RecipesList() {
 
                   <View className="flex-row justify-around mb-8">
                       <TouchableOpacity onPress={handleManualCreate} className="items-center">
-                          <View className="w-14 h-14 bg-indigo-50 rounded-full items-center justify-center mb-2">
-                              <Plus size={24} color="#4F46E5" />
+                          <View className="w-16 h-16 bg-indigo-50 rounded-full items-center justify-center mb-2">
+                              <Plus size={28} color="#4F46E5" />
                           </View>
-                          <Text className="text-sm font-medium">Manual</Text>
+                          <Text className="text-sm font-medium text-gray-700">Manual</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity onPress={handleCameraCreate} className="items-center">
-                          <View className="w-14 h-14 bg-indigo-50 rounded-full items-center justify-center mb-2">
-                              <Camera size={24} color="#4F46E5" />
+                          <View className="w-16 h-16 bg-indigo-50 rounded-full items-center justify-center mb-2">
+                              <Camera size={28} color="#4F46E5" />
                           </View>
-                          <Text className="text-sm font-medium">Scan Image</Text>
+                          <Text className="text-sm font-medium text-gray-700">Scan</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity onPress={() => { setShowCreateOptions(false); setTextInputVisible(true); }} className="items-center">
-                          <View className="w-14 h-14 bg-indigo-50 rounded-full items-center justify-center mb-2">
-                              <LinkIcon size={24} color="#4F46E5" />
+                          <View className="w-16 h-16 bg-indigo-50 rounded-full items-center justify-center mb-2">
+                              <ChefHat size={28} color="#4F46E5" />
                           </View>
-                          <Text className="text-sm font-medium">URL / Text</Text>
+                          <Text className="text-sm font-medium text-gray-700">AI Chef</Text>
                       </TouchableOpacity>
                   </View>
 
@@ -206,16 +207,16 @@ export default function RecipesList() {
       <Modal visible={textInputVisible} transparent animationType="slide">
           <View className="flex-1 bg-black/50 justify-center px-4">
               <View className="bg-white rounded-2xl p-6">
-                  <Text className="text-lg font-bold mb-2">Import from Text or URL</Text>
+                  <Text className="text-lg font-bold mb-2">Ask AI Chef</Text>
                   <Text className="text-sm text-gray-500 mb-4">
-                      Paste a recipe URL or describe the dish you want to make.
+                      Enter a recipe name, a description, or paste a URL.
                   </Text>
 
                   <TextInput
                       className="bg-gray-50 border border-gray-200 rounded-xl p-3 h-32 mb-4 text-gray-900"
                       multiline
                       textAlignVertical="top"
-                      placeholder="e.g. https://... or 'Spicy Thai Curry with chicken...'"
+                      placeholder="e.g. 'Spaghetti Bolognese' or 'https://...'"
                       value={aiText}
                       onChangeText={setAiText}
                   />

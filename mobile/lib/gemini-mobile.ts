@@ -68,6 +68,44 @@ export async function parseReceiptImageMobile(imageUri: string): Promise<{ name:
     }
 }
 
+export async function parseCupboardVideoMobile(videoUri: string): Promise<{ name: string, amount: number, unit: string }[]> {
+    try {
+        const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" }); // Using Flash model which supports video
+
+        // Read video file as base64
+        const base64 = await FileSystem.readAsStringAsync(videoUri, { encoding: 'base64' });
+
+        const prompt = `
+            Analyze this video of a cupboard/pantry and identify the food items and their approximate quantities.
+            Return a JSON array where each object has:
+            - "name": The name of the ingredient.
+            - "amount": A numeric estimate of the quantity.
+            - "unit": The unit.
+
+            Ignore non-food items.
+
+            ${getPromptInstructions()}
+        `;
+
+        const result = await model.generateContent([
+            { text: prompt },
+            {
+                inlineData: {
+                    data: base64,
+                    mimeType: 'video/mp4' // Assuming mp4 or similar compatible format
+                }
+            }
+        ]);
+
+        const responseText = result.response.text();
+        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.error("Error parsing video mobile:", error);
+        throw new Error("Failed to analyze video.");
+    }
+}
+
 export async function generateRecipeFromTextMobile(text: string): Promise<{
     name: string,
     description: string,

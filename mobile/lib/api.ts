@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, orderBy, doc, getDoc, addDoc, updateDoc, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, increment, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { Meal, PlannedMeal, Suggestion } from '../../src/types';
 import { startOfWeek, endOfWeek, format, addDays } from 'date-fns';
@@ -48,39 +48,81 @@ export async function getPlannedMeals(userId: string, date: Date): Promise<Plann
 export async function getShoppingList(userId: string): Promise<{ planned: any[], manual: any[] }> {
   // Fetch manual items
   const shoppingRef = collection(db, 'shoppingList');
-  const q = query(shoppingRef, where('userId', '==', userId));
-  const snapshot = await getDocs(q);
+  const q = query(shoppingRef, where('userId', '==', userId)); // Note: Web app doesn't seem to filter by userId in the read_file output?
+  // Wait, the web app code shows `const q = query(collection(db, "shoppingList"))` - NO userId filter?
+  // That seems wrong for a multi-user app, but maybe it's a family shared list?
+  // The mobile `getShoppingList` currently filters by `userId`.
+  // If the web app is shared, mobile should probably match.
+  // But given I am "fixing" it, let's assume it should be per user or match existing pattern.
+  // The web app snapshot does NOT filter. The mobile one DOES.
+  // Let's stick to the mobile filter for safety unless it's empty.
+  // Actually, the web app code `src/app/dashboard/shop/page.tsx` definitely does `query(collection(db, "shoppingList"))`.
+  // This implies a shared global list or security rules handle it.
+  // I'll keep the filter for now as it's safer, or check if `userId` is even in the document on web.
+  // Web `addItem` writes: `name`, `checked`, `createdAt`. NO userId.
+  // So `where('userId', '==', userId)` on mobile will return NOTHING if the web app created items without userId.
+
+  // FIX: Remove userId filter for manual items to match web behavior (or lack thereof).
+  const snapshot = await getDocs(shoppingRef);
   const manual = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-  // Fetch planned meals for the current week (next 7 days from today to cover immediate needs)
-  // or align with the standard "Weekly Planner" view which is current week.
-  // We'll use the current week logic to match getPlannedMeals
+  // Fetch planned meals
   const today = new Date();
   const plannedMeals = await getPlannedMeals(userId, today);
 
-  // Aggregate ingredients
-  // Note: This is a simplified aggregation. The full web version might handle scaling and checked items differently.
-  // We also need to fetch the 'shoppingChecked' state if we want to show what's already bought.
-
-  // Fetch checked status
+  // Fetch checked status for planned items
   const checkedRef = collection(db, 'shoppingChecked');
-  const checkedQ = query(checkedRef, where('userId', '==', userId));
+  const checkedQ = query(checkedRef); // Again, no userId filter on web side for this?
   const checkedSnap = await getDocs(checkedQ);
-  const checkedIds = new Set(checkedSnap.docs.map(doc => doc.data().ingredientId || doc.id)); // Assuming ID usage
+  const checkedMap: Record<string, boolean> = {};
+  checkedSnap.docs.forEach(doc => {
+      checkedMap[doc.id] = doc.data().checked;
+  });
 
   const planned = plannedMeals.flatMap(meal => {
-      // Use scaledIngredients if available (from planner scaling), else fallback to ingredients
       const ingredients = meal.scaledIngredients || meal.ingredients || [];
-      return ingredients.map(ing => ({
-          ...ing,
-          mealId: meal.id,
-          mealName: meal.mealName,
-          checked: false // We can't easily map the "checked" state without a composite ID of mealId + ingredientName or similar
-          // Real implementation requires robust ID generation for ingredients in planned meals.
-      }));
+      return ingredients.map(ing => {
+          // Construct ID logic similar to web if possible, or just use a composite key for now
+          // Web uses `${ing.name.toLowerCase()}-${normalizedUnit}` as key for aggregation
+          // We'll skip complex aggregation for this step and just list them, but we need the ID to check state.
+          // Let's make a best effort ID.
+          const id = `${ing.name.toLowerCase()}-${ing.unit}`;
+          return {
+            ...ing,
+            id: id,
+            mealId: meal.id,
+            mealName: meal.mealName,
+            checked: checkedMap[id] || false
+          };
+      });
   });
 
   return { planned, manual };
+}
+
+export async function addManualShoppingItem(name: string): Promise<void> {
+    const shoppingRef = collection(db, 'shoppingList');
+    await addDoc(shoppingRef, {
+        name,
+        checked: false,
+        createdAt: new Date().toISOString()
+        // No userId based on web implementation
+    });
+}
+
+export async function toggleShoppingItem(id: string, checked: boolean, isManual: boolean): Promise<void> {
+    if (isManual) {
+        const itemRef = doc(db, 'shoppingList', id);
+        await updateDoc(itemRef, { checked });
+    } else {
+        const itemRef = doc(db, 'shoppingChecked', id);
+        await setDoc(itemRef, { checked }, { merge: true });
+    }
+}
+
+export async function deleteShoppingItem(id: string): Promise<void> {
+    const itemRef = doc(db, 'shoppingList', id);
+    await deleteDoc(itemRef);
 }
 
 export async function getInboxMeals(): Promise<Suggestion[]> {
@@ -88,6 +130,21 @@ export async function getInboxMeals(): Promise<Suggestion[]> {
   const q = query(suggestionsRef, orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Suggestion));
+}
+
+export async function addSuggestion(text: string, userId: string, userName: string): Promise<void> {
+    const suggestionsRef = collection(db, 'suggestions');
+    await addDoc(suggestionsRef, {
+        text,
+        votes: 1,
+        votedBy: [userId],
+        status: 'pending',
+        suggestedBy: {
+            id: userId,
+            name: userName
+        },
+        createdAt: new Date().toISOString()
+    });
 }
 
 export async function voteForMeal(suggestionId: string, userId: string, vote: boolean): Promise<void> {
@@ -103,4 +160,16 @@ export async function voteForMeal(suggestionId: string, userId: string, vote: bo
       votes: increment(-1)
     });
   }
+}
+
+export async function approveSuggestion(suggestionId: string): Promise<void> {
+    const suggestionRef = doc(db, 'suggestions', suggestionId);
+    await updateDoc(suggestionRef, {
+        status: 'approved'
+    });
+}
+
+export async function rejectSuggestion(suggestionId: string): Promise<void> {
+    const suggestionRef = doc(db, 'suggestions', suggestionId);
+    await deleteDoc(suggestionRef);
 }

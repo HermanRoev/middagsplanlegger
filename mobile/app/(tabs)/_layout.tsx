@@ -1,11 +1,30 @@
-import { Tabs } from 'expo-router';
-import { ChefHat, Calendar, ShoppingCart, Home, Package } from 'lucide-react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { ChefHat, Calendar, ShoppingCart, Package, User } from 'lucide-react-native';
+import { TouchableOpacity, View } from 'react-native';
 
 export default function TabLayout() {
+  const router = useRouter();
+
+  const HeaderRight = () => (
+    <TouchableOpacity
+      onPress={() => router.push('/profile')}
+      className="mr-4 p-2"
+    >
+      <User size={24} color="#374151" />
+    </TouchableOpacity>
+  );
+
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
+        headerShown: true, // Show header to display the Profile icon
+        headerTitle: '', // Remove the text title as requested
+        headerShadowVisible: false, // Remove shadow for cleaner look
+        headerStyle: {
+          backgroundColor: 'white',
+          height: 100, // Slightly taller for better spacing
+        },
+        headerRight: () => <HeaderRight />,
         tabBarStyle: {
           backgroundColor: 'white',
           borderTopWidth: 1,
@@ -20,28 +39,10 @@ export default function TabLayout() {
           fontWeight: '500',
           fontSize: 12,
         },
-        headerStyle: {
-          backgroundColor: 'white',
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: '#F3F4F6',
-        },
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          color: '#111827',
-        },
       }}
     >
-      <Tabs.Screen
+       <Tabs.Screen
         name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="planner"
         options={{
           title: 'Plan',
           tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
@@ -58,7 +59,6 @@ export default function TabLayout() {
         name="cupboard"
         options={{
           title: 'Cupboard',
-          headerShown: false, // Custom header in component
           tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
         }}
       />
@@ -67,6 +67,12 @@ export default function TabLayout() {
         options={{
           title: 'Shop',
           tabBarIcon: ({ color, size }) => <ShoppingCart size={size} color={color} />,
+        }}
+      />
+       <Tabs.Screen
+        name="home"
+        options={{
+          href: null, // Hide Home from tabs entirely as we swapped it out
         }}
       />
     </Tabs>

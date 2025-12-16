@@ -4,9 +4,9 @@ import { useAuth } from '../../context/auth';
 import { db } from '../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { CupboardItem } from '../../../src/types';
-import { Package, Plus, Search, Trash2, Camera, X } from 'lucide-react-native';
+import { Package, Plus, Search, Trash2, Camera, X, Video } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { parseReceiptImageMobile } from '../../lib/gemini-mobile';
+import { parseReceiptImageMobile, parseCupboardVideoMobile } from '../../lib/gemini-mobile';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Cupboard() {
@@ -25,6 +25,7 @@ export default function Cupboard() {
   const [scanning, setScanning] = useState(false);
   const [scannedItems, setScannedItems] = useState<{name: string, amount: number, unit: string}[]>([]);
   const [showScanResult, setShowScanResult] = useState(false);
+  const [scanType, setScanType] = useState<'receipt' | 'video' | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -73,14 +74,15 @@ export default function Cupboard() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images,
       quality: 0.7,
-      base64: false, // We use FileSystem to read it later in gemini-mobile
+      base64: false,
     });
 
     if (!result.canceled && result.assets[0].uri) {
       setScanning(true);
       setShowScanResult(true);
+      setScanType('receipt');
       try {
         const items = await parseReceiptImageMobile(result.assets[0].uri);
         setScannedItems(items);
@@ -91,6 +93,38 @@ export default function Cupboard() {
         setScanning(false);
       }
     }
+  };
+
+  const handleScanVideo = async () => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status: micStatus } = await ImagePicker.requestMicrophonePermissionsAsync(); // Video might need mic perms
+      if (status !== 'granted') {
+          Alert.alert('Permission needed', 'Camera permission is required to scan video.');
+          return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaType.Videos,
+          quality: 0.5,
+          videoMaxDuration: 10, // Limit duration to keep upload size manageable
+          allowsEditing: true,
+      });
+
+      if (!result.canceled && result.assets[0].uri) {
+          setScanning(true);
+          setShowScanResult(true);
+          setScanType('video');
+          try {
+              const items = await parseCupboardVideoMobile(result.assets[0].uri);
+              setScannedItems(items);
+          } catch (e) {
+              console.error(e);
+              Alert.alert('Error', 'Failed to analyze video.');
+              setShowScanResult(false);
+          } finally {
+              setScanning(false);
+          }
+      }
   };
 
   const saveScannedItems = async () => {
@@ -127,9 +161,14 @@ export default function Cupboard() {
     <SafeAreaView edges={['top']} className="flex-1 bg-gray-50">
       <View className="px-4 py-3 bg-white border-b border-gray-100 flex-row justify-between items-center">
         <Text className="text-2xl font-bold text-gray-900">Cupboard</Text>
-        <TouchableOpacity onPress={handleScanReceipt} className="p-2 bg-indigo-50 rounded-full">
-            <Camera size={20} color="#4F46E5" />
-        </TouchableOpacity>
+        <View className="flex-row gap-2">
+            <TouchableOpacity onPress={handleScanVideo} className="p-2 bg-indigo-50 rounded-full">
+                <Video size={20} color="#4F46E5" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleScanReceipt} className="p-2 bg-indigo-50 rounded-full">
+                <Camera size={20} color="#4F46E5" />
+            </TouchableOpacity>
+        </View>
       </View>
 
       <View className="p-4 bg-white shadow-sm z-10">
@@ -217,7 +256,9 @@ export default function Cupboard() {
       <Modal visible={showScanResult} animationType="slide" presentationStyle="pageSheet">
           <View className="flex-1 bg-white p-6">
               <View className="flex-row justify-between items-center mb-6">
-                  <Text className="text-2xl font-bold">Scan Results</Text>
+                  <Text className="text-2xl font-bold">
+                    {scanType === 'receipt' ? 'Receipt Scan' : 'Video Scan'} Results
+                  </Text>
                   <TouchableOpacity onPress={() => setShowScanResult(false)}>
                       <X size={24} color="#1F2937" />
                   </TouchableOpacity>
@@ -226,7 +267,7 @@ export default function Cupboard() {
               {scanning ? (
                   <View className="flex-1 justify-center items-center">
                       <ActivityIndicator size="large" color="#4F46E5" />
-                      <Text className="mt-4 text-gray-500">Analyzing image...</Text>
+                      <Text className="mt-4 text-gray-500">Analyzing {scanType}...</Text>
                   </View>
               ) : (
                   <>
