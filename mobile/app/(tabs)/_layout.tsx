@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { ChefHat, Calendar, ShoppingCart, Home } from 'lucide-react-native';
+import { ChefHat, Calendar, ShoppingCart, Home, Package } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -52,6 +52,14 @@ export default function TabLayout() {
         options={{
           title: 'Recipes',
           tabBarIcon: ({ color, size }) => <ChefHat size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="cupboard"
+        options={{
+          title: 'Cupboard',
+          headerShown: false, // Custom header in component
+          tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
         }}
       />
       <Tabs.Screen
