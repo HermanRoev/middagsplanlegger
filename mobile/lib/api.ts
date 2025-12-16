@@ -1,7 +1,7 @@
-import { collection, getDocs, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, getDoc, addDoc, updateDoc, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 import { db } from './firebase';
-import { Meal, PlannedMeal, CupboardItem } from '../../src/types';
-import { startOfWeek, endOfWeek, format, parseISO } from 'date-fns';
+import { Meal, PlannedMeal, Suggestion } from '../../src/types';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
 
 export async function getUserRecipes(userId: string): Promise<Meal[]> {
   const recipesRef = collection(db, 'meals');
@@ -17,6 +17,16 @@ export async function getRecipeById(recipeId: string): Promise<Meal | null> {
     return { id: docSnap.id, ...docSnap.data() } as Meal;
   }
   return null;
+}
+
+export async function createMeal(meal: Omit<Meal, 'id'>): Promise<string> {
+  const recipesRef = collection(db, 'meals');
+  const docRef = await addDoc(recipesRef, {
+    ...meal,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+  return docRef.id;
 }
 
 export async function getPlannedMeals(userId: string, date: Date): Promise<PlannedMeal[]> {
@@ -36,23 +46,32 @@ export async function getPlannedMeals(userId: string, date: Date): Promise<Plann
 }
 
 export async function getShoppingList(userId: string): Promise<{ planned: any[], manual: any[] }> {
-  // Logic simplified for reading; complete implementation would involve
-  // aggregating ingredients from planned meals vs cupboard stock.
-  // For this "view-only" first pass, we might just list manual items or
-  // rely on a stored shopping list if that's how the web app does it.
-
-  // Checking memory: "The shopping list (/dashboard/shop) persists 'manual' items directly,
-  // while 'planned' items (from recipes) are derived. The checked state of planned items
-  // is persisted in a separate shoppingChecked Firestore collection."
-
-  // Implementation note: Fully replicating the derived logic on mobile
-  // without shared business logic code might be complex.
-  // I will implement fetching manual items first.
-
   const shoppingRef = collection(db, 'shoppingList');
   const q = query(shoppingRef, where('userId', '==', userId));
   const snapshot = await getDocs(q);
   const manual = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
   return { planned: [], manual };
+}
+
+export async function getInboxMeals(): Promise<Suggestion[]> {
+  const suggestionsRef = collection(db, 'suggestions');
+  const q = query(suggestionsRef, orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Suggestion));
+}
+
+export async function voteForMeal(suggestionId: string, userId: string, vote: boolean): Promise<void> {
+  const suggestionRef = doc(db, 'suggestions', suggestionId);
+  if (vote) {
+    await updateDoc(suggestionRef, {
+      votedBy: arrayUnion(userId),
+      votes: increment(1)
+    });
+  } else {
+    await updateDoc(suggestionRef, {
+      votedBy: arrayRemove(userId),
+      votes: increment(-1)
+    });
+  }
 }

@@ -3,8 +3,8 @@ import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { 
   initializeAuth, 
   getAuth, 
-  getReactNativePersistence, 
-  Auth 
+  Auth,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
@@ -27,8 +27,21 @@ let storage: FirebaseStorage;
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
   
+  // Attempt to use getReactNativePersistence via require to bypass type check issues
+  // if strict types for v12 are blocking it.
+  let persistence;
+  try {
+    // @ts-ignore
+    const { getReactNativePersistence } = require('firebase/auth');
+    if (getReactNativePersistence) {
+        persistence = getReactNativePersistence(AsyncStorage);
+    }
+  } catch (e) {
+    console.warn("Failed to load getReactNativePersistence", e);
+  }
+
   auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
+    persistence: persistence || browserLocalPersistence,
   });
   
   db = getFirestore(app);

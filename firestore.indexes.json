@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "plannedMeals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "plannedBy.id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

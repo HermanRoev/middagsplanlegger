@@ -3,7 +3,7 @@ import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { getRecipeById } from '../../../lib/api';
 import { Meal } from '../../../../src/types';
-import { Clock, Users, ArrowLeft, Utensils, CircleDollarSign } from 'lucide-react-native';
+import { Clock, Users, Utensils, CircleDollarSign } from 'lucide-react-native';
 
 export default function RecipeDetail() {
   const { id } = useLocalSearchParams();
@@ -40,7 +40,7 @@ export default function RecipeDetail() {
 
   return (
     <View className="flex-1 bg-white">
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ title: recipe.name }} />
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Image Header */}
@@ -56,14 +56,6 @@ export default function RecipeDetail() {
                <Text className="text-6xl">🥘</Text>
             </View>
           )}
-
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="absolute top-12 left-4 bg-white/90 p-2 rounded-full shadow-sm"
-          >
-            <ArrowLeft size={24} color="#111827" />
-          </TouchableOpacity>
-
           <View className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
         </View>
 
