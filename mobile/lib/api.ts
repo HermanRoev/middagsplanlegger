@@ -45,23 +45,29 @@ export async function getPlannedMeals(userId: string, date: Date): Promise<Plann
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PlannedMeal));
 }
 
+export async function addPlannedMeal(userId: string, meal: Meal, date: string): Promise<void> {
+    const plannerRef = collection(db, 'plannedMeals');
+    await addDoc(plannerRef, {
+        date,
+        mealId: meal.id,
+        mealName: meal.name,
+        imageUrl: meal.imageUrl || null,
+        plannedServings: meal.servings || 4,
+        isShopped: false,
+        isCooked: false,
+        ingredients: meal.ingredients || [], // Standard ingredients
+        scaledIngredients: meal.ingredients || [], // Default to standard
+        instructions: meal.instructions || [],
+        prepTime: meal.prepTime,
+        plannedBy: { id: userId, name: 'User' }, // Simplified
+        createdAt: new Date().toISOString()
+    });
+}
+
 export async function getShoppingList(userId: string): Promise<{ planned: any[], manual: any[] }> {
   // Fetch manual items
   const shoppingRef = collection(db, 'shoppingList');
-  const q = query(shoppingRef, where('userId', '==', userId)); // Note: Web app doesn't seem to filter by userId in the read_file output?
-  // Wait, the web app code shows `const q = query(collection(db, "shoppingList"))` - NO userId filter?
-  // That seems wrong for a multi-user app, but maybe it's a family shared list?
-  // The mobile `getShoppingList` currently filters by `userId`.
-  // If the web app is shared, mobile should probably match.
-  // But given I am "fixing" it, let's assume it should be per user or match existing pattern.
-  // The web app snapshot does NOT filter. The mobile one DOES.
-  // Let's stick to the mobile filter for safety unless it's empty.
-  // Actually, the web app code `src/app/dashboard/shop/page.tsx` definitely does `query(collection(db, "shoppingList"))`.
-  // This implies a shared global list or security rules handle it.
-  // I'll keep the filter for now as it's safer, or check if `userId` is even in the document on web.
-  // Web `addItem` writes: `name`, `checked`, `createdAt`. NO userId.
-  // So `where('userId', '==', userId)` on mobile will return NOTHING if the web app created items without userId.
-
+  const q = query(shoppingRef, where('userId', '==', userId));
   // FIX: Remove userId filter for manual items to match web behavior (or lack thereof).
   const snapshot = await getDocs(shoppingRef);
   const manual = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -72,7 +78,7 @@ export async function getShoppingList(userId: string): Promise<{ planned: any[],
 
   // Fetch checked status for planned items
   const checkedRef = collection(db, 'shoppingChecked');
-  const checkedQ = query(checkedRef); // Again, no userId filter on web side for this?
+  const checkedQ = query(checkedRef);
   const checkedSnap = await getDocs(checkedQ);
   const checkedMap: Record<string, boolean> = {};
   checkedSnap.docs.forEach(doc => {
@@ -82,10 +88,6 @@ export async function getShoppingList(userId: string): Promise<{ planned: any[],
   const planned = plannedMeals.flatMap(meal => {
       const ingredients = meal.scaledIngredients || meal.ingredients || [];
       return ingredients.map(ing => {
-          // Construct ID logic similar to web if possible, or just use a composite key for now
-          // Web uses `${ing.name.toLowerCase()}-${normalizedUnit}` as key for aggregation
-          // We'll skip complex aggregation for this step and just list them, but we need the ID to check state.
-          // Let's make a best effort ID.
           const id = `${ing.name.toLowerCase()}-${ing.unit}`;
           return {
             ...ing,
@@ -106,7 +108,6 @@ export async function addManualShoppingItem(name: string): Promise<void> {
         name,
         checked: false,
         createdAt: new Date().toISOString()
-        // No userId based on web implementation
     });
 }
 

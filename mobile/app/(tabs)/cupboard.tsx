@@ -74,7 +74,7 @@ export default function Cupboard() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
       base64: false,
     });
@@ -97,14 +97,13 @@ export default function Cupboard() {
 
   const handleScanVideo = async () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      const { status: micStatus } = await ImagePicker.requestMicrophonePermissionsAsync(); // Video might need mic perms
       if (status !== 'granted') {
           Alert.alert('Permission needed', 'Camera permission is required to scan video.');
           return;
       }
 
       const result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaType.Videos,
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
           quality: 0.5,
           videoMaxDuration: 10, // Limit duration to keep upload size manageable
           allowsEditing: true,
@@ -158,7 +157,7 @@ export default function Cupboard() {
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50">
       <View className="px-4 py-3 bg-white border-b border-gray-100 flex-row justify-between items-center">
         <Text className="text-2xl font-bold text-gray-900">Cupboard</Text>
         <View className="flex-row gap-2">
@@ -292,6 +291,6 @@ export default function Cupboard() {
               )}
           </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

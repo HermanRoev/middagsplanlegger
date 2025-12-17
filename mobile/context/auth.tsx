@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
@@ -7,9 +7,14 @@ import { View, ActivityIndicator } from 'react-native';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({
+    user: null,
+    loading: true,
+    signOut: async () => {}
+});
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -31,7 +36,7 @@ function useProtectedRoute(user: User | null, loading: boolean) {
     if (!user && inAuthGroup) {
       router.replace('/login');
     } else if (user && segments[0] === 'login') {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/');
     }
   }, [user, segments, rootNavigationState, loading]);
 }
@@ -52,6 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+  };
+
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center">
@@ -61,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

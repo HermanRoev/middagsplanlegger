@@ -18,7 +18,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50">
       <View className="px-4 py-3 bg-white border-b border-gray-100 flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-gray-900">Profile</Text>
       </View>
@@ -59,6 +59,6 @@ export default function ProfileScreen() {
 
           <Text className="text-center text-gray-400 mt-8 text-xs">Version 1.0.0</Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

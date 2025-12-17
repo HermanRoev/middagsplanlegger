@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
 import { getPlannedMeals } from '../../lib/api';
 import { PlannedMeal } from '../../../src/types';
-import { startOfWeek, addDays, format, isSameDay, parseISO } from 'date-fns';
-import { ChevronLeft, ChevronRight, Utensils } from 'lucide-react-native';
+import { startOfWeek, addDays, format, isSameDay } from 'date-fns';
+import { ChevronLeft, ChevronRight, Utensils, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function Planner() {
@@ -18,7 +18,10 @@ export default function Planner() {
   const weekDays = [...Array(7)].map((_, i) => addDays(weekStart, i));
 
   useEffect(() => {
-    async function fetchPlanner() {
+    fetchPlanner();
+  }, [user, currentDate]);
+
+  async function fetchPlanner() {
       if (!user) return;
       setLoading(true);
       try {
@@ -30,11 +33,27 @@ export default function Planner() {
         setLoading(false);
       }
     }
-    fetchPlanner();
-  }, [user, currentDate]);
 
   const changeWeek = (direction: 'prev' | 'next') => {
     setCurrentDate(date => addDays(date, direction === 'prev' ? -7 : 7));
+  };
+
+  const handleAddMeal = (dateStr: string) => {
+    // Navigate to recipes list with a selection mode or param
+    // Since we don't have a sophisticated "Select Mode", we can push to recipes
+    // and pass the date as a param. The Recipes page needs to handle this "selection" mode.
+    // Alternatively, simpler for MVP: Go to recipes, user clicks a recipe, and if we are in "planning mode" it adds it.
+    // Or, we show a modal here.
+
+    // For now, let's navigate to recipes with a query param `planningDate`.
+    router.push({ pathname: '/(tabs)/recipes', params: { planningDate: dateStr } });
+  };
+
+  const handleEditMeal = (meal: PlannedMeal) => {
+      // Navigate to meal details.
+      // If we want to edit the *planned* instance (e.g. servings), we need a specific route.
+      // But typically we just view the recipe.
+      router.push(`/(tabs)/recipes/${meal.mealId}`);
   };
 
   return (
@@ -86,7 +105,7 @@ export default function Planner() {
                     mealsForDay.map(meal => (
                       <TouchableOpacity
                         key={meal.id}
-                        onPress={() => router.push(`/(tabs)/recipes/${meal.mealId}`)} // Navigate to original recipe for now
+                        onPress={() => handleEditMeal(meal)}
                         className="flex-row items-center bg-gray-50 p-3 rounded-xl border border-gray-100"
                       >
                         <View className="bg-white p-2 rounded-lg mr-3 shadow-sm">
@@ -99,9 +118,13 @@ export default function Planner() {
                       </TouchableOpacity>
                     ))
                   ) : (
-                    <View className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200 items-center">
-                      <Text className="text-gray-400 text-sm">No meal planned</Text>
-                    </View>
+                    <TouchableOpacity
+                        onPress={() => handleAddMeal(dayStr)}
+                        className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200 items-center flex-row justify-center"
+                    >
+                      <Plus size={16} color="#9CA3AF" />
+                      <Text className="text-gray-500 text-sm ml-2 font-medium">Add Meal</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               );

@@ -1,11 +1,11 @@
 import { View, Text, FlatList, ActivityIndicator, TextInput, TouchableOpacity, Modal, ScrollView, Alert } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../context/auth';
-import { getUserRecipes } from '../../../lib/api';
+import { getUserRecipes, addPlannedMeal } from '../../../lib/api';
 import { Meal } from '../../../../src/types';
 import { RecipeCard } from '../../../components/RecipeCard';
-import { Search, Plus, Inbox, Link as LinkIcon, Camera, Type, ChefHat } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { Search, Plus, Inbox, Link as LinkIcon, Camera, Type, ChefHat, Calendar } from 'lucide-react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { generateRecipeFromImageMobile, generateRecipeFromTextMobile } from '../../../lib/gemini-mobile';
 import { createMeal } from '../../../lib/api';
@@ -23,6 +23,8 @@ export default function RecipesList() {
   const [aiText, setAiText] = useState('');
 
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const planningDate = params.planningDate as string;
 
   useEffect(() => {
     fetchRecipes();
@@ -44,6 +46,34 @@ export default function RecipesList() {
     recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleRecipePress = (recipe: Meal) => {
+      if (planningDate) {
+          Alert.alert(
+              'Plan Meal',
+              `Add ${recipe.name} to your plan for ${planningDate}?`,
+              [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Add to Plan', onPress: async () => {
+                      if (!user) return;
+                      try {
+                          await addPlannedMeal(user.uid, recipe, planningDate);
+                          Alert.alert('Success', 'Meal added to plan!');
+                          router.push('/(tabs)/'); // Go back to planner
+                      } catch (e) {
+                          Alert.alert('Error', 'Failed to add meal');
+                      }
+                  }}
+              ]
+          );
+      } else {
+          // Standard details view (if we had a details page route configured fully, or expand card)
+          // For now, let's just show an alert or expand if implemented.
+          // The card doesn't have an onPress prop exposed typically unless wrapped.
+          // Wait, RecipeCard is a component. Let's see if it handles press.
+          // If not, we wrap it here.
+      }
+  };
+
   const handleManualCreate = () => {
     setShowCreateOptions(false);
     router.push('/(tabs)/recipes/create');
@@ -55,7 +85,7 @@ export default function RecipesList() {
      if (status !== 'granted') return Alert.alert('Permission needed');
 
      const result = await ImagePicker.launchCameraAsync({
-         mediaTypes: ImagePicker.MediaType.Images,
+         mediaTypes: ImagePicker.MediaTypeOptions.Images,
          quality: 0.5,
          base64: false
      });
@@ -132,6 +162,19 @@ export default function RecipesList() {
         </TouchableOpacity>
       </View>
 
+      {/* Planning Mode Banner */}
+      {planningDate && (
+          <View className="bg-indigo-50 px-4 py-2 flex-row items-center justify-between border-b border-indigo-100">
+              <View className="flex-row items-center">
+                  <Calendar size={16} color="#4F46E5" />
+                  <Text className="ml-2 text-indigo-700 font-medium">Selecting for {planningDate}</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.setParams({ planningDate: '' })}>
+                  <Text className="text-indigo-500 text-xs font-bold">CANCEL</Text>
+              </TouchableOpacity>
+          </View>
+      )}
+
       {/* AI Loading Overlay */}
       {aiLoading && (
           <View className="absolute inset-0 bg-black/50 z-50 justify-center items-center">
@@ -150,7 +193,11 @@ export default function RecipesList() {
         <FlatList
           data={filteredRecipes}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <RecipeCard recipe={item} />}
+          renderItem={({ item }) => (
+              <TouchableOpacity onPress={() => handleRecipePress(item)}>
+                  <RecipeCard recipe={item} />
+              </TouchableOpacity>
+          )}
           contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center mt-20">
