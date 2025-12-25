@@ -2,8 +2,9 @@ import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput,
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
 import { getShoppingList, addManualShoppingItem, toggleShoppingItem, deleteShoppingItem } from '../../lib/api';
-import { CheckCircle2, Circle, Plus, Trash2, X } from 'lucide-react-native';
+import { CheckCircle2, Circle, Plus, Trash2, X, Copy } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 
 export default function Shop() {
   const { user } = useAuth();
@@ -20,13 +21,12 @@ export default function Shop() {
 
   async function fetchShop() {
       if (!user) return;
-      // setLoading(true); // Don't block UI on refresh
       try {
         const { manual, planned } = await getShoppingList(user.uid);
 
         const manualMapped = manual.map((m: any) => ({
             id: m.id,
-            text: m.name || m.item, // Handle legacy 'item' field if exists
+            text: m.name || m.item,
             checked: m.checked || false,
             isManual: true
         }));
@@ -38,7 +38,6 @@ export default function Shop() {
             isManual: false
         }));
 
-        // Sort: Unchecked first
         const allItems = [...manualMapped, ...plannedMapped].sort((a, b) => Number(a.checked) - Number(b.checked));
         setItems(allItems);
       } catch (error) {
@@ -51,17 +50,16 @@ export default function Shop() {
   const handleAddItem = async () => {
       if (!newItemName.trim()) return;
       try {
-          // Optimistic update
           const tempId = Date.now().toString();
           setItems(prev => [{ id: tempId, text: newItemName, checked: false, isManual: true }, ...prev]);
           setNewItemName('');
           setIsAdding(false);
 
           await addManualShoppingItem(newItemName);
-          fetchShop(); // Refresh to get real ID
+          fetchShop();
       } catch (error) {
           Alert.alert('Error', 'Failed to add item');
-          fetchShop(); // Revert
+          fetchShop();
       }
   };
 
@@ -69,23 +67,20 @@ export default function Shop() {
     const item = items.find(i => i.id === id);
     if (!item) return;
 
-    // Optimistic
     setItems(current =>
       current.map(i => i.id === id ? { ...i, checked: !i.checked } : i)
-             .sort((a, b) => Number(a.checked) - Number(b.checked)) // Re-sort? Maybe annoying if it jumps. Let's keep position or sort.
-             // Usually sorting on check is standard but can be jarring. Let's not sort immediately on toggle for UX stability.
+             .sort((a, b) => Number(a.checked) - Number(b.checked))
     );
 
     try {
         await toggleShoppingItem(id, !item.checked, isManual);
     } catch (error) {
         console.error(error);
-        fetchShop(); // Revert
+        fetchShop();
     }
   };
 
   const handleDelete = async (id: string) => {
-      // Optimistic
       setItems(current => current.filter(i => i.id !== id));
       try {
           await deleteShoppingItem(id);
@@ -95,6 +90,17 @@ export default function Shop() {
       }
   };
 
+  const handleCopyList = async () => {
+      const uncheckedItems = items.filter(i => !i.checked);
+      if (uncheckedItems.length === 0) {
+          Alert.alert('Info', 'No items to copy');
+          return;
+      }
+      const text = "Shopping List:\n" + uncheckedItems.map(i => `- ${i.text}`).join('\n');
+      await Clipboard.setStringAsync(text);
+      Alert.alert('Success', 'Shopping list copied to clipboard');
+  };
+
   return (
     <View className="flex-1 bg-gray-50">
       <View className="bg-white p-4 border-b border-gray-100 flex-row justify-between items-center pt-12">
@@ -102,12 +108,20 @@ export default function Shop() {
           <Text className="text-2xl font-bold text-gray-900">Shopping List</Text>
           <Text className="text-gray-500 text-sm">{items.filter(i => !i.checked).length} items to buy</Text>
         </View>
-        <TouchableOpacity
-            onPress={() => setIsAdding(true)}
-            className="bg-indigo-600 p-3 rounded-full shadow-sm"
-        >
-          <Plus size={24} color="white" />
-        </TouchableOpacity>
+        <View className="flex-row gap-2">
+            <TouchableOpacity
+                onPress={handleCopyList}
+                className="bg-gray-100 p-3 rounded-full"
+            >
+              <Copy size={24} color="#374151" />
+            </TouchableOpacity>
+            <TouchableOpacity
+                onPress={() => setIsAdding(true)}
+                className="bg-indigo-600 p-3 rounded-full shadow-sm"
+            >
+              <Plus size={24} color="white" />
+            </TouchableOpacity>
+        </View>
       </View>
 
       {/* Add Item Modal/Overlay */}

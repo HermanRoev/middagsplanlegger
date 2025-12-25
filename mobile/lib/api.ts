@@ -55,11 +55,28 @@ export async function addPlannedMeal(userId: string, meal: Meal, date: string): 
         plannedServings: meal.servings || 4,
         isShopped: false,
         isCooked: false,
-        ingredients: meal.ingredients || [], // Standard ingredients
-        scaledIngredients: meal.ingredients || [], // Default to standard
+        ingredients: meal.ingredients || [],
+        scaledIngredients: meal.ingredients || [],
         instructions: meal.instructions || [],
         prepTime: meal.prepTime,
-        plannedBy: { id: userId, name: 'User' }, // Simplified
+        plannedBy: { id: userId, name: 'User' },
+        createdAt: new Date().toISOString()
+    });
+}
+
+export async function addLeftoverMeal(userId: string, date: string): Promise<void> {
+    const plannerRef = collection(db, 'plannedMeals');
+    await addDoc(plannerRef, {
+        date,
+        mealId: "leftover-placeholder",
+        mealName: "Leftovers",
+        imageUrl: null,
+        plannedServings: 4,
+        isShopped: true,
+        isCooked: false,
+        ingredients: [],
+        notes: "Eat up previous meals!",
+        plannedBy: { id: userId, name: 'User' },
         createdAt: new Date().toISOString()
     });
 }

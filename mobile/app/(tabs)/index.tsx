@@ -1,10 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
-import { getPlannedMeals } from '../../lib/api';
+import { getPlannedMeals, addLeftoverMeal } from '../../lib/api';
 import { PlannedMeal } from '../../../src/types';
 import { startOfWeek, addDays, format, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Utensils, Plus } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Utensils, Plus, Copy } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function Planner() {
@@ -39,20 +39,24 @@ export default function Planner() {
   };
 
   const handleAddMeal = (dateStr: string) => {
-    // Navigate to recipes list with a selection mode or param
-    // Since we don't have a sophisticated "Select Mode", we can push to recipes
-    // and pass the date as a param. The Recipes page needs to handle this "selection" mode.
-    // Alternatively, simpler for MVP: Go to recipes, user clicks a recipe, and if we are in "planning mode" it adds it.
-    // Or, we show a modal here.
-
-    // For now, let's navigate to recipes with a query param `planningDate`.
     router.push({ pathname: '/(tabs)/recipes', params: { planningDate: dateStr } });
   };
 
+  const handleAddLeftovers = async (dateStr: string) => {
+      if (!user) return;
+      try {
+          await addLeftoverMeal(user.uid, dateStr);
+          fetchPlanner();
+      } catch (e) {
+          Alert.alert('Error', 'Failed to plan leftovers');
+      }
+  };
+
   const handleEditMeal = (meal: PlannedMeal) => {
-      // Navigate to meal details.
-      // If we want to edit the *planned* instance (e.g. servings), we need a specific route.
-      // But typically we just view the recipe.
+      if (meal.mealId === 'leftover-placeholder') {
+          Alert.alert('Leftovers', meal.notes);
+          return;
+      }
       router.push(`/(tabs)/recipes/${meal.mealId}`);
   };
 
@@ -106,25 +110,46 @@ export default function Planner() {
                       <TouchableOpacity
                         key={meal.id}
                         onPress={() => handleEditMeal(meal)}
-                        className="flex-row items-center bg-gray-50 p-3 rounded-xl border border-gray-100"
+                        className={`flex-row items-center p-3 rounded-xl border border-gray-100 mb-2 ${
+                            meal.mealId === 'leftover-placeholder' ? 'bg-amber-50 border-amber-100' : 'bg-gray-50'
+                        }`}
                       >
-                        <View className="bg-white p-2 rounded-lg mr-3 shadow-sm">
-                          <Utensils size={16} color="#4F46E5" />
+                        <View className={`p-2 rounded-lg mr-3 shadow-sm ${
+                            meal.mealId === 'leftover-placeholder' ? 'bg-amber-100' : 'bg-white'
+                        }`}>
+                          {meal.mealId === 'leftover-placeholder' ? (
+                              <Copy size={16} color="#B45309" />
+                          ) : (
+                              <Utensils size={16} color="#4F46E5" />
+                          )}
                         </View>
                         <View className="flex-1">
-                          <Text className="font-semibold text-gray-900">{meal.mealName}</Text>
-                          <Text className="text-xs text-gray-500">{meal.plannedServings} servings</Text>
+                          <Text className={`font-semibold ${
+                              meal.mealId === 'leftover-placeholder' ? 'text-amber-900' : 'text-gray-900'
+                          }`}>{meal.mealName}</Text>
+                          {meal.mealId !== 'leftover-placeholder' && (
+                              <Text className="text-xs text-gray-500">{meal.plannedServings} servings</Text>
+                          )}
                         </View>
                       </TouchableOpacity>
                     ))
                   ) : (
-                    <TouchableOpacity
-                        onPress={() => handleAddMeal(dayStr)}
-                        className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200 items-center flex-row justify-center"
-                    >
-                      <Plus size={16} color="#9CA3AF" />
-                      <Text className="text-gray-500 text-sm ml-2 font-medium">Add Meal</Text>
-                    </TouchableOpacity>
+                    <View className="flex-row gap-2">
+                        <TouchableOpacity
+                            onPress={() => handleAddMeal(dayStr)}
+                            className="flex-1 bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200 items-center flex-row justify-center"
+                        >
+                          <Plus size={16} color="#9CA3AF" />
+                          <Text className="text-gray-500 text-sm ml-2 font-medium">Add Meal</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => handleAddLeftovers(dayStr)}
+                            className="w-12 bg-amber-50 rounded-xl border border-dashed border-amber-200 items-center justify-center"
+                        >
+                            <Copy size={16} color="#D97706" />
+                        </TouchableOpacity>
+                    </View>
                   )}
                 </View>
               );
