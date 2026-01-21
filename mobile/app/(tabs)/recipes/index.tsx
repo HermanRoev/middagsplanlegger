@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/auth';
 import { getUserRecipes, addPlannedMeal } from '../../../lib/api';
 import { Meal } from '../../../../src/types';
 import { RecipeCard } from '../../../components/RecipeCard';
-import { Search, Plus, Inbox, Link as LinkIcon, Camera, Type, ChefHat, Calendar } from 'lucide-react-native';
+import { Search, Plus, Link as LinkIcon, Camera, ChefHat, Calendar } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { generateRecipeFromImageMobile, generateRecipeFromTextMobile } from '../../../lib/gemini-mobile';
@@ -148,12 +148,6 @@ export default function RecipesList() {
             onChangeText={setSearchQuery}
           />
         </View>
-        <TouchableOpacity
-          onPress={() => router.push('/(tabs)/recipes/inbox')}
-          className="bg-indigo-50 p-3 rounded-xl"
-        >
-          <Inbox size={20} color="#4F46E5" />
-        </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setShowCreateOptions(true)}
           className="bg-indigo-600 p-3 rounded-xl shadow-sm"

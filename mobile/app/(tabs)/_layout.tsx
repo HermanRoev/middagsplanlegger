@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from 'expo-router';
-import { ChefHat, Calendar, ShoppingCart, Package, User } from 'lucide-react-native';
+import { ChefHat, Calendar, ShoppingCart, Package, User, MessageSquare } from 'lucide-react-native';
 import { TouchableOpacity, View } from 'react-native';
 
 export default function TabLayout() {
@@ -56,10 +56,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="cupboard"
+        name="inbox"
         options={{
-          title: 'Cupboard',
-          tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
+          title: 'Inbox',
+          tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -69,10 +69,17 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <ShoppingCart size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="cupboard"
+        options={{
+          title: 'Cupboard',
+          tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
+        }}
+      />
        <Tabs.Screen
         name="home"
         options={{
-          href: null, // Hide Home from tabs entirely as we swapped it out
+          href: null, // Hide Home from tabs entirely
         }}
       />
     </Tabs>

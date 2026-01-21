@@ -1,8 +1,8 @@
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../../context/auth';
-import { getInboxMeals, voteForMeal, addSuggestion, approveSuggestion, rejectSuggestion } from '../../../lib/api';
-import { Suggestion } from '../../../../src/types';
+import { useAuth } from '../../context/auth';
+import { getInboxMeals, voteForMeal, addSuggestion, approveSuggestion, rejectSuggestion } from '../../lib/api';
+import { Suggestion } from '../../../src/types';
 import { ThumbsUp, Check, X, Plus, Trash } from 'lucide-react-native';
 import { formatDistanceToNow } from 'date-fns';
 
