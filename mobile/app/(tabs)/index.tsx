@@ -39,7 +39,8 @@ export default function Planner() {
   };
 
   const handleAddMeal = (dateStr: string) => {
-    router.push({ pathname: '/(tabs)/recipes', params: { planningDate: dateStr } });
+    // Navigate with query param string to ensure it updates even if tab is already mounted
+    router.push(`/(tabs)/recipes?planningDate=${dateStr}`);
   };
 
   const handleAddLeftovers = async (dateStr: string) => {

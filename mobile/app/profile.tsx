@@ -99,7 +99,7 @@ export default function ProfileScreen() {
   const displayImage = imageUri || user?.photoURL;
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'left', 'right']}>
       <View className="px-4 py-3 bg-white border-b border-gray-100 flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-gray-900">Account Settings</Text>
       </View>
