@@ -76,12 +76,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
         }}
       />
-       <Tabs.Screen
-        name="home"
-        options={{
-          href: null, // Hide Home from tabs entirely
-        }}
-      />
     </Tabs>
   );
 }

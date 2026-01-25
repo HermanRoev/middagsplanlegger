@@ -7,7 +7,6 @@ import { CupboardItem } from '../../../src/types';
 import { Package, Plus, Search, Trash2, Camera, X, Video } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { parseReceiptImageMobile, parseCupboardVideoMobile } from '../../lib/gemini-mobile';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Cupboard() {
   const { user } = useAuth();
