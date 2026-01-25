@@ -128,6 +128,7 @@ export default function Shop() {
       {isAdding && (
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
             className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 shadow-lg z-50 rounded-t-3xl"
           >
               <View className="flex-row justify-between items-center mb-4">

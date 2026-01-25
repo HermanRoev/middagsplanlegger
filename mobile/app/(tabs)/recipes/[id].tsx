@@ -2,11 +2,13 @@ import { View, Text, Image, ScrollView, ActivityIndicator, TouchableOpacity } fr
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { getRecipeById } from '../../../lib/api';
+import { useAuth } from '../../../context/auth';
 import { Meal } from '../../../../src/types';
 import { Clock, Users, Utensils, CircleDollarSign } from 'lucide-react-native';
 
 export default function RecipeDetail() {
   const { id } = useLocalSearchParams();
+  const { user } = useAuth();
   const [recipe, setRecipe] = useState<Meal | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -40,7 +42,18 @@ export default function RecipeDetail() {
 
   return (
     <View className="flex-1 bg-white">
-      <Stack.Screen options={{ title: recipe.name }} />
+      <Stack.Screen
+        options={{
+          title: recipe.name,
+          headerRight: () => (
+            user && recipe.createdBy?.id === user.uid ? (
+              <TouchableOpacity onPress={() => router.push(`/(tabs)/recipes/edit/${recipe.id}`)}>
+                <Text className="text-indigo-600 font-bold text-lg">Edit</Text>
+              </TouchableOpacity>
+            ) : null
+          )
+        }}
+      />
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Image Header */}
@@ -104,14 +117,14 @@ export default function RecipeDetail() {
 
             {/* Instructions */}
             <View>
-              <Text className="text-lg font-bold text-gray-900 mb-4">Instructions</Text>
-              <View className="space-y-6">
+              <Text className="text-lg font-bold text-gray-900 mb-6">Instructions</Text>
+              <View className="space-y-8">
                 {recipe.instructions.map((step, idx) => (
-                  <View key={idx} className="flex-row gap-4">
+                  <View key={idx} className="flex-row gap-4 mb-2">
                     <View className="w-8 h-8 rounded-full bg-indigo-100 items-center justify-center">
                       <Text className="text-indigo-700 font-bold">{idx + 1}</Text>
                     </View>
-                    <Text className="text-gray-600 flex-1 leading-6 pt-1">{step}</Text>
+                    <Text className="text-gray-600 flex-1 leading-7 pt-1 text-base">{step}</Text>
                   </View>
                 ))}
               </View>

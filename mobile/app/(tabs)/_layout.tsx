@@ -1,6 +1,6 @@
 import { Tabs, useRouter } from 'expo-router';
 import { ChefHat, Calendar, ShoppingCart, Package, User, MessageSquare } from 'lucide-react-native';
-import { TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View, Platform } from 'react-native';
 
 export default function TabLayout() {
   const router = useRouter();
@@ -22,16 +22,15 @@ export default function TabLayout() {
         headerShadowVisible: false, // Remove shadow for cleaner look
         headerStyle: {
           backgroundColor: 'white',
-          height: 100, // Slightly taller for better spacing
         },
         headerRight: () => <HeaderRight />,
         tabBarStyle: {
           backgroundColor: 'white',
           borderTopWidth: 1,
           borderTopColor: '#F3F4F6',
-          height: 85,
+          height: Platform.OS === 'ios' ? 85 : 60,
           paddingTop: 10,
-          paddingBottom: 30,
+          paddingBottom: Platform.OS === 'ios' ? 30 : 10,
         },
         tabBarActiveTintColor: '#4F46E5',
         tabBarInactiveTintColor: '#9CA3AF',

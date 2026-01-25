@@ -1,10 +1,10 @@
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert, TextInput, ScrollView } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
 import { getInboxMeals, voteForMeal, addSuggestion, approveSuggestion, rejectSuggestion } from '../../lib/api';
 import { Suggestion } from '../../../src/types';
-import { ThumbsUp, Check, X, Plus, Trash } from 'lucide-react-native';
-import { formatDistanceToNow } from 'date-fns';
+import { ThumbsUp, Check, X, Plus, Trash, Calendar } from 'lucide-react-native';
+import { formatDistanceToNow, addDays, format, isSameDay, parseISO } from 'date-fns';
 
 export default function Inbox() {
   const { user } = useAuth();
@@ -12,6 +12,7 @@ export default function Inbox() {
   const [loading, setLoading] = useState(true);
   const [newSuggestion, setNewSuggestion] = useState('');
   const [adding, setAdding] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null); // YYYY-MM-DD or null for General
 
   useEffect(() => {
     fetchInbox();
@@ -21,10 +22,6 @@ export default function Inbox() {
     if (!user) return;
     try {
       const data = await getInboxMeals();
-      // Keep all suggestions to show approved ones as well, similar to web?
-      // Web filters visual display but fetches all.
-      // Let's filter to pending + recently approved for simplicity or just sort them.
-      // The web shows all.
       setSuggestions(data);
     } catch (error) {
       console.error(error);
@@ -37,9 +34,15 @@ export default function Inbox() {
     if (!newSuggestion.trim() || !user) return;
     setAdding(true);
     try {
-        await addSuggestion(newSuggestion, user.uid, user.displayName || user.email || 'User');
+        await addSuggestion(
+            newSuggestion,
+            user.uid,
+            user.displayName || user.email || 'User',
+            selectedDate || undefined
+        );
         setNewSuggestion('');
-        fetchInbox(); // Refresh list
+        // setSelectedDate(null); // Keep date selected for multiple suggestions? Or reset. Resetting feels safer.
+        fetchInbox();
     } catch (error) {
         Alert.alert('Error', 'Failed to add suggestion');
     } finally {
@@ -53,7 +56,6 @@ export default function Inbox() {
       const hasVoted = suggestion.votedBy?.includes(user.uid);
       await voteForMeal(suggestion.id, user.uid, !hasVoted);
 
-      // Optimistic update
       setSuggestions(prev => prev.map(s => {
         if (s.id === suggestion.id) {
           const newVotedBy = hasVoted
@@ -71,7 +73,6 @@ export default function Inbox() {
   const handleApprove = async (id: string) => {
       try {
           await approveSuggestion(id);
-          // Optimistic update
           setSuggestions(prev => prev.map(s => s.id === id ? { ...s, status: 'approved' } : s));
       } catch (error) {
           Alert.alert('Error', 'Failed to approve');
@@ -92,64 +93,119 @@ export default function Inbox() {
       ]);
   };
 
-  const renderItem = ({ item }: { item: Suggestion }) => {
+  // Date Chips Generation
+  const dates = [
+      { label: 'General', value: null },
+      { label: 'Today', value: format(new Date(), 'yyyy-MM-dd') },
+      { label: 'Tomorrow', value: format(addDays(new Date(), 1), 'yyyy-MM-dd') },
+      ...Array.from({ length: 5 }).map((_, i) => {
+          const d = addDays(new Date(), i + 2);
+          return { label: format(d, 'EEE d. MMM'), value: format(d, 'yyyy-MM-dd') };
+      })
+  ];
+
+  // Group Suggestions
+  const generalSuggestions = suggestions.filter(s => !s.forDate);
+  const datedSuggestions = suggestions.filter(s => s.forDate).sort((a, b) => (a.forDate! > b.forDate! ? 1 : -1));
+
+  // Combine for FlatList with Headers
+  // We will render a custom list where we intersperse headers?
+  // Easier to just use SectionList? Or just sort and use renderItem logic to show header when date changes.
+  // Actually, let's just stick to FlatList but sort by date, putting General first or last.
+  // Let's put General at the top, then dates sorted.
+
+  const combinedData = [...generalSuggestions, ...datedSuggestions];
+
+  const renderItem = ({ item, index }: { item: Suggestion, index: number }) => {
     const hasVoted = item.votedBy?.includes(user?.uid || '');
     const isApproved = item.status === 'approved';
+    const prevItem = index > 0 ? combinedData[index - 1] : null;
+
+    // Header Logic
+    const showGeneralHeader = index === 0 && !item.forDate;
+    const showDateHeader = item.forDate && (!prevItem || prevItem.forDate !== item.forDate);
+
+    let headerText = '';
+    if (showGeneralHeader) headerText = 'General Ideas';
+    if (showDateHeader) {
+        const d = parseISO(item.forDate!);
+        if (isSameDay(d, new Date())) headerText = 'Today';
+        else if (isSameDay(d, addDays(new Date(), 1))) headerText = 'Tomorrow';
+        else headerText = format(d, 'EEEE d. MMM');
+    }
 
     return (
-      <View className={`p-4 rounded-2xl mb-3 border shadow-sm ${isApproved ? 'bg-green-50 border-green-100' : 'bg-white border-gray-100'}`}>
-        <View className="flex-row justify-between items-start mb-2">
-          <View className="flex-1 mr-4">
-              <Text className="text-gray-900 font-semibold text-lg">
-                {item.text}
+      <View>
+          {(showGeneralHeader || showDateHeader) && (
+              <Text className="text-gray-500 font-bold uppercase text-xs tracking-wider mb-2 mt-4 ml-1">
+                  {headerText}
               </Text>
-              <Text className="text-gray-500 text-xs mt-1">
-                Suggested by {item.suggestedBy?.name || 'Unknown'} • {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-              </Text>
-          </View>
-        </View>
+          )}
 
-        <View className="flex-row justify-between items-center mt-2 border-t border-gray-100 pt-2">
-           {isApproved ? (
-               <View className="flex-row items-center">
-                   <View className="bg-green-200 px-2 py-1 rounded-full flex-row items-center mr-2">
-                       <Check size={12} color="#166534" />
-                       <Text className="text-green-800 text-xs font-bold ml-1">Approved</Text>
-                   </View>
-                   <TouchableOpacity onPress={() => handleReject(item.id)} className="p-2">
-                       <Trash size={16} color="#EF4444" />
-                   </TouchableOpacity>
-               </View>
-           ) : (
-             <View className="flex-row items-center justify-between w-full">
-                <TouchableOpacity
-                    onPress={() => handleVote(item)}
-                    className={`flex-row items-center px-3 py-1.5 rounded-full border mr-2 ${
-                    hasVoted
-                        ? 'bg-indigo-50 border-indigo-200'
-                        : 'bg-white border-gray-200'
-                    }`}
-                >
-                    <ThumbsUp
-                    size={14}
-                    color={hasVoted ? '#4F46E5' : '#6B7280'}
-                    fill={hasVoted ? '#4F46E5' : 'transparent'}
-                    />
-                    <Text className={`ml-1.5 font-bold text-sm ${hasVoted ? 'text-indigo-600' : 'text-gray-600'}`}>
-                    {item.votes || 0}
+          <View className={`p-4 rounded-2xl mb-3 border shadow-sm ${isApproved ? 'bg-green-50 border-green-100' : 'bg-white border-gray-100'}`}>
+            <View className="flex-row justify-between items-start mb-2">
+            <View className="flex-1 mr-4">
+                <Text className="text-gray-900 font-semibold text-lg">
+                    {item.text}
+                </Text>
+                <View className="flex-row items-center mt-1">
+                    <Text className="text-gray-500 text-xs">
+                        {item.suggestedBy?.name || 'Unknown'}
                     </Text>
-                </TouchableOpacity>
+                    {item.forDate && (
+                         <View className="flex-row items-center bg-indigo-50 px-2 py-0.5 rounded ml-2">
+                             <Calendar size={10} color="#4F46E5" />
+                             <Text className="text-indigo-600 text-[10px] font-bold ml-1">
+                                 {format(parseISO(item.forDate), 'd. MMM')}
+                             </Text>
+                         </View>
+                    )}
+                </View>
+            </View>
+            </View>
 
-                <View className="flex-row">
-                    <TouchableOpacity onPress={() => handleApprove(item.id)} className="p-2 mr-1 bg-gray-50 rounded-full">
-                        <Check size={18} color="#16A34A" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleReject(item.id)} className="p-2 bg-gray-50 rounded-full">
-                        <X size={18} color="#EF4444" />
+            <View className="flex-row justify-between items-center mt-2 border-t border-gray-100 pt-2">
+            {isApproved ? (
+                <View className="flex-row items-center">
+                    <View className="bg-green-200 px-2 py-1 rounded-full flex-row items-center mr-2">
+                        <Check size={12} color="#166534" />
+                        <Text className="text-green-800 text-xs font-bold ml-1">Approved</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => handleReject(item.id)} className="p-2">
+                        <Trash size={16} color="#EF4444" />
                     </TouchableOpacity>
                 </View>
-             </View>
-           )}
+            ) : (
+                <View className="flex-row items-center justify-between w-full">
+                    <TouchableOpacity
+                        onPress={() => handleVote(item)}
+                        className={`flex-row items-center px-3 py-1.5 rounded-full border mr-2 ${
+                        hasVoted
+                            ? 'bg-indigo-50 border-indigo-200'
+                            : 'bg-white border-gray-200'
+                        }`}
+                    >
+                        <ThumbsUp
+                        size={14}
+                        color={hasVoted ? '#4F46E5' : '#6B7280'}
+                        fill={hasVoted ? '#4F46E5' : 'transparent'}
+                        />
+                        <Text className={`ml-1.5 font-bold text-sm ${hasVoted ? 'text-indigo-600' : 'text-gray-600'}`}>
+                        {item.votes || 0}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <View className="flex-row">
+                        <TouchableOpacity onPress={() => handleApprove(item.id)} className="p-2 mr-1 bg-gray-50 rounded-full">
+                            <Check size={18} color="#16A34A" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleReject(item.id)} className="p-2 bg-gray-50 rounded-full">
+                            <X size={18} color="#EF4444" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
+            </View>
         </View>
       </View>
     );
@@ -157,27 +213,49 @@ export default function Inbox() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View className="p-4 bg-white border-b border-gray-100">
-          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 py-2 border border-gray-200">
-              <TextInput
-                  placeholder="I want to eat..."
-                  value={newSuggestion}
-                  onChangeText={setNewSuggestion}
-                  className="flex-1 mr-2 h-10 text-base"
-                  returnKeyType="done"
-                  onSubmitEditing={handleAddSuggestion}
-              />
-              <TouchableOpacity
-                  onPress={handleAddSuggestion}
-                  disabled={!newSuggestion.trim() || adding}
-                  className={`p-2 rounded-full ${!newSuggestion.trim() ? 'bg-gray-200' : 'bg-indigo-600'}`}
-              >
-                  {adding ? (
-                      <ActivityIndicator size="small" color="white" />
-                  ) : (
-                      <Plus size={20} color="white" />
-                  )}
-              </TouchableOpacity>
+      <View className="bg-white border-b border-gray-100 pb-2">
+          {/* Date Selector */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 py-3" contentContainerStyle={{ paddingRight: 20 }}>
+              {dates.map((dateOption) => {
+                  const isSelected = selectedDate === dateOption.value;
+                  return (
+                      <TouchableOpacity
+                        key={dateOption.label}
+                        onPress={() => setSelectedDate(dateOption.value)}
+                        className={`mr-2 px-4 py-2 rounded-full border ${
+                            isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                          <Text className={`font-semibold text-xs ${isSelected ? 'text-white' : 'text-gray-600'}`}>
+                              {dateOption.label}
+                          </Text>
+                      </TouchableOpacity>
+                  );
+              })}
+          </ScrollView>
+
+          <View className="px-4 pb-2">
+              <View className="flex-row items-center bg-gray-50 rounded-xl px-4 py-2 border border-gray-200">
+                  <TextInput
+                      placeholder={`I want to eat... ${selectedDate ? `(${dates.find(d => d.value === selectedDate)?.label})` : ''}`}
+                      value={newSuggestion}
+                      onChangeText={setNewSuggestion}
+                      className="flex-1 mr-2 h-10 text-base"
+                      returnKeyType="done"
+                      onSubmitEditing={handleAddSuggestion}
+                  />
+                  <TouchableOpacity
+                      onPress={handleAddSuggestion}
+                      disabled={!newSuggestion.trim() || adding}
+                      className={`p-2 rounded-full ${!newSuggestion.trim() ? 'bg-gray-200' : 'bg-indigo-600'}`}
+                  >
+                      {adding ? (
+                          <ActivityIndicator size="small" color="white" />
+                      ) : (
+                          <Plus size={20} color="white" />
+                      )}
+                  </TouchableOpacity>
+              </View>
           </View>
       </View>
 
@@ -187,10 +265,10 @@ export default function Inbox() {
         </View>
       ) : (
         <FlatList
-          data={suggestions}
+          data={combinedData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center mt-20">
               <Text className="text-gray-400">No suggestions yet.</Text>

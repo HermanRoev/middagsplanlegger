@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, ScrollView } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
 import { db } from '../../lib/firebase';
@@ -7,6 +7,8 @@ import { CupboardItem } from '../../../src/types';
 import { Package, Plus, Search, Trash2, Camera, X, Video } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { parseReceiptImageMobile, parseCupboardVideoMobile } from '../../lib/gemini-mobile';
+
+const UNITS = ['stk', 'g', 'kg', 'l', 'dl', 'ml', 'ss', 'ts'];
 
 export default function Cupboard() {
   const { user } = useAuth();
@@ -50,6 +52,7 @@ export default function Cupboard() {
       });
       setNewItemName('');
       setNewItemAmount('');
+      setNewItemUnit('stk'); // Reset to default
       setIsAdding(false);
     } catch (e) {
       console.error(e);
@@ -204,13 +207,30 @@ export default function Cupboard() {
                         value={newItemAmount}
                         onChangeText={setNewItemAmount}
                     />
-                    <TextInput
-                         className="w-20 bg-white border border-gray-200 rounded-lg p-2 text-center"
-                         placeholder="Unit"
-                         value={newItemUnit}
-                         onChangeText={setNewItemUnit}
-                    />
                 </View>
+
+                {/* Unit Chips */}
+                <View className="mb-4">
+                  <Text className="text-xs text-gray-500 font-bold mb-2 uppercase">Unit</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {UNITS.map(unit => (
+                      <TouchableOpacity
+                        key={unit}
+                        onPress={() => setNewItemUnit(unit)}
+                        className={`mr-2 px-3 py-1.5 rounded-full border ${
+                          newItemUnit === unit
+                            ? 'bg-indigo-600 border-indigo-600'
+                            : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        <Text className={`text-xs font-semibold ${newItemUnit === unit ? 'text-white' : 'text-gray-600'}`}>
+                          {unit}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
                 <TouchableOpacity onPress={handleAddItem} className="bg-green-600 py-2 rounded-lg items-center">
                     <Text className="text-white font-bold">Save Item</Text>
                 </TouchableOpacity>

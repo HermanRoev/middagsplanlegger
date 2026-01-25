@@ -29,6 +29,14 @@ export async function createMeal(meal: Omit<Meal, 'id'>): Promise<string> {
   return docRef.id;
 }
 
+export async function updateMeal(id: string, updates: Partial<Meal>): Promise<void> {
+    const mealRef = doc(db, 'meals', id);
+    await updateDoc(mealRef, {
+        ...updates,
+        updatedAt: new Date().toISOString()
+    });
+}
+
 export async function getPlannedMeals(userId: string, date: Date): Promise<PlannedMeal[]> {
   const start = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   const end = format(endOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -150,9 +158,9 @@ export async function getInboxMeals(): Promise<Suggestion[]> {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Suggestion));
 }
 
-export async function addSuggestion(text: string, userId: string, userName: string): Promise<void> {
+export async function addSuggestion(text: string, userId: string, userName: string, forDate?: string): Promise<void> {
     const suggestionsRef = collection(db, 'suggestions');
-    await addDoc(suggestionsRef, {
+    const data: any = {
         text,
         votes: 1,
         votedBy: [userId],
@@ -162,7 +170,13 @@ export async function addSuggestion(text: string, userId: string, userName: stri
             name: userName
         },
         createdAt: new Date().toISOString()
-    });
+    };
+
+    if (forDate) {
+        data.forDate = forDate;
+    }
+
+    await addDoc(suggestionsRef, data);
 }
 
 export async function voteForMeal(suggestionId: string, userId: string, vote: boolean): Promise<void> {

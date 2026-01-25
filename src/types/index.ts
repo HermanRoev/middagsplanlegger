@@ -77,5 +77,6 @@ export interface Suggestion {
     id: string
     name: string
   }
+  forDate?: string // YYYY-MM-DD (Optional, for suggesting a specific day)
   createdAt: string
 }

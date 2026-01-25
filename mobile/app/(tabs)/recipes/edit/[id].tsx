@@ -1,16 +1,18 @@
 import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { useState } from 'react';
-import { useRouter, Stack } from 'expo-router';
-import { useAuth } from '../../../context/auth';
-import { createMeal } from '../../../lib/api';
-import { Ingredient, Meal } from '../../../../src/types';
+import { useState, useEffect } from 'react';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '../../../../context/auth';
+import { getRecipeById, updateMeal } from '../../../../lib/api';
+import { Ingredient, Meal } from '../../../../../src/types';
 import { Plus, X, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function CreateRecipe() {
+export default function EditRecipe() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState('');
   const [servings, setServings] = useState('4');
@@ -21,6 +23,33 @@ export default function CreateRecipe() {
     { name: '', amount: null, unit: 'stk' }
   ]);
   const [instructions, setInstructions] = useState<string[]>(['']);
+
+  useEffect(() => {
+      if (typeof id === 'string') {
+          loadRecipe(id);
+      }
+  }, [id]);
+
+  const loadRecipe = async (recipeId: string) => {
+      try {
+          const data = await getRecipeById(recipeId);
+          if (data) {
+              setName(data.name);
+              setServings(data.servings?.toString() || '4');
+              setPrepTime(data.prepTime?.toString() || '30');
+              setImageUrl(data.imageUrl || '');
+              setIngredients(data.ingredients || []);
+              setInstructions(data.instructions || []);
+          } else {
+              Alert.alert('Error', 'Recipe not found');
+              router.back();
+          }
+      } catch (error) {
+          Alert.alert('Error', 'Failed to load recipe');
+      } finally {
+          setLoading(false);
+      }
+  };
 
   const addIngredient = () => {
     setIngredients([...ingredients, { name: '', amount: null, unit: 'stk' }]);
@@ -66,23 +95,16 @@ export default function CreateRecipe() {
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.5,
-      base64: true // We might need base64 for direct upload or URI for Firebase Storage
+      base64: true
     });
 
     if (!result.canceled) {
-        // TODO: Upload to Firebase Storage and get URL.
-        // For now, we'll just use the local URI for preview if we can't upload easily without setup
-        // But the user requested "Image Upload instead" of URL input.
-        // Since setting up Firebase Storage upload in RN requires Blob/Fetch polyfills often,
-        // I will implement a placeholder that sets the URI.
-        // Real implementation requires `uploadBytes` to storage bucket.
         setImageUrl(result.assets[0].uri);
-        // Alert.alert('Note', 'Image upload to server requires Firebase Storage setup. Using local preview.');
     }
   };
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || typeof id !== 'string') return;
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter a recipe name');
       return;
@@ -94,40 +116,43 @@ export default function CreateRecipe() {
         return;
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
-      const newMeal: Omit<Meal, 'id'> = {
+      const updates: Partial<Meal> = {
         name,
         imageUrl: imageUrl || null,
         servings: parseInt(servings) || 4,
         prepTime: parseInt(prepTime) || 30,
-        costEstimate: null,
         ingredients: validIngredients,
         instructions: instructions.filter(i => i.trim() !== ''),
-        createdBy: {
-          id: user.uid,
-          name: user.email || 'User'
-        }
       };
 
-      await createMeal(newMeal);
+      await updateMeal(id, updates);
       router.back();
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to create recipe');
+      Alert.alert('Error', 'Failed to update recipe');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+      return (
+          <View className="flex-1 justify-center items-center bg-gray-50">
+              <ActivityIndicator size="large" color="#4F46E5" />
+          </View>
+      );
+  }
 
   return (
     <View className="flex-1 bg-gray-50">
       <Stack.Screen
         options={{
-          headerTitle: 'New Recipe',
+          headerTitle: 'Edit Recipe',
           headerRight: () => (
-            <TouchableOpacity onPress={handleSave} disabled={loading}>
-              {loading ? (
+            <TouchableOpacity onPress={handleSave} disabled={saving}>
+              {saving ? (
                 <ActivityIndicator color="#4F46E5" />
               ) : (
                 <Text className="text-indigo-600 font-bold text-lg">Save</Text>
@@ -233,7 +258,6 @@ export default function CreateRecipe() {
                   onChangeText={(t) => updateIngredient(idx, 'amount', t)}
                   keyboardType="numeric"
                 />
-                 {/* Simple unit input for now, could be a picker */}
                 <TextInput
                   className="w-16 bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 text-center"
                   placeholder="Unit"
@@ -246,9 +270,6 @@ export default function CreateRecipe() {
                 </TouchableOpacity>
               </View>
             ))}
-            {ingredients.length === 0 && (
-                <Text className="text-center text-gray-400 py-4 italic">No ingredients added.</Text>
-            )}
           </View>
         </View>
 

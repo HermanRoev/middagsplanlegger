@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, Image, ScrollView, Alert, TextInput, Acti
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
 import { useRouter } from 'expo-router';
-import { LogOut, User, Settings, Camera, Lock, Mail, Save, AlertCircle } from 'lucide-react-native';
+import { LogOut, User, Settings, Camera, Lock, Mail, Save, AlertCircle, ArrowLeft } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { updateProfile, updatePassword } from 'firebase/auth';
@@ -100,8 +100,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'left', 'right']}>
-      <View className="px-4 py-3 bg-white border-b border-gray-100 flex-row items-center justify-between">
-          <Text className="text-2xl font-bold text-gray-900">Account Settings</Text>
+      <View className="px-4 py-3 bg-white border-b border-gray-100 flex-row items-center">
+          <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
+             <ArrowLeft size={24} color="#1F2937" />
+          </TouchableOpacity>
+          <Text className="text-2xl font-bold text-gray-900 flex-1">Account Settings</Text>
       </View>
 
       <KeyboardAvoidingView
