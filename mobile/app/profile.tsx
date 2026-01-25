@@ -205,6 +205,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
