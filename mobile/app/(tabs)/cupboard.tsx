@@ -7,8 +7,7 @@ import { CupboardItem } from '../../../src/types';
 import { Package, Plus, Search, Trash2, Camera, X, Video } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { parseReceiptImageMobile, parseCupboardVideoMobile } from '../../lib/gemini-mobile';
-
-const UNITS = ['stk', 'g', 'kg', 'l', 'dl', 'ml', 'ss', 'ts'];
+import { UnitSelector } from '../../components/UnitSelector';
 
 export default function Cupboard() {
   const { user } = useAuth();
@@ -21,6 +20,7 @@ export default function Cupboard() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
   const [newItemUnit, setNewItemUnit] = useState('stk');
+  const [showUnitSelector, setShowUnitSelector] = useState(false);
 
   // Scanning State
   const [scanning, setScanning] = useState(false);
@@ -199,39 +199,23 @@ export default function Cupboard() {
                     value={newItemName}
                     onChangeText={setNewItemName}
                 />
-                <View className="flex-row gap-2 mb-2">
+                <View className="flex-row gap-2 mb-4">
                     <TextInput
-                        className="flex-1 bg-white border border-gray-200 rounded-lg p-2"
+                        className="flex-1 bg-white border border-gray-200 rounded-lg p-3"
                         placeholder="Amount"
                         keyboardType="numeric"
                         value={newItemAmount}
                         onChangeText={setNewItemAmount}
                     />
+                    <TouchableOpacity
+                        onPress={() => setShowUnitSelector(true)}
+                        className="w-24 bg-white border border-gray-200 rounded-lg justify-center items-center"
+                    >
+                        <Text className="text-gray-900 font-medium">{newItemUnit}</Text>
+                    </TouchableOpacity>
                 </View>
 
-                {/* Unit Chips */}
-                <View className="mb-4">
-                  <Text className="text-xs text-gray-500 font-bold mb-2 uppercase">Unit</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {UNITS.map(unit => (
-                      <TouchableOpacity
-                        key={unit}
-                        onPress={() => setNewItemUnit(unit)}
-                        className={`mr-2 px-3 py-1.5 rounded-full border ${
-                          newItemUnit === unit
-                            ? 'bg-indigo-600 border-indigo-600'
-                            : 'bg-white border-gray-200'
-                        }`}
-                      >
-                        <Text className={`text-xs font-semibold ${newItemUnit === unit ? 'text-white' : 'text-gray-600'}`}>
-                          {unit}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-
-                <TouchableOpacity onPress={handleAddItem} className="bg-green-600 py-2 rounded-lg items-center">
+                <TouchableOpacity onPress={handleAddItem} className="bg-green-600 py-3 rounded-lg items-center">
                     <Text className="text-white font-bold">Save Item</Text>
                 </TouchableOpacity>
              </View>
@@ -269,6 +253,13 @@ export default function Cupboard() {
           }
         />
       )}
+
+      <UnitSelector
+        visible={showUnitSelector}
+        onClose={() => setShowUnitSelector(false)}
+        currentUnit={newItemUnit}
+        onSelect={(unit) => setNewItemUnit(unit)}
+      />
 
       {/* Scan Results Modal */}
       <Modal visible={showScanResult} animationType="slide" presentationStyle="pageSheet">

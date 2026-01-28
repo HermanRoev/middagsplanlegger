@@ -6,6 +6,7 @@ import { getRecipeById, updateMeal } from '../../../../lib/api';
 import { Ingredient, Meal } from '../../../../../src/types';
 import { Plus, X, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { UnitSelector } from '../../../../components/UnitSelector';
 
 export default function EditRecipe() {
   const router = useRouter();
@@ -19,10 +20,13 @@ export default function EditRecipe() {
   const [prepTime, setPrepTime] = useState('30');
   const [imageUrl, setImageUrl] = useState('');
 
-  const [ingredients, setIngredients] = useState<Ingredient[]>([
-    { name: '', amount: null, unit: 'stk' }
+  type FormIngredient = { name: string; amount: string; unit: string };
+
+  const [ingredients, setIngredients] = useState<FormIngredient[]>([
+    { name: '', amount: '', unit: 'stk' }
   ]);
   const [instructions, setInstructions] = useState<string[]>(['']);
+  const [selectingUnitIndex, setSelectingUnitIndex] = useState<number | null>(null);
 
   useEffect(() => {
       if (typeof id === 'string') {
@@ -38,7 +42,11 @@ export default function EditRecipe() {
               setServings(data.servings?.toString() || '4');
               setPrepTime(data.prepTime?.toString() || '30');
               setImageUrl(data.imageUrl || '');
-              setIngredients(data.ingredients || []);
+              setIngredients(data.ingredients?.map(ing => ({
+                  name: ing.name,
+                  amount: ing.amount?.toString() || '',
+                  unit: ing.unit
+              })) || []);
               setInstructions(data.instructions || []);
           } else {
               Alert.alert('Error', 'Recipe not found');
@@ -52,16 +60,12 @@ export default function EditRecipe() {
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { name: '', amount: null, unit: 'stk' }]);
+    setIngredients([...ingredients, { name: '', amount: '', unit: 'stk' }]);
   };
 
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string) => {
+  const updateIngredient = (index: number, field: keyof FormIngredient, value: string) => {
     const newIngredients = [...ingredients];
-    if (field === 'amount') {
-      newIngredients[index].amount = value ? parseFloat(value) : null;
-    } else {
-      (newIngredients[index] as any)[field] = value;
-    }
+    (newIngredients[index] as any)[field] = value;
     setIngredients(newIngredients);
   };
 
@@ -118,12 +122,18 @@ export default function EditRecipe() {
 
     setSaving(true);
     try {
+      const formattedIngredients: Ingredient[] = validIngredients.map(ing => ({
+          name: ing.name,
+          unit: ing.unit,
+          amount: ing.amount ? (isNaN(parseFloat(ing.amount)) ? null : parseFloat(ing.amount)) : null
+      }));
+
       const updates: Partial<Meal> = {
         name,
         imageUrl: imageUrl || null,
         servings: parseInt(servings) || 4,
         prepTime: parseInt(prepTime) || 30,
-        ingredients: validIngredients,
+        ingredients: formattedIngredients,
         instructions: instructions.filter(i => i.trim() !== ''),
       };
 
@@ -254,18 +264,17 @@ export default function EditRecipe() {
                   className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 text-center"
                   placeholder="0"
                   placeholderTextColor="#9CA3AF"
-                  value={ing.amount?.toString() || ''}
+                  value={ing.amount}
                   onChangeText={(t) => updateIngredient(idx, 'amount', t)}
                   keyboardType="numeric"
                 />
-                <TextInput
-                  className="w-16 bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 text-center"
-                  placeholder="Unit"
-                  placeholderTextColor="#9CA3AF"
-                  value={ing.unit}
-                  onChangeText={(t) => updateIngredient(idx, 'unit', t)}
-                />
-                <TouchableOpacity onPress={() => removeIngredient(idx)} className="p-2 bg-red-50 rounded-lg">
+                <TouchableOpacity
+                  onPress={() => setSelectingUnitIndex(idx)}
+                  className="w-16 bg-gray-50 border border-gray-200 rounded-xl justify-center items-center"
+                >
+                    <Text className="text-gray-900 font-medium">{ing.unit}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => removeIngredient(idx)} className="p-2 bg-red-50 rounded-lg justify-center">
                   <X size={18} color="#EF4444" />
                 </TouchableOpacity>
               </View>
@@ -283,7 +292,7 @@ export default function EditRecipe() {
             </TouchableOpacity>
           </View>
 
-          <View className="space-y-4">
+          <View className="space-y-6">
             {instructions.map((inst, idx) => (
               <View key={idx} className="flex-row gap-3 items-start">
                 <View className="mt-3 w-6 h-6 rounded-full bg-indigo-100 items-center justify-center">
@@ -307,6 +316,17 @@ export default function EditRecipe() {
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
+
+      <UnitSelector
+        visible={selectingUnitIndex !== null}
+        onClose={() => setSelectingUnitIndex(null)}
+        currentUnit={selectingUnitIndex !== null ? ingredients[selectingUnitIndex].unit : 'stk'}
+        onSelect={(unit) => {
+            if (selectingUnitIndex !== null) {
+                updateIngredient(selectingUnitIndex, 'unit', unit);
+            }
+        }}
+      />
     </View>
   );
 }

@@ -95,6 +95,7 @@ export default function Inbox() {
 
   // Date Chips Generation
   const dates = [
+      { label: 'All', value: 'ALL' },
       { label: 'General', value: null },
       { label: 'Today', value: format(new Date(), 'yyyy-MM-dd') },
       { label: 'Tomorrow', value: format(addDays(new Date(), 1), 'yyyy-MM-dd') },
@@ -108,13 +109,12 @@ export default function Inbox() {
   const generalSuggestions = suggestions.filter(s => !s.forDate);
   const datedSuggestions = suggestions.filter(s => s.forDate).sort((a, b) => (a.forDate! > b.forDate! ? 1 : -1));
 
-  // Combine for FlatList with Headers
-  // We will render a custom list where we intersperse headers?
-  // Easier to just use SectionList? Or just sort and use renderItem logic to show header when date changes.
-  // Actually, let's just stick to FlatList but sort by date, putting General first or last.
-  // Let's put General at the top, then dates sorted.
-
-  const combinedData = [...generalSuggestions, ...datedSuggestions];
+  let combinedData: Suggestion[] = [];
+  if (selectedDate === 'ALL' || selectedDate === undefined) { // Default to All
+     combinedData = [...generalSuggestions, ...datedSuggestions];
+  } else {
+     combinedData = suggestions.filter(s => s.forDate === selectedDate || (selectedDate === null && !s.forDate));
+  }
 
   const renderItem = ({ item, index }: { item: Suggestion, index: number }) => {
     const hasVoted = item.votedBy?.includes(user?.uid || '');
@@ -122,7 +122,7 @@ export default function Inbox() {
     const prevItem = index > 0 ? combinedData[index - 1] : null;
 
     // Header Logic
-    const showGeneralHeader = index === 0 && !item.forDate;
+    const showGeneralHeader = (index === 0 && !item.forDate) || (!prevItem?.forDate && !item.forDate && prevItem);
     const showDateHeader = item.forDate && (!prevItem || prevItem.forDate !== item.forDate);
 
     let headerText = '';

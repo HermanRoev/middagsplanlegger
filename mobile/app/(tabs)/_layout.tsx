@@ -1,6 +1,7 @@
 import { Tabs, useRouter } from 'expo-router';
 import { ChefHat, Calendar, ShoppingCart, Package, User, MessageSquare } from 'lucide-react-native';
-import { TouchableOpacity, View, Platform } from 'react-native';
+import { TouchableOpacity, Platform, StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 
 export default function TabLayout() {
   const router = useRouter();
@@ -8,72 +9,102 @@ export default function TabLayout() {
   const HeaderRight = () => (
     <TouchableOpacity
       onPress={() => router.push('/profile')}
-      className="mr-4 p-2"
+      className="mr-4 p-2 bg-gray-100 rounded-full"
     >
-      <User size={24} color="#374151" />
+      <User size={20} color="#374151" />
     </TouchableOpacity>
   );
 
   return (
     <Tabs
       screenOptions={{
-        headerShown: true, // Show header to display the Profile icon
-        headerTitle: '', // Remove the text title as requested
-        headerShadowVisible: false, // Remove shadow for cleaner look
+        headerShown: true,
+        headerShadowVisible: false,
         headerStyle: {
-          backgroundColor: 'white',
+          backgroundColor: '#f9fafb', // Match bg-gray-50
         },
+        headerTitleStyle: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: '#111827'
+        },
+        headerTitleAlign: 'left', // Align title to left
         headerRight: () => <HeaderRight />,
         tabBarStyle: {
-          backgroundColor: 'white',
-          borderTopWidth: 1,
-          borderTopColor: '#F3F4F6',
-          height: Platform.OS === 'ios' ? 85 : 60,
-          paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+          position: 'absolute',
+          bottom: 25,
+          left: 20,
+          right: 20,
+          height: 70,
+          borderRadius: 35,
+          borderTopWidth: 0,
+          elevation: 0,
+          backgroundColor: 'transparent', // Handled by BlurView
+          paddingBottom: 0, // Reset padding
+          justifyContent: 'center',
+          alignItems: 'center',
         },
-        tabBarActiveTintColor: '#4F46E5',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarBackground: () => (
+             <BlurView
+                intensity={80}
+                style={StyleSheet.absoluteFill}
+                tint="dark" // Dark glass as per screenshot
+             />
+        ),
+        tabBarActiveTintColor: '#FFFFFF', // White for active on dark glass
+        tabBarInactiveTintColor: '#9CA3AF', // Gray for inactive
+        tabBarShowLabel: false, // Screenshot seems to have no labels or small ones? Screenshot HAD labels.
+        // Let's keep labels but style them.
         tabBarLabelStyle: {
-          fontWeight: '500',
-          fontSize: 12,
+            fontSize: 10,
+            marginBottom: 5,
+            fontWeight: '600',
         },
+        tabBarItemStyle: {
+            height: 70,
+            paddingTop: 10,
+        }
       }}
     >
        <Tabs.Screen
         name="index"
         options={{
           title: 'Plan',
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
+          tabBarLabel: 'Plan',
+          tabBarIcon: ({ color, size }) => <Calendar size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="shop"
         options={{
           title: 'Shop',
-          tabBarIcon: ({ color, size }) => <ShoppingCart size={size} color={color} />,
+          tabBarLabel: 'Shop',
+          tabBarIcon: ({ color, size }) => <ShoppingCart size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="recipes"
         options={{
           title: 'Recipes',
-          tabBarIcon: ({ color, size }) => <ChefHat size={size} color={color} />,
+          headerShown: false, // Hide Tab Header, let Stack handle it
+          tabBarLabel: 'Recipes',
+          tabBarIcon: ({ color, size }) => <ChefHat size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="inbox"
         options={{
           title: 'Inbox',
-          tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
+          tabBarLabel: 'Inbox',
+          tabBarIcon: ({ color, size }) => <MessageSquare size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="cupboard"
         options={{
           title: 'Cupboard',
-          tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
+          tabBarLabel: 'Pantry',
+          tabBarIcon: ({ color, size }) => <Package size={24} color={color} />,
         }}
       />
     </Tabs>

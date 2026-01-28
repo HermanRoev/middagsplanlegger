@@ -128,7 +128,7 @@ export default function Shop() {
       {isAdding && (
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 0}
             className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 shadow-lg z-50 rounded-t-3xl"
           >
               <View className="flex-row justify-between items-center mb-4">
@@ -137,15 +137,17 @@ export default function Shop() {
                       <X size={24} color="#9CA3AF" />
                   </TouchableOpacity>
               </View>
-              <View className="flex-row gap-2">
+              <View className="flex-row gap-2 items-center">
                   <TextInput
-                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg"
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-base text-gray-900"
                       placeholder="What do you need?"
+                      placeholderTextColor="#9CA3AF"
                       value={newItemName}
                       onChangeText={setNewItemName}
                       autoFocus
                       returnKeyType="done"
                       onSubmitEditing={handleAddItem}
+                      textAlignVertical="center"
                   />
                   <TouchableOpacity
                     onPress={handleAddItem}
