@@ -12,19 +12,8 @@ export default function RootLayout() {
         <Stack.Screen
           name="profile"
           options={{
-            headerShown: true,
-            title: 'Profile',
-            headerBackTitle: 'Back',
+            headerShown: false,
             presentation: 'card',
-            headerStyle: {
-              backgroundColor: '#f9fafb',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontWeight: '600',
-              color: '#111827'
-            },
-            headerShadowVisible: false,
           }}
         />
       </Stack>

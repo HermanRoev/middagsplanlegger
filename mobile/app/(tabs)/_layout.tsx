@@ -21,42 +21,38 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: 30,
-          left: 20,
-          right: 20,
-          height: 80,
-          borderRadius: 40,
+          bottom: 40, // Increased bottom spacing
+          marginHorizontal: 20, // Use margin for spacing from edges
+          height: 70, // Slightly more compact height
+          borderRadius: 35, // Rounded pill shape
           borderTopWidth: 0,
-          elevation: 10, // Shadow for Android
+          elevation: 0, // Remove default elevation, handle shadow manually if needed or via container
           backgroundColor: 'transparent',
-          paddingBottom: 0,
-          paddingTop: 0,
+          paddingHorizontal: 10, // Add padding to edges to push tabs in
           shadowColor: '#000',
           shadowOffset: {
             width: 0,
-            height: 10,
+            height: 5,
           },
-          shadowOpacity: 0.25,
-          shadowRadius: 10,
+          shadowOpacity: 0.1,
+          shadowRadius: 5,
         },
         tabBarBackground: () => (
-             <BlurView
-                intensity={40}
-                style={[StyleSheet.absoluteFill, { overflow: 'hidden', borderRadius: 40, backgroundColor: 'rgba(255, 255, 255, 0.7)' }]}
-                tint="light"
-             />
+             <View style={{ flex: 1, borderRadius: 35, overflow: 'hidden', backgroundColor: 'transparent' }}>
+                 <BlurView
+                    intensity={60} // Higher intensity for better glass effect
+                    style={StyleSheet.absoluteFill}
+                    tint="extraLight" // Frosted glass look
+                 />
+                 <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255, 255, 255, 0.5)' }} />
+             </View>
         ),
-        tabBarActiveTintColor: '#4F46E5', // Indigo for active
-        tabBarInactiveTintColor: '#9CA3AF', // Gray for inactive
-        tabBarShowLabel: true,
-        tabBarLabelStyle: {
-            fontSize: 11,
-            marginBottom: 10,
-            fontWeight: '600',
-        },
+        tabBarActiveTintColor: '#4F46E5',
+        tabBarInactiveTintColor: '#6B7280',
+        tabBarShowLabel: false, // Cleaner look without labels often works better for "Liquid"
         tabBarItemStyle: {
-            height: 80,
-            paddingTop: 10,
+            height: 70,
+            paddingTop: 12, // Center icon
         }
       }}
     >
