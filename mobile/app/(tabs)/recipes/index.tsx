@@ -53,6 +53,10 @@ export default function RecipesList() {
               `Add ${recipe.name} to your plan for ${planningDate}?`,
               [
                   { text: 'Cancel', style: 'cancel' },
+                  {
+                      text: 'View Details',
+                      onPress: () => router.push(`/(tabs)/recipes/${recipe.id}?planningDate=${planningDate}`)
+                  },
                   { text: 'Add to Plan', onPress: async () => {
                       if (!user) return;
                       try {
@@ -66,11 +70,7 @@ export default function RecipesList() {
               ]
           );
       } else {
-          // Standard details view (if we had a details page route configured fully, or expand card)
-          // For now, let's just show an alert or expand if implemented.
-          // The card doesn't have an onPress prop exposed typically unless wrapped.
-          // Wait, RecipeCard is a component. Let's see if it handles press.
-          // If not, we wrap it here.
+          router.push(`/(tabs)/recipes/${recipe.id}`);
       }
   };
 

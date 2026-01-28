@@ -44,6 +44,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Plan',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
         }}
       />

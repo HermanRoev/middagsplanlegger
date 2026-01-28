@@ -89,6 +89,19 @@ export async function addLeftoverMeal(userId: string, date: string): Promise<voi
     });
 }
 
+export async function updatePlannedMeal(id: string, updates: Partial<PlannedMeal>): Promise<void> {
+    const plannerRef = doc(db, 'plannedMeals', id);
+    await updateDoc(plannerRef, {
+        ...updates,
+        updatedAt: new Date().toISOString()
+    });
+}
+
+export async function deletePlannedMeal(id: string): Promise<void> {
+    const plannerRef = doc(db, 'plannedMeals', id);
+    await deleteDoc(plannerRef);
+}
+
 export async function getShoppingList(userId: string): Promise<{ planned: any[], manual: any[] }> {
   // Fetch manual items
   const shoppingRef = collection(db, 'shoppingList');
