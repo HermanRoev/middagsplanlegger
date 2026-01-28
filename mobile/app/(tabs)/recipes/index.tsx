@@ -192,7 +192,7 @@ export default function RecipesList() {
                   <RecipeCard recipe={item} />
               </TouchableOpacity>
           )}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 130 }}
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center mt-20">
               <Text className="text-gray-400">No recipes found.</Text>

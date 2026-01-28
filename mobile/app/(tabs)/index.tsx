@@ -130,7 +130,7 @@ export default function Planner() {
         </View>
       </SafeAreaView>
 
-      <ScrollView className="flex-1 p-4">
+      <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 130 }}>
         {loading ? (
           <View className="py-20">
             <ActivityIndicator size="large" color="#4F46E5" />

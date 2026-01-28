@@ -2,11 +2,13 @@ import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput,
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
 import { getShoppingList, addManualShoppingItem, toggleShoppingItem, deleteShoppingItem } from '../../lib/api';
-import { CheckCircle2, Circle, Plus, Trash2, X, Copy } from 'lucide-react-native';
+import { CheckCircle2, Circle, Plus, Trash2, X, Copy, User } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Shop() {
+  const router = useRouter();
   const { user } = useAuth();
   const [items, setItems] = useState<{ id: string, text: string, checked: boolean, isManual: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,26 +105,34 @@ export default function Shop() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View className="bg-white p-4 border-b border-gray-100 flex-row justify-between items-center pt-12">
-        <View>
-          <Text className="text-2xl font-bold text-gray-900">Shopping List</Text>
-          <Text className="text-gray-500 text-sm">{items.filter(i => !i.checked).length} items to buy</Text>
+      <SafeAreaView edges={['top']} className="bg-white border-b border-gray-100">
+        <View className="px-4 py-4 flex-row justify-between items-center">
+            <View className="flex-1">
+            <Text className="text-2xl font-bold text-gray-900">Shopping List</Text>
+            <Text className="text-gray-500 text-sm">{items.filter(i => !i.checked).length} items to buy</Text>
+            </View>
+            <View className="flex-row gap-2">
+                <TouchableOpacity
+                    onPress={() => router.push('/profile')}
+                    className="bg-gray-100 p-2 rounded-full"
+                >
+                <User size={20} color="#374151" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={handleCopyList}
+                    className="bg-gray-100 p-2 rounded-full"
+                >
+                <Copy size={20} color="#374151" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => setIsAdding(true)}
+                    className="bg-indigo-600 p-2 rounded-full shadow-sm"
+                >
+                <Plus size={20} color="white" />
+                </TouchableOpacity>
+            </View>
         </View>
-        <View className="flex-row gap-2">
-            <TouchableOpacity
-                onPress={handleCopyList}
-                className="bg-gray-100 p-3 rounded-full"
-            >
-              <Copy size={24} color="#374151" />
-            </TouchableOpacity>
-            <TouchableOpacity
-                onPress={() => setIsAdding(true)}
-                className="bg-indigo-600 p-3 rounded-full shadow-sm"
-            >
-              <Plus size={24} color="white" />
-            </TouchableOpacity>
-        </View>
-      </View>
+      </SafeAreaView>
 
       {/* Add Item Modal/Overlay */}
       {isAdding && (
@@ -159,7 +169,7 @@ export default function Shop() {
           </KeyboardAvoidingView>
       )}
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 130 }}>
         {loading ? (
           <View className="py-20">
             <ActivityIndicator size="large" color="#4F46E5" />

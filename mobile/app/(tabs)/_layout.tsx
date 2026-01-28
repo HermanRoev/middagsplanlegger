@@ -18,50 +18,44 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
-        headerShadowVisible: false,
-        headerStyle: {
-          backgroundColor: '#f9fafb', // Match bg-gray-50
-        },
-        headerTitleStyle: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: '#111827'
-        },
-        headerTitleAlign: 'left', // Align title to left
-        headerRight: () => <HeaderRight />,
+        headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: 25,
+          bottom: 30,
           left: 20,
           right: 20,
-          height: 70,
-          borderRadius: 35,
+          height: 80,
+          borderRadius: 40,
           borderTopWidth: 0,
-          elevation: 0,
-          backgroundColor: 'transparent', // Handled by BlurView
-          paddingBottom: 0, // Reset padding
-          justifyContent: 'center',
-          alignItems: 'center',
+          elevation: 10, // Shadow for Android
+          backgroundColor: 'transparent',
+          paddingBottom: 0,
+          paddingTop: 0,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: 10,
+          },
+          shadowOpacity: 0.25,
+          shadowRadius: 10,
         },
         tabBarBackground: () => (
              <BlurView
-                intensity={80}
-                style={StyleSheet.absoluteFill}
-                tint="dark" // Dark glass as per screenshot
+                intensity={40}
+                style={[StyleSheet.absoluteFill, { overflow: 'hidden', borderRadius: 40, backgroundColor: 'rgba(255, 255, 255, 0.7)' }]}
+                tint="light"
              />
         ),
-        tabBarActiveTintColor: '#FFFFFF', // White for active on dark glass
+        tabBarActiveTintColor: '#4F46E5', // Indigo for active
         tabBarInactiveTintColor: '#9CA3AF', // Gray for inactive
-        tabBarShowLabel: false, // Screenshot seems to have no labels or small ones? Screenshot HAD labels.
-        // Let's keep labels but style them.
+        tabBarShowLabel: true,
         tabBarLabelStyle: {
-            fontSize: 10,
-            marginBottom: 5,
+            fontSize: 11,
+            marginBottom: 10,
             fontWeight: '600',
         },
         tabBarItemStyle: {
-            height: 70,
+            height: 80,
             paddingTop: 10,
         }
       }}
@@ -86,7 +80,6 @@ export default function TabLayout() {
         name="recipes"
         options={{
           title: 'Recipes',
-          headerShown: false, // Hide Tab Header, let Stack handle it
           tabBarLabel: 'Recipes',
           tabBarIcon: ({ color, size }) => <ChefHat size={24} color={color} />,
         }}

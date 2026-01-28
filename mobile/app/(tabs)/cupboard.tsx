@@ -4,12 +4,15 @@ import { useAuth } from '../../context/auth';
 import { db } from '../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { CupboardItem } from '../../../src/types';
-import { Package, Plus, Search, Trash2, Camera, X, Video } from 'lucide-react-native';
+import { Package, Plus, Search, Trash2, Camera, X, Video, User } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { parseReceiptImageMobile, parseCupboardVideoMobile } from '../../lib/gemini-mobile';
 import { UnitSelector } from '../../components/UnitSelector';
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Cupboard() {
+  const router = useRouter();
   const { user } = useAuth();
   const [items, setItems] = useState<CupboardItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,17 +163,22 @@ export default function Cupboard() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View className="px-4 py-3 bg-white border-b border-gray-100 flex-row justify-between items-center">
-        <Text className="text-2xl font-bold text-gray-900">Cupboard</Text>
-        <View className="flex-row gap-2">
-            <TouchableOpacity onPress={handleScanVideo} className="p-2 bg-indigo-50 rounded-full">
-                <Video size={20} color="#4F46E5" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleScanReceipt} className="p-2 bg-indigo-50 rounded-full">
-                <Camera size={20} color="#4F46E5" />
-            </TouchableOpacity>
+      <SafeAreaView edges={['top']} className="bg-white border-b border-gray-100">
+        <View className="px-4 py-3 flex-row justify-between items-center">
+            <Text className="text-2xl font-bold text-gray-900">Cupboard</Text>
+            <View className="flex-row gap-2">
+                <TouchableOpacity onPress={() => router.push('/profile')} className="p-2 bg-gray-50 rounded-full">
+                    <User size={20} color="#374151" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleScanVideo} className="p-2 bg-indigo-50 rounded-full">
+                    <Video size={20} color="#4F46E5" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleScanReceipt} className="p-2 bg-indigo-50 rounded-full">
+                    <Camera size={20} color="#4F46E5" />
+                </TouchableOpacity>
+            </View>
         </View>
-      </View>
+      </SafeAreaView>
 
       <View className="p-4 bg-white shadow-sm z-10">
         <View className="flex-row bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 items-center mb-3">
@@ -228,7 +236,7 @@ export default function Cupboard() {
         <FlatList
           data={filteredItems}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 130 }}
           renderItem={({ item }) => (
             <View className="flex-row justify-between items-center bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100">
                 <View className="flex-row items-center">

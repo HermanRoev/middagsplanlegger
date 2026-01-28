@@ -3,10 +3,13 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
 import { getInboxMeals, voteForMeal, addSuggestion, approveSuggestion, rejectSuggestion } from '../../lib/api';
 import { Suggestion } from '../../../src/types';
-import { ThumbsUp, Check, X, Plus, Trash, Calendar } from 'lucide-react-native';
+import { ThumbsUp, Check, X, Plus, Trash, Calendar, User } from 'lucide-react-native';
 import { formatDistanceToNow, addDays, format, isSameDay, parseISO } from 'date-fns';
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Inbox() {
+  const router = useRouter();
   const { user } = useAuth();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,9 +216,18 @@ export default function Inbox() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View className="bg-white border-b border-gray-100 pb-2">
-          {/* Date Selector */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 py-3" contentContainerStyle={{ paddingRight: 20 }}>
+      <SafeAreaView edges={['top']} className="bg-white border-b border-gray-100">
+        <View className="pb-2">
+            {/* Header */}
+            <View className="px-4 py-3 flex-row justify-between items-center">
+                <Text className="text-2xl font-bold text-gray-900">Inbox</Text>
+                <TouchableOpacity onPress={() => router.push('/profile')} className="p-2 bg-gray-50 rounded-full">
+                    <User size={20} color="#374151" />
+                </TouchableOpacity>
+            </View>
+
+            {/* Date Selector */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 py-2" contentContainerStyle={{ paddingRight: 20 }}>
               {dates.map((dateOption) => {
                   const isSelected = selectedDate === dateOption.value;
                   return (
@@ -234,30 +246,31 @@ export default function Inbox() {
               })}
           </ScrollView>
 
-          <View className="px-4 pb-2">
-              <View className="flex-row items-center bg-gray-50 rounded-xl px-4 py-2 border border-gray-200">
-                  <TextInput
-                      placeholder={`I want to eat... ${selectedDate ? `(${dates.find(d => d.value === selectedDate)?.label})` : ''}`}
-                      value={newSuggestion}
-                      onChangeText={setNewSuggestion}
-                      className="flex-1 mr-2 h-10 text-base"
-                      returnKeyType="done"
-                      onSubmitEditing={handleAddSuggestion}
-                  />
-                  <TouchableOpacity
-                      onPress={handleAddSuggestion}
-                      disabled={!newSuggestion.trim() || adding}
-                      className={`p-2 rounded-full ${!newSuggestion.trim() ? 'bg-gray-200' : 'bg-indigo-600'}`}
-                  >
-                      {adding ? (
-                          <ActivityIndicator size="small" color="white" />
-                      ) : (
-                          <Plus size={20} color="white" />
-                      )}
-                  </TouchableOpacity>
-              </View>
-          </View>
-      </View>
+            <View className="px-4 pb-2">
+                <View className="flex-row items-center bg-gray-50 rounded-xl px-4 py-2 border border-gray-200">
+                    <TextInput
+                        placeholder={`I want to eat... ${selectedDate ? `(${dates.find(d => d.value === selectedDate)?.label})` : ''}`}
+                        value={newSuggestion}
+                        onChangeText={setNewSuggestion}
+                        className="flex-1 mr-2 h-10 text-base"
+                        returnKeyType="done"
+                        onSubmitEditing={handleAddSuggestion}
+                    />
+                    <TouchableOpacity
+                        onPress={handleAddSuggestion}
+                        disabled={!newSuggestion.trim() || adding}
+                        className={`p-2 rounded-full ${!newSuggestion.trim() ? 'bg-gray-200' : 'bg-indigo-600'}`}
+                    >
+                        {adding ? (
+                            <ActivityIndicator size="small" color="white" />
+                        ) : (
+                            <Plus size={20} color="white" />
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+      </SafeAreaView>
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
@@ -268,7 +281,7 @@ export default function Inbox() {
           data={combinedData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 130 }}
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center mt-20">
               <Text className="text-gray-400">No suggestions yet.</Text>
