@@ -41,7 +41,7 @@ export default function TabLayout() {
       }}
     >
        <Tabs.Screen
-        name="index"
+        name="planner"
         options={{
           title: 'Plan',
           headerShown: false,

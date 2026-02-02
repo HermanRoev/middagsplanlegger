@@ -48,27 +48,7 @@ export default function RecipesList() {
 
   const handleRecipePress = (recipe: Meal) => {
       if (planningDate) {
-          Alert.alert(
-              'Plan Meal',
-              `Add ${recipe.name} to your plan for ${planningDate}?`,
-              [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                      text: 'View Details',
-                      onPress: () => router.push(`/(tabs)/recipes/${recipe.id}?planningDate=${planningDate}`)
-                  },
-                  { text: 'Add to Plan', onPress: async () => {
-                      if (!user) return;
-                      try {
-                          await addPlannedMeal(user.uid, recipe, planningDate);
-                          Alert.alert('Success', 'Meal added to plan!');
-                          router.push('/(tabs)/'); // Go back to planner
-                      } catch (e) {
-                          Alert.alert('Error', 'Failed to add meal');
-                      }
-                  }}
-              ]
-          );
+          router.push(`/(tabs)/recipes/${recipe.id}?planningDate=${planningDate}`);
       } else {
           router.push(`/(tabs)/recipes/${recipe.id}`);
       }
@@ -188,9 +168,7 @@ export default function RecipesList() {
           data={filteredRecipes}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => handleRecipePress(item)}>
-                  <RecipeCard recipe={item} />
-              </TouchableOpacity>
+              <RecipeCard recipe={item} onPress={() => handleRecipePress(item)} />
           )}
           contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={

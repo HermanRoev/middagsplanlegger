@@ -5,15 +5,24 @@ import { Clock, Users } from 'lucide-react-native';
 
 interface RecipeCardProps {
   recipe: Meal;
+  onPress?: () => void;
 }
 
-export function RecipeCard({ recipe }: RecipeCardProps) {
+export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
   const router = useRouter();
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      router.push(`/(tabs)/recipes/${recipe.id}`);
+    }
+  };
 
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      onPress={() => router.push(`/(tabs)/recipes/${recipe.id}`)}
+      onPress={handlePress}
       className="bg-white rounded-2xl mb-4 shadow-sm border border-gray-100 overflow-hidden"
     >
       <View className="relative aspect-[4/3]">

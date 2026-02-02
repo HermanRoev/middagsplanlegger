@@ -1,8 +1,8 @@
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../context/auth';
-import { getPlannedMeals, addLeftoverMeal, updatePlannedMeal, deletePlannedMeal } from '../../lib/api';
-import { PlannedMeal } from '../../../src/types';
+import { useAuth } from '../../../context/auth';
+import { getPlannedMeals, addLeftoverMeal, updatePlannedMeal, deletePlannedMeal } from '../../../lib/api';
+import { PlannedMeal } from '../../../../src/types';
 import { startOfWeek, addDays, format, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Utensils, Plus, Copy, User, Trash2, Eye, X, Save } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -46,8 +46,8 @@ export default function Planner() {
   };
 
   const handleAddMeal = (dateStr: string) => {
-    // Navigate with query param string to ensure it updates even if tab is already mounted
-    router.push(`/(tabs)/recipes?planningDate=${dateStr}`);
+    // Navigate to the planner-specific add meal flow
+    router.push(`/(tabs)/planner/add?date=${dateStr}`);
   };
 
   const handleAddLeftovers = async (dateStr: string) => {
