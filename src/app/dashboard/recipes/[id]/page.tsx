@@ -14,6 +14,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
 import Link from "next/link"
 import { format } from "date-fns"
+import { nb } from "date-fns/locale"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import {
@@ -53,7 +54,7 @@ export default function RecipeDetailsPage() {
   const [showRemovePlanDialog, setShowRemovePlanDialog] = useState(false)
 
   useEffect(() => {
-    if (!id) return
+    if (!id || id === 'leftover-placeholder') return
     const unsubscribe = onSnapshot(doc(db, "meals", id as string), (doc) => {
       if (doc.exists()) {
         const rawData = { id: doc.id, ...doc.data() };
@@ -229,9 +230,53 @@ export default function RecipeDetailsPage() {
   }
 
 
-  if (!recipe) return <div className="p-8 text-center">Loading recipe...</div>
+  if (!recipe && id !== 'leftover-placeholder') return <div className="p-8 text-center">Loading recipe...</div>
 
+  const isLeftover = id === 'leftover-placeholder'
   const isPlannedMode = !!plannedMeal
+
+  if (isLeftover && plannedMeal) {
+      return (
+          <div className="max-w-2xl mx-auto py-12 px-4">
+              <Card className="shadow-xl border-amber-100 overflow-hidden">
+                  <div className="bg-amber-500 h-3" />
+                  <CardHeader className="text-center pb-2">
+                      <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Utensils className="w-10 h-10 text-amber-600" />
+                      </div>
+                      <CardTitle className="text-3xl font-bold text-gray-900">Rester</CardTitle>
+                      <CardDescription className="text-lg">
+                          Planlagt for {format(new Date(plannedMeal.date), "EEEE d. MMMM", { locale: nb })}
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 italic text-center text-gray-700 text-lg">
+                          &quot;{plannedMeal.notes || "Spis opp tidligere måltider!"}&quot;
+                      </div>
+
+                      <div className="flex flex-col gap-3">
+                          <Button 
+                            variant="destructive" 
+                            size="lg" 
+                            className="rounded-xl font-bold py-6"
+                            onClick={handleRemovePlanned}
+                          >
+                              <Trash2 className="w-5 h-5 mr-2" /> Fjern fra plan
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="lg" 
+                            className="rounded-xl"
+                            onClick={() => router.back()}
+                          >
+                              Tilbake
+                          </Button>
+                      </div>
+                  </CardContent>
+              </Card>
+          </div>
+      )
+  }
 
   // Ingredient Scaling Logic
   const baseServings = isPlannedMode ? (plannedMeal?.plannedServings || 4) : (recipe.servings || 4)

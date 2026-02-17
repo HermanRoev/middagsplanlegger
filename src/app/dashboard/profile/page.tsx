@@ -104,31 +104,31 @@ export default function ProfilePage() {
   const displayImage = previewUrl || photoURL || `https://ui-avatars.com/api/?name=${displayName || 'User'}&background=random`
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-10">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Account Settings</h1>
-        <p className="text-gray-500">Manage your profile and security preferences.</p>
+    <div className="max-w-5xl mx-auto space-y-10 pb-12">
+      <div className="space-y-2">
+        <h1 className="text-5xl font-black tracking-tight text-gray-900 leading-none">Min profil</h1>
+        <p className="text-gray-500 text-xl font-medium">Administrer dine personlige innstillinger og sikkerhet.</p>
       </div>
 
       <div className="grid gap-8 md:grid-cols-3">
         {/* Sidebar / Profile Card */}
         <div className="md:col-span-1 space-y-6">
-            <Card className="border-0 shadow-md overflow-hidden text-center bg-white">
-                <CardContent className="pt-8 pb-8">
-                    <div className="relative inline-block mb-4 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                        <div className={`w-32 h-32 rounded-full border-4 shadow-lg overflow-hidden bg-gray-100 mx-auto transition-all ${isDirty && imageFile ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-white'}`}>
+            <Card className="border-0 shadow-xl shadow-gray-100/50 overflow-hidden text-center bg-white rounded-[32px]">
+                <CardContent className="pt-12 pb-10">
+                    <div className="relative inline-block mb-6 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                        <div className={`w-40 h-40 rounded-[48px] border-4 shadow-2xl overflow-hidden bg-gray-100 mx-auto transition-all duration-500 ${isDirty && imageFile ? 'border-indigo-400 ring-8 ring-indigo-50' : 'border-white'}`}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={displayImage}
                                 alt="Profile"
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                             />
                         </div>
-                        <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                            <Camera className="w-8 h-8 text-white" />
+                        <div className="absolute inset-0 rounded-[48px] flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                            <Camera className="w-10 h-10 text-white" />
                         </div>
-                        <div className="absolute bottom-0 right-0 bg-indigo-600 rounded-full p-2 text-white shadow-md border-2 border-white group-hover:bg-indigo-700 transition-colors">
-                            <Camera className="w-4 h-4" />
+                        <div className="absolute bottom-1 right-1 bg-indigo-600 rounded-2xl p-3 text-white shadow-xl border-4 border-white group-hover:bg-indigo-700 transition-all group-hover:scale-110">
+                            <Camera className="w-5 h-5" />
                         </div>
                     </div>
                     <input
@@ -139,18 +139,18 @@ export default function ProfilePage() {
                         onChange={handleFileChange}
                     />
 
-                    <div className="space-y-1">
-                        <h2 className="text-xl font-bold text-gray-900">{displayName || 'User'}</h2>
-                        <p className="text-sm text-gray-500 flex items-center justify-center gap-1.5">
-                            <Mail className="w-3.5 h-3.5" />
-                            {user?.email}
-                        </p>
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-black text-gray-900">{displayName || 'Bruker'}</h2>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-full border border-gray-100">
+                            <Mail className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-sm font-bold text-gray-500">{user?.email}</span>
+                        </div>
                     </div>
 
                     {isDirty && (
-                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
-                                 <AlertCircle className="w-3 h-3" /> Unsaved Changes
+                        <div className="mt-6 animate-in fade-in zoom-in-95 duration-300">
+                             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 text-amber-700 text-xs font-black uppercase tracking-widest border border-amber-100">
+                                 <AlertCircle className="w-3.5 h-3.5" /> Ulagrede endringer
                              </span>
                         </div>
                     )}
@@ -159,61 +159,61 @@ export default function ProfilePage() {
         </div>
 
         {/* Forms */}
-        <div className="md:col-span-2 space-y-6">
-            <Card className="border-0 shadow-md bg-white">
-                <CardHeader>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>Update how others see you on the platform.</CardDescription>
+        <div className="md:col-span-2 space-y-8">
+            <Card className="border border-gray-100 shadow-sm bg-white rounded-2xl overflow-hidden">
+                <CardHeader className="pt-6 px-6">
+                    <CardTitle className="text-xl font-bold">Personlig informasjon</CardTitle>
+                    <CardDescription className="text-sm">Oppdater hvordan andre ser deg i appen.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 p-6 pt-2">
                     <div className="space-y-2">
-                        <Label>Display Name</Label>
-                        <div className="relative">
-                            <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Visningsnavn</Label>
+                        <div className="relative group">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                             <Input
                                 value={displayName}
                                 onChange={(e) => setDisplayName(e.target.value)}
-                                placeholder="Your Name"
-                                className="pl-9 bg-gray-50/50 focus:bg-white transition-colors"
+                                placeholder="Ditt navn"
+                                className="pl-10 h-11 rounded-lg bg-gray-50/50 border-gray-200 text-base focus:bg-white transition-all shadow-inner"
                             />
                         </div>
                     </div>
                 </CardContent>
-                <CardFooter className="flex justify-between bg-gray-50/50 p-4 border-t border-gray-100">
-                    <span className="text-xs text-gray-500 italic">
-                        {isDirty ? "Remember to save your changes." : "Profile is up to date."}
+                <CardFooter className="flex justify-between items-center bg-gray-50/30 px-6 py-4 border-t border-gray-50">
+                    <span className="text-xs font-semibold text-gray-400">
+                        {isDirty ? "Husk å lagre endringene dine." : "Profilen er oppdatert."}
                     </span>
-                    <Button onClick={handleUpdateProfile} disabled={loading || !isDirty} variant="premium">
+                    <Button onClick={handleUpdateProfile} disabled={loading || !isDirty} variant="premium" className="h-10 px-6 rounded-lg font-bold shadow-sm">
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isDirty ? 'Save Changes' : 'Saved'}
+                        {isDirty ? 'Lagre endringer' : 'Oppdatert'}
                     </Button>
                 </CardFooter>
             </Card>
 
-            <Card className="border-0 shadow-md bg-white">
-                <CardHeader>
-                    <CardTitle>Security</CardTitle>
-                    <CardDescription>Ensure your account remains safe.</CardDescription>
+            <Card className="border border-gray-100 shadow-sm bg-white rounded-2xl overflow-hidden">
+                <CardHeader className="pt-6 px-6">
+                    <CardTitle className="text-xl font-bold">Sikkerhet</CardTitle>
+                    <CardDescription className="text-sm">Sørg for at kontoen din forblir trygg.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 p-6 pt-2">
                     <div className="space-y-2">
-                        <Label>New Password</Label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Nytt passord</Label>
+                        <div className="relative group">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                             <Input
                                 type="password"
-                                className="pl-9 bg-gray-50/50 focus:bg-white transition-colors"
+                                className="pl-10 h-11 rounded-lg bg-gray-50/50 border-gray-200 text-base focus:bg-white transition-all shadow-inner"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder="Min. 6 characters"
+                                placeholder="Minst 6 tegn"
                             />
                         </div>
                     </div>
                 </CardContent>
-                <CardFooter className="flex justify-end bg-gray-50/50 p-4 border-t border-gray-100">
-                    <Button variant="outline" onClick={handleUpdatePassword} disabled={loading || !newPassword}>
+                <CardFooter className="flex justify-end bg-gray-50/30 px-6 py-4 border-t border-gray-50">
+                    <Button variant="outline" onClick={handleUpdatePassword} disabled={loading || !newPassword} className="h-10 px-6 rounded-lg font-bold border-gray-200 bg-white shadow-sm hover:bg-gray-50 transition-all">
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Update Password
+                        Oppdater passord
                     </Button>
                 </CardFooter>
             </Card>

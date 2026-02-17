@@ -1,7 +1,7 @@
 import { collection, getDocs, query, where, orderBy, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, increment, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { Meal, PlannedMeal, Suggestion } from '../../src/types';
-import { startOfWeek, endOfWeek, format, addDays } from 'date-fns';
+import { Meal, PlannedMeal, Suggestion, CupboardItem } from '../../src/types';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
 
 export async function getUserRecipes(userId: string): Promise<Meal[]> {
   const recipesRef = collection(db, 'meals');
@@ -17,6 +17,13 @@ export async function getRecipeById(recipeId: string): Promise<Meal | null> {
     return { id: docSnap.id, ...docSnap.data() } as Meal;
   }
   return null;
+}
+
+export async function getCupboardItems(userId: string): Promise<CupboardItem[]> {
+  const cupboardRef = collection(db, 'cupboard');
+  const q = query(cupboardRef, where('userId', '==', userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CupboardItem));
 }
 
 export async function createMeal(meal: Omit<Meal, 'id'>): Promise<string> {
@@ -53,6 +60,15 @@ export async function getPlannedMeals(userId: string, date: Date): Promise<Plann
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PlannedMeal));
 }
 
+export async function getPlannedMealById(plannedId: string): Promise<PlannedMeal | null> {
+  const docRef = doc(db, 'plannedMeals', plannedId);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return { id: docSnap.id, ...docSnap.data() } as PlannedMeal;
+  }
+  return null;
+}
+
 export async function addPlannedMeal(userId: string, meal: Meal, date: string): Promise<void> {
     const plannerRef = collection(db, 'plannedMeals');
     await addDoc(plannerRef, {
@@ -67,7 +83,7 @@ export async function addPlannedMeal(userId: string, meal: Meal, date: string): 
         scaledIngredients: meal.ingredients || [],
         instructions: meal.instructions || [],
         prepTime: meal.prepTime,
-        plannedBy: { id: userId, name: 'User' },
+        plannedBy: { id: userId, name: 'Bruker' },
         createdAt: new Date().toISOString()
     });
 }
@@ -77,14 +93,14 @@ export async function addLeftoverMeal(userId: string, date: string): Promise<voi
     await addDoc(plannerRef, {
         date,
         mealId: "leftover-placeholder",
-        mealName: "Leftovers",
+        mealName: "Rester",
         imageUrl: null,
         plannedServings: 4,
         isShopped: true,
         isCooked: false,
         ingredients: [],
-        notes: "Eat up previous meals!",
-        plannedBy: { id: userId, name: 'User' },
+        notes: "Spis opp tidligere måltider!",
+        plannedBy: { id: userId, name: 'Bruker' },
         createdAt: new Date().toISOString()
     });
 }
@@ -102,11 +118,9 @@ export async function deletePlannedMeal(id: string): Promise<void> {
     await deleteDoc(plannerRef);
 }
 
-export async function getShoppingList(userId: string): Promise<{ planned: any[], manual: any[] }> {
+export async function getShoppingList(userId: string): Promise<{ planned: { id: string, name: string, amount: number, unit: string, mealId: string, mealName: string, checked: boolean }[], manual: { id: string, name?: string, item?: string, checked?: boolean }[] }> {
   // Fetch manual items
   const shoppingRef = collection(db, 'shoppingList');
-  const q = query(shoppingRef, where('userId', '==', userId));
-  // FIX: Remove userId filter for manual items to match web behavior (or lack thereof).
   const snapshot = await getDocs(shoppingRef);
   const manual = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -155,13 +169,25 @@ export async function toggleShoppingItem(id: string, checked: boolean, isManual:
         await updateDoc(itemRef, { checked });
     } else {
         const itemRef = doc(db, 'shoppingChecked', id);
-        await setDoc(itemRef, { checked }, { merge: true });
+    await setDoc(itemRef, { checked }, { merge: true });
     }
 }
 
 export async function deleteShoppingItem(id: string): Promise<void> {
     const itemRef = doc(db, 'shoppingList', id);
     await deleteDoc(itemRef);
+}
+
+export async function clearCheckedItems(userId: string): Promise<void> {
+    // Only clear manual checked items (delete from shoppingList)
+    // Planned checked items keep their shoppingChecked docs so they stay checked
+    // and can be filtered out of the UI
+    const shoppingRef = collection(db, 'shoppingList');
+    const q = query(shoppingRef, where('checked', '==', true));
+    const snapshot = await getDocs(q);
+    const manualPromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+
+    await Promise.all(manualPromises);
 }
 
 export async function getInboxMeals(): Promise<Suggestion[]> {
@@ -173,7 +199,7 @@ export async function getInboxMeals(): Promise<Suggestion[]> {
 
 export async function addSuggestion(text: string, userId: string, userName: string, forDate?: string): Promise<void> {
     const suggestionsRef = collection(db, 'suggestions');
-    const data: any = {
+    const data: Omit<Suggestion, 'id'> = {
         text,
         votes: 1,
         votedBy: [userId],
@@ -212,6 +238,23 @@ export async function approveSuggestion(suggestionId: string): Promise<void> {
     await updateDoc(suggestionRef, {
         status: 'approved'
     });
+}
+
+export async function addPlannedSuggestionMeal(text: string, date: string, userId?: string, userName?: string): Promise<void> {
+  const plannerRef = collection(db, 'plannedMeals');
+  await addDoc(plannerRef, {
+    date,
+    mealId: 'suggestion-placeholder',
+    mealName: text,
+    imageUrl: null,
+    plannedServings: 4,
+    isShopped: false,
+    isCooked: false,
+    ingredients: [],
+    notes: 'Planlagt fra forslag',
+    plannedBy: userId ? { id: userId, name: userName || 'Bruker' } : undefined,
+    createdAt: new Date().toISOString()
+  });
 }
 
 export async function rejectSuggestion(suggestionId: string): Promise<void> {

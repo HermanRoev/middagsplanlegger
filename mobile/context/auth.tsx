@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
@@ -25,20 +25,22 @@ function useProtectedRoute(user: User | null, loading: boolean) {
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
 
+  // Stabilize dependencies: extract primitive values so useEffect doesn't fire
+  // on every render due to new array/object references from useSegments/useRootNavigationState
+  const segment = segments[0];
+  const navigationReady = !!rootNavigationState?.key;
+
   useEffect(() => {
+    if (loading || !navigationReady) return;
 
-    if (loading) return;
-
-    if (!rootNavigationState?.key) return;
-
-    const inAuthGroup = segments[0] === '(tabs)';
+    const inAuthGroup = segment === '(tabs)';
 
     if (!user && inAuthGroup) {
       router.replace('/login');
-    } else if (user && segments[0] === 'login') {
+    } else if (user && segment === 'login') {
       router.replace('/(tabs)/');
     }
-  }, [user, segments, rootNavigationState, loading]);
+  }, [user, segment, navigationReady, loading]);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -57,9 +59,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await firebaseSignOut(auth);
-  };
+  }, []);
+
+  // Memoize context value to prevent unnecessary re-renders in all consumers.
+  // Without this, every component using useAuth() re-renders whenever AuthProvider re-renders,
+  // even if user/loading haven't changed — because a new object reference is created each time.
+  const value = useMemo(() => ({ user, loading, signOut }), [user, loading, signOut]);
 
   if (loading) {
     return (
@@ -70,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

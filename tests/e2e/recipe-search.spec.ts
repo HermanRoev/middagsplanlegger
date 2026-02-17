@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Recipe Search', () => {
+  test.use({ storageState: './tests/e2e/storageState.json' });
+
   test('should filter recipes by search term', async ({ page }) => {
     await page.goto('/dashboard/recipes');
 

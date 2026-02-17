@@ -70,4 +70,30 @@ describe('gemini', () => {
 
      expect(promptArg).toContain("Existing Ingredients List: []");
   });
+
+  it('should parse JSON wrapped in code fences', async () => {
+    vi.mocked(getAllIngredients).mockResolvedValue([]);
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => "```json\n{\"name\":\"Fence Test\",\"description\":\"x\",\"prepTime\":10,\"servings\":2,\"ingredients\":[],\"instructions\":[],\"nutrition\":{\"calories\":100,\"protein\":5,\"carbs\":10,\"fat\":2}}\n```",
+      },
+    });
+
+    const result = await generateRecipeFromText('Fence test');
+    expect(result.name).toBe('Fence Test');
+    expect(result.nutrition.calories).toBe(100);
+  });
+
+  it('should parse JSON with extra text', async () => {
+    vi.mocked(getAllIngredients).mockResolvedValue([]);
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => "Here is the result:\n{\"name\":\"Extra Text\",\"description\":\"x\",\"prepTime\":5,\"servings\":1,\"ingredients\":[],\"instructions\":[],\"nutrition\":{\"calories\":50,\"protein\":2,\"carbs\":5,\"fat\":1}}\nThanks!",
+      },
+    });
+
+    const result = await generateRecipeFromText('Extra text test');
+    expect(result.name).toBe('Extra Text');
+    expect(result.nutrition.fat).toBe(1);
+  });
 });

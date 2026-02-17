@@ -7,18 +7,28 @@ import { Suggestion } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { ThumbsUp, Check, X, MessageSquarePlus, Plus, Trash, Calendar } from "lucide-react"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { ThumbsUp, Check, X, MessageSquarePlus, Plus, Trash, Calendar, Utensils } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import toast from "react-hot-toast"
 import { motion, AnimatePresence } from "framer-motion"
-import { useRouter } from "next/navigation"
 import { format, parseISO, isSameDay, addDays } from "date-fns"
+import { nb } from "date-fns/locale"
 
 export default function InboxPage() {
   const { user } = useAuth()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [newSuggestion, setNewSuggestion] = useState("")
-  const [selectedDate, setSelectedDate] = useState<string>("") // Empty string = General
+    const [selectedDate, setSelectedDate] = useState<string>("") // Empty string = General
+    const [approveTarget, setApproveTarget] = useState<Suggestion | null>(null)
+    const [approveDate, setApproveDate] = useState<string>("")
 
   useEffect(() => {
     const q = query(collection(db, "suggestions"), orderBy("createdAt", "desc"))
@@ -34,7 +44,7 @@ export default function InboxPage() {
     if (!newSuggestion.trim() || !user) return
 
     try {
-        const data: any = {
+        const data: Omit<Suggestion, "id"> = {
             text: newSuggestion,
             votes: 1,
             votedBy: [user.uid],
@@ -43,19 +53,15 @@ export default function InboxPage() {
                 id: user.uid,
                 name: user.displayName || user.email
             },
-            createdAt: new Date().toISOString()
-        }
-
-        if (selectedDate) {
-            data.forDate = selectedDate
+            createdAt: new Date().toISOString(),
+            ...(selectedDate ? { forDate: selectedDate } : {})
         }
 
         await addDoc(collection(db, "suggestions"), data)
         setNewSuggestion("")
-        // setSelectedDate("") // Optional: Reset date
-        toast.success("Suggestion added!")
+        toast.success("Forslag sendt!")
     } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
-        toast.error("Failed to add suggestion")
+        toast.error("Kunne ikke sende forslag")
     }
   }
 
@@ -78,28 +84,65 @@ export default function InboxPage() {
                })
           }
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
-          toast.error("Failed to vote")
+          toast.error("Kunne ikke stemme")
       }
+  }
+
+  const planSuggestion = async (suggestion: Suggestion, date: string) => {
+      await addDoc(collection(db, "plannedMeals"), {
+          date,
+          mealId: "suggestion-placeholder",
+          mealName: suggestion.text,
+          imageUrl: null,
+          plannedServings: 4,
+          isShopped: false,
+          isCooked: false,
+          ingredients: [],
+          notes: "Planlagt fra forslag",
+          plannedBy: user ? { id: user.uid, name: user.displayName || user.email || 'Ukjent' } : undefined,
+          createdAt: new Date().toISOString()
+      })
   }
 
   const handleApprove = async (suggestion: Suggestion) => {
       try {
+          if (!suggestion.forDate) {
+              setApproveTarget(suggestion)
+              setApproveDate(new Date().toISOString().split('T')[0])
+              return
+          }
+
+          await planSuggestion(suggestion, suggestion.forDate)
           await updateDoc(doc(db, "suggestions", suggestion.id), {
               status: 'approved'
           })
-          toast.success("Marked as approved!")
+          toast.success("Godkjent og planlagt!")
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
-          toast.error("Failed to approve")
+          toast.error("Kunne ikke godkjenne")
+      }
+  }
+
+  const handleConfirmApprove = async () => {
+      if (!approveTarget || !approveDate) return
+      try {
+          await planSuggestion(approveTarget, approveDate)
+          await updateDoc(doc(db, "suggestions", approveTarget.id), {
+              status: 'approved'
+          })
+          toast.success("Godkjent og planlagt!")
+          setApproveTarget(null)
+      } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
+          toast.error("Kunne ikke godkjenne")
       }
   }
 
   const handleReject = async (id: string) => {
-      if(!confirm("Reject this suggestion?")) return
+      if(!confirm("Fjerne dette forslaget?")) return
       try {
           await deleteDoc(doc(db, "suggestions", id))
-          toast.success("Suggestion removed")
+          toast.success("Forslag fjernet")
       } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
-          toast.error("Failed to remove")
+          toast.error("Kunne ikke fjerne")
       }
   }
 
@@ -109,114 +152,135 @@ export default function InboxPage() {
   const sortedSuggestions = [...generalSuggestions, ...datedSuggestions]
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="max-w-3xl mx-auto space-y-10 pb-12">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div>
-            <h1 className="text-3xl font-bold text-gray-900">Family Inbox</h1>
-            <p className="text-gray-500">Suggest meals for the upcoming week.</p>
+            <h1 className="text-5xl font-black tracking-tight text-gray-900 leading-none">Forslag</h1>
+            <p className="text-gray-500 mt-4 text-xl font-medium">Del dine matønsker med familien.</p>
         </div>
-        <div className="p-2 bg-indigo-100 text-indigo-700 rounded-full">
-            <MessageSquarePlus className="w-6 h-6" />
+        <div className="p-4 bg-indigo-50 text-indigo-600 rounded-[24px]">
+            <MessageSquarePlus className="w-10 h-10" />
         </div>
       </div>
 
-      <Card className="border-0 shadow-lg bg-white">
+      <Card className="border border-gray-100 shadow-sm bg-white rounded-2xl overflow-hidden">
           <CardContent className="p-6">
-              <form onSubmit={handleAddSuggestion} className="flex gap-2 items-center">
-                  <div className="flex-1 space-y-2">
-                     <Input
-                        placeholder="I want to eat..."
-                        value={newSuggestion}
-                        onChange={(e) => setNewSuggestion(e.target.value)}
-                        className="bg-gray-50"
-                      />
-                      <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500 font-medium">For specific day (optional):</span>
-                          <Input
-                             type="date"
-                             value={selectedDate}
-                             onChange={(e) => setSelectedDate(e.target.value)}
-                             className="w-auto h-8 text-xs bg-white border-gray-200"
-                             min={new Date().toISOString().split('T')[0]}
-                          />
-                          {selectedDate && (
-                              <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDate("")} className="h-8 w-8 p-0 text-red-400">
-                                  <X className="w-3 h-3" />
-                              </Button>
-                          )}
+              <form onSubmit={handleAddSuggestion} className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-3 items-start">
+                      <div className="flex-1 w-full space-y-3">
+                        <div className="relative group">
+                            <Utensils className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                            <Input
+                                placeholder="Hva har du lyst på? (f.eks. Taco)"
+                                value={newSuggestion}
+                                onChange={(e) => setNewSuggestion(e.target.value)}
+                                className="pl-10 h-11 rounded-lg bg-gray-50/50 border-gray-200 text-base"
+                            />
+                        </div>
+                        
+                        <div className="flex items-center gap-3 bg-gray-50/30 p-2 rounded-xl border border-gray-100 w-fit">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-2">Dag?</span>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="date"
+                                    value={selectedDate}
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    className="w-auto h-8 px-3 rounded-lg bg-white border-gray-200 font-semibold text-gray-700 text-xs"
+                                    min={new Date().toISOString().split('T')[0]}
+                                />
+                                {selectedDate && (
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDate("")} className="h-8 w-8 p-0 text-red-400 hover:bg-red-50 rounded-lg">
+                                        <X className="w-4 h-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
                       </div>
+                      <Button type="submit" variant="premium" className="h-11 px-6 rounded-lg font-bold shadow-sm w-full sm:w-auto">
+                          <Plus className="w-4 h-4 mr-2" /> Foreslå
+                      </Button>
                   </div>
-                  <Button type="submit" variant="premium" className="h-auto self-start py-3">
-                      <Plus className="w-4 h-4 mr-2" /> Suggest
-                  </Button>
               </form>
           </CardContent>
       </Card>
 
-      <div className="space-y-4">
-          <AnimatePresence>
+      <div className="space-y-6">
+          <AnimatePresence mode="popLayout">
               {sortedSuggestions.map((item, index) => {
                   const prevItem = index > 0 ? sortedSuggestions[index - 1] : null
                   const showGeneralHeader = index === 0 && !item.forDate
                   const showDateHeader = item.forDate && (!prevItem || prevItem.forDate !== item.forDate)
 
                   let headerText = ''
-                  if (showGeneralHeader) headerText = 'General Ideas'
+                  if (showGeneralHeader) headerText = 'Generelle ønsker'
                   if (showDateHeader) {
                       const d = parseISO(item.forDate!)
-                      if (isSameDay(d, new Date())) headerText = 'Today'
-                      else if (isSameDay(d, addDays(new Date(), 1))) headerText = 'Tomorrow'
-                      else headerText = format(d, 'EEEE d. MMM')
+                      if (isSameDay(d, new Date())) headerText = 'I dag'
+                      else if (isSameDay(d, addDays(new Date(), 1))) headerText = 'I morgen'
+                      else headerText = format(d, 'EEEE d. MMM', { locale: nb })
                   }
 
                   return (
-                  <div key={item.id}>
+                  <div key={item.id} className="space-y-3">
                       {(showGeneralHeader || showDateHeader) && (
-                          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-6 ml-1">
-                              {headerText}
-                          </h3>
+                          <div className="flex items-center gap-4 mt-8 mb-4">
+                              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] ml-1">
+                                  {headerText}
+                              </h3>
+                              <div className="h-px flex-1 bg-gray-100" />
+                          </div>
                       )}
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, height: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
                       >
-                          <Card className={`border-0 shadow-sm ${item.status === 'approved' ? 'bg-green-50' : 'bg-white'}`}>
-                              <CardContent className="p-4 flex items-center justify-between">
-                                  <div>
-                                      <h3 className="font-semibold text-lg">{item.text}</h3>
-                                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                                          <span>Suggested by {item.suggestedBy?.name}</span>
-                                          {item.forDate && (
-                                              <span className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-medium">
-                                                  <Calendar className="w-3 h-3" />
-                                                  {format(parseISO(item.forDate), 'd. MMM')}
-                                              </span>
-                                          )}
+                          <Card className={`border border-gray-100 shadow-sm rounded-[24px] overflow-hidden transition-all hover:shadow-md ${item.status === 'approved' ? 'bg-emerald-50/30 border-emerald-100' : 'bg-white'}`}>
+                              <CardContent className="p-5 flex items-center justify-between">
+                                  <div className="flex items-center gap-5">
+                                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${item.status === 'approved' ? 'bg-emerald-100' : 'bg-indigo-50'}`}>
+                                          <Utensils className={`w-6 h-6 ${item.status === 'approved' ? 'text-emerald-600' : 'text-indigo-600'}`} />
+                                      </div>
+                                      <div>
+                                          <h3 className="font-black text-xl text-gray-900 leading-tight">{item.text}</h3>
+                                          <div className="flex items-center gap-3 mt-1">
+                                              <span className="text-xs font-bold text-gray-400">Foreslått av {item.suggestedBy?.name}</span>
+                                              {item.forDate && (
+                                                  <span className="bg-white/80 px-2 py-0.5 rounded-lg border border-gray-100 text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1">
+                                                      <Calendar className="w-3 h-3" />
+                                                      {format(parseISO(item.forDate), 'd. MMM')}
+                                                  </span>
+                                              )}
+                                          </div>
                                       </div>
                                   </div>
-                                  <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2">
                                       {item.status === 'pending' && (
-                                          <>
-                                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-indigo-600" onClick={() => handleVote(item)}>
-                                                <ThumbsUp className="w-4 h-4 mr-1" /> {item.votes || 0}
+                                          <div className="flex items-center bg-gray-50 rounded-2xl p-1 gap-1 border border-gray-100">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className={`rounded-xl px-4 font-black ${item.votedBy?.includes(user?.uid || '') ? 'text-indigo-600 bg-white shadow-sm' : 'text-gray-400 hover:text-indigo-600'}`} 
+                                                onClick={() => handleVote(item)}
+                                            >
+                                                <ThumbsUp className="w-4 h-4 mr-2" /> {item.votes || 0}
                                             </Button>
-                                            <div className="h-4 w-px bg-gray-200" />
-                                            <Button size="icon" variant="ghost" className="text-green-600 hover:bg-green-100" onClick={() => handleApprove(item)} title="Approve & Plan">
-                                                <Check className="w-4 h-4" />
+                                            <div className="w-px h-6 bg-gray-200 mx-1" />
+                                            <Button size="icon" variant="ghost" className="text-emerald-600 hover:bg-emerald-100 rounded-xl" onClick={() => handleApprove(item)} title="Godkjenn & Planlegg">
+                                                <Check className="w-5 h-5" />
                                             </Button>
-                                            <Button size="icon" variant="ghost" className="text-red-400 hover:bg-red-100" onClick={() => handleReject(item.id)} title="Reject">
-                                                <X className="w-4 h-4" />
+                                            <Button size="icon" variant="ghost" className="text-red-400 hover:bg-red-50 rounded-xl" onClick={() => handleReject(item.id)} title="Avvis">
+                                                <X className="w-5 h-5" />
                                             </Button>
-                                          </>
+                                          </div>
                                       )}
                                       {item.status === 'approved' && (
-                                          <div className="flex items-center gap-2">
-                                            <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold flex items-center gap-1">
-                                                <Check className="w-3 h-3" /> Approved
-                                            </span>
-                                            <Button size="icon" variant="ghost" className="text-red-400 hover:bg-red-100" onClick={() => handleReject(item.id)} title="Remove">
-                                                <Trash className="w-4 h-4" />
+                                          <div className="flex items-center gap-3">
+                                            <div className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-100">
+                                                <Check className="w-4 h-4" /> Godkjent
+                                            </div>
+                                            <Button size="icon" variant="ghost" className="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => handleReject(item.id)} title="Fjern">
+                                                <Trash className="w-5 h-5" />
                                             </Button>
                                           </div>
                                       )}
@@ -228,12 +292,37 @@ export default function InboxPage() {
                   )
               })}
               {suggestions.length === 0 && (
-                  <div className="text-center py-12 text-gray-400">
-                      No suggestions yet. Be the first!
+                  <div className="col-span-full py-24 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 rounded-[40px] border-2 border-dashed border-gray-200">
+                      <MessageSquarePlus className="w-16 h-16 mb-4 opacity-20" />
+                      <p className="text-xl font-bold text-gray-900 mb-1">Ingen forslag ennå</p>
+                      <p className="text-gray-500">Vær den første til å foreslå noe godt!</p>
                   </div>
               )}
           </AnimatePresence>
       </div>
+
+      <Dialog open={!!approveTarget} onOpenChange={(open) => !open && setApproveTarget(null)}>
+          <DialogContent className="rounded-[32px] p-8 border-0 shadow-2xl">
+              <DialogHeader>
+                  <DialogTitle className="text-2xl font-black">Planlegg forslag</DialogTitle>
+                  <DialogDescription className="text-base pt-2">
+                      Velg en dato for å legge til <strong>{approveTarget?.text}</strong> i ukeplanen.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="py-6">
+                  <Input 
+                    type="date" 
+                    value={approveDate} 
+                    onChange={(e) => setApproveDate(e.target.value)} 
+                    className="h-14 rounded-2xl bg-gray-50 border-gray-100 text-lg font-medium"
+                  />
+              </div>
+              <DialogFooter className="gap-3">
+                  <Button variant="ghost" className="rounded-xl h-12 px-6" onClick={() => setApproveTarget(null)}>Avbryt</Button>
+                  <Button onClick={handleConfirmApprove} variant="premium" className="rounded-xl h-12 px-8 font-black shadow-lg shadow-indigo-100">Godkjenn & Planlegg</Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
     </div>
   )
 }

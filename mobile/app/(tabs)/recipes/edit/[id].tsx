@@ -6,6 +6,8 @@ import { getRecipeById, updateMeal } from '../../../../lib/api';
 import { Ingredient, Meal } from '../../../../../src/types';
 import { Plus, X, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImageFromUri } from '../../../../lib/storage';
+import UnitPicker from '../../../../components/UnitPicker';
 
 export default function EditRecipe() {
   const router = useRouter();
@@ -94,14 +96,16 @@ export default function EditRecipe() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [16, 9],
-      quality: 0.5,
-      base64: true
+      quality: 0.5
     });
 
     if (!result.canceled) {
         setImageUrl(result.assets[0].uri);
     }
   };
+
+  const isLocalUri = (uri: string) =>
+    uri.startsWith('file:') || uri.startsWith('content:') || uri.startsWith('ph://');
 
   const handleSave = async () => {
     if (!user || typeof id !== 'string') return;
@@ -118,9 +122,15 @@ export default function EditRecipe() {
 
     setSaving(true);
     try {
+      let finalImageUrl: string | null = imageUrl || null;
+      if (imageUrl && isLocalUri(imageUrl)) {
+        const imagePath = `meals/${user.uid}/cover_${Date.now()}`;
+        finalImageUrl = await uploadImageFromUri(imageUrl, imagePath);
+      }
+
       const updates: Partial<Meal> = {
         name,
-        imageUrl: imageUrl || null,
+        imageUrl: finalImageUrl,
         servings: parseInt(servings) || 4,
         prepTime: parseInt(prepTime) || 30,
         ingredients: validIngredients,
@@ -258,12 +268,10 @@ export default function EditRecipe() {
                   onChangeText={(t) => updateIngredient(idx, 'amount', t)}
                   keyboardType="numeric"
                 />
-                <TextInput
-                  className="w-16 bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 text-center"
-                  placeholder="Unit"
-                  placeholderTextColor="#9CA3AF"
+                <UnitPicker
                   value={ing.unit}
-                  onChangeText={(t) => updateIngredient(idx, 'unit', t)}
+                  onChange={(unit) => updateIngredient(idx, 'unit', unit)}
+                  className="w-20"
                 />
                 <TouchableOpacity onPress={() => removeIngredient(idx)} className="p-2 bg-red-50 rounded-lg">
                   <X size={18} color="#EF4444" />

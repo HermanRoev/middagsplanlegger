@@ -1,10 +1,10 @@
-import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
 import { db } from '../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { CupboardItem } from '../../../src/types';
-import { Package, Plus, Search, Trash2, Camera, X, Video } from 'lucide-react-native';
+import { Package, Plus, Search, Trash2, Camera, X, Video, CheckCircle2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { parseReceiptImageMobile, parseCupboardVideoMobile } from '../../lib/gemini-mobile';
 
@@ -52,11 +52,12 @@ export default function Cupboard() {
       });
       setNewItemName('');
       setNewItemAmount('');
-      setNewItemUnit('stk'); // Reset to default
+      setNewItemUnit('stk');
       setIsAdding(false);
+      Keyboard.dismiss();
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Failed to add item');
+      Alert.alert('Feil', 'Kunne ikke legge til vare');
     }
   };
 
@@ -71,7 +72,7 @@ export default function Cupboard() {
   const handleScanReceipt = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Camera permission is required to scan receipts.');
+      Alert.alert('Tilgang kreves', 'Vi trenger tilgang til kameraet for å skanne kvitteringer.');
       return;
     }
 
@@ -86,10 +87,11 @@ export default function Cupboard() {
       setShowScanResult(true);
       setScanType('receipt');
       try {
-        const items = await parseReceiptImageMobile(result.assets[0].uri);
-        setScannedItems(items);
+        const resultItems = await parseReceiptImageMobile(result.assets[0].uri);
+        setScannedItems(resultItems);
       } catch (e) {
-        Alert.alert('Error', 'Failed to analyze receipt.');
+        console.error(e);
+        Alert.alert('Feil', 'Kunne ikke analysere kvittering');
         setShowScanResult(false);
       } finally {
         setScanning(false);
@@ -100,14 +102,14 @@ export default function Cupboard() {
   const handleScanVideo = async () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-          Alert.alert('Permission needed', 'Camera permission is required to scan video.');
+          Alert.alert('Tilgang kreves', 'Vi trenger tilgang til kameraet for å skanne video.');
           return;
       }
 
       const result = await ImagePicker.launchCameraAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Videos,
           quality: 0.5,
-          videoMaxDuration: 10, // Limit duration to keep upload size manageable
+          videoMaxDuration: 10,
           allowsEditing: true,
       });
 
@@ -116,11 +118,11 @@ export default function Cupboard() {
           setShowScanResult(true);
           setScanType('video');
           try {
-              const items = await parseCupboardVideoMobile(result.assets[0].uri);
-              setScannedItems(items);
+              const resultItems = await parseCupboardVideoMobile(result.assets[0].uri);
+              setScannedItems(resultItems);
           } catch (e) {
               console.error(e);
-              Alert.alert('Error', 'Failed to analyze video.');
+              Alert.alert('Feil', 'Kunne ikke analysere video');
               setShowScanResult(false);
           } finally {
               setScanning(false);
@@ -148,7 +150,8 @@ export default function Cupboard() {
         setScannedItems([]);
         setShowScanResult(false);
     } catch (e) {
-        Alert.alert('Error', 'Failed to save items');
+        console.error(e);
+        Alert.alert('Feil', 'Kunne ikke lagre varene');
     } finally {
         setScanning(false);
     }
@@ -159,125 +162,159 @@ export default function Cupboard() {
   );
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="px-4 py-3 bg-white border-b border-gray-100 flex-row justify-between items-center">
-        <Text className="text-2xl font-bold text-gray-900">Cupboard</Text>
-        <View className="flex-row gap-2">
-            <TouchableOpacity onPress={handleScanVideo} className="p-2 bg-indigo-50 rounded-full">
-                <Video size={20} color="#4F46E5" />
+    <View className="flex-1 bg-white">
+      <View className="bg-white px-6 pb-4 pt-16 border-b border-gray-200 flex-row justify-between items-end">
+        <View>
+          <Text className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{items.length} varer på lager</Text>
+          <Text className="text-3xl font-black text-gray-900 tracking-tight">Matbod</Text>
+        </View>
+        <View className="flex-row gap-x-2">
+            <TouchableOpacity 
+                onPress={handleScanVideo} 
+                className="p-3 bg-gray-50 rounded-2xl border border-gray-100"
+                activeOpacity={0.7}
+            >
+                <Video size={20} color="#6366F1" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleScanReceipt} className="p-2 bg-indigo-50 rounded-full">
-                <Camera size={20} color="#4F46E5" />
+            <TouchableOpacity 
+                onPress={handleScanReceipt} 
+                className="p-3 bg-gray-50 rounded-2xl border border-gray-100"
+                activeOpacity={0.7}
+            >
+                <Camera size={20} color="#6366F1" />
+            </TouchableOpacity>
+            <TouchableOpacity
+                onPress={() => setIsAdding(!isAdding)}
+                className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200"
+                activeOpacity={0.8}
+            >
+                <Plus size={20} color="white" />
             </TouchableOpacity>
         </View>
       </View>
 
-      <View className="p-4 bg-white shadow-sm z-10">
-        <View className="flex-row bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 items-center mb-3">
+      <View className="p-6 bg-white border-b border-gray-200">
+        <View className="flex-row bg-gray-50 border border-gray-100 rounded-[20px] px-4 py-3 items-center">
              <Search size={18} color="#9CA3AF" />
              <TextInput
-                className="flex-1 ml-2 text-gray-900"
-                placeholder="Search pantry..."
+                className="flex-1 ml-3 text-gray-900 font-bold"
+                placeholder="Søk i matboden..."
                 placeholderTextColor="#9CA3AF"
                 value={searchTerm}
                 onChangeText={setSearchTerm}
              />
         </View>
-        <TouchableOpacity
-            onPress={() => setIsAdding(!isAdding)}
-            className="flex-row items-center justify-center bg-indigo-600 py-3 rounded-xl"
-        >
-            <Plus size={18} color="white" />
-            <Text className="text-white font-bold ml-2">Add Manual Item</Text>
-        </TouchableOpacity>
-
-        {isAdding && (
-             <View className="mt-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                <TextInput
-                    className="bg-white border border-gray-200 rounded-lg p-2 mb-2"
-                    placeholder="Item Name"
-                    value={newItemName}
-                    onChangeText={setNewItemName}
-                />
-                <View className="flex-row gap-2 mb-2">
-                    <TextInput
-                        className="flex-1 bg-white border border-gray-200 rounded-lg p-2"
-                        placeholder="Amount"
-                        keyboardType="numeric"
-                        value={newItemAmount}
-                        onChangeText={setNewItemAmount}
-                    />
-                </View>
-
-                {/* Unit Chips */}
-                <View className="mb-4">
-                  <Text className="text-xs text-gray-500 font-bold mb-2 uppercase">Unit</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {UNITS.map(unit => (
-                      <TouchableOpacity
-                        key={unit}
-                        onPress={() => setNewItemUnit(unit)}
-                        className={`mr-2 px-3 py-1.5 rounded-full border ${
-                          newItemUnit === unit
-                            ? 'bg-indigo-600 border-indigo-600'
-                            : 'bg-white border-gray-200'
-                        }`}
-                      >
-                        <Text className={`text-xs font-semibold ${newItemUnit === unit ? 'text-white' : 'text-gray-600'}`}>
-                          {unit}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-
-                <TouchableOpacity onPress={handleAddItem} className="bg-green-600 py-2 rounded-lg items-center">
-                    <Text className="text-white font-bold">Save Item</Text>
-                </TouchableOpacity>
-             </View>
-        )}
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" className="mt-10" color="#4F46E5" />
+        <View className="py-20 items-center">
+            <ActivityIndicator size="large" color="#4F46E5" />
+        </View>
       ) : (
         <FlatList
           data={filteredItems}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View className="flex-row justify-between items-center bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100">
-                <View className="flex-row items-center">
-                    <View className="w-10 h-10 bg-amber-50 rounded-full items-center justify-center mr-3">
-                        <Package size={20} color="#D97706" />
+            <View className="flex-row justify-between items-center bg-white p-5 rounded-[28px] mb-4 shadow-sm border border-gray-100">
+                <View className="flex-row items-center flex-1">
+                    <View className="w-12 h-12 bg-amber-50 rounded-2xl items-center justify-center mr-4">
+                        <Package size={24} color="#D97706" />
                     </View>
-                    <View>
-                        <Text className="font-semibold text-gray-900 text-lg">{item.ingredientName}</Text>
-                        <Text className="text-gray-500">{item.amount} {item.unit}</Text>
+                    <View className="flex-1">
+                        <Text className="font-black text-gray-900 text-lg leading-tight" numberOfLines={1}>{item.ingredientName}</Text>
+                        <View className="flex-row items-center mt-1">
+                            <View className="bg-indigo-50 px-2 py-0.5 rounded-md">
+                                <Text className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{item.amount} {item.unit}</Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
-                <TouchableOpacity onPress={() => handleDelete(item.id)} className="p-2">
-                    <Trash2 size={18} color="#EF4444" opacity={0.7} />
+                <TouchableOpacity 
+                    onPress={() => handleDelete(item.id)} 
+                    className="p-3 bg-red-50 rounded-xl ml-2"
+                    activeOpacity={0.6}
+                >
+                    <Trash2 size={18} color="#EF4444" />
                 </TouchableOpacity>
             </View>
           )}
           ListEmptyComponent={
-              <View className="items-center justify-center py-10 opacity-50">
-                  <Package size={48} color="#9CA3AF" />
-                  <Text className="mt-2 text-gray-500">Your cupboard is empty</Text>
+              <View className="items-center justify-center py-24 opacity-30">
+                  <Package size={80} color="#9CA3AF" />
+                  <Text className="text-gray-500 font-black uppercase tracking-widest mt-4">Boden er tom</Text>
               </View>
           }
         />
       )}
 
+      {/* Add Item Overlay */}
+      {isAdding && (
+          <View className="absolute inset-0 bg-black/40 z-50 justify-end">
+              <TouchableOpacity activeOpacity={1} style={{ flex: 1 }} onPress={() => setIsAdding(false)} />
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                className="bg-white p-8 rounded-t-[40px] shadow-2xl"
+              >
+                  <View className="flex-row justify-between items-center mb-8">
+                      <Text className="text-2xl font-black text-gray-900 uppercase tracking-tight">Legg til vare</Text>
+                      <TouchableOpacity onPress={() => setIsAdding(false)} className="bg-gray-100 p-2 rounded-full">
+                          <X size={24} color="#9CA3AF" />
+                      </TouchableOpacity>
+                  </View>
+                  
+                  <View className="space-y-4 mb-10">
+                    <TextInput
+                        className="bg-gray-50 border border-gray-100 rounded-[24px] p-6 text-lg font-medium text-gray-900 shadow-inner"
+                        placeholder="Varenavn (f.eks. Melk)"
+                        placeholderTextColor="#9CA3AF"
+                        value={newItemName}
+                        onChangeText={setNewItemName}
+                        autoFocus
+                    />
+                    <View className="flex-row gap-x-3">
+                        <TextInput
+                            className="flex-1 bg-gray-50 border border-gray-100 rounded-[20px] p-4 text-base font-bold text-gray-900 shadow-inner"
+                            placeholder="Antall"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            value={newItemAmount}
+                            onChangeText={setNewItemAmount}
+                        />
+                        <View className="flex-[2] bg-gray-50 border border-gray-100 rounded-[20px] p-1 flex-row flex-wrap justify-center items-center">
+                            {UNITS.slice(0, 4).map(unit => (
+                                <TouchableOpacity 
+                                    key={unit} 
+                                    onPress={() => setNewItemUnit(unit)}
+                                    className={`px-3 py-1.5 m-1 rounded-xl ${newItemUnit === unit ? 'bg-indigo-600' : 'bg-white border border-gray-100'}`}
+                                >
+                                    <Text className={`text-[10px] font-black uppercase ${newItemUnit === unit ? 'text-white' : 'text-gray-400'}`}>{unit}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                    
+                    <TouchableOpacity
+                        onPress={handleAddItem}
+                        className="bg-indigo-600 py-5 rounded-[24px] items-center shadow-lg shadow-indigo-200 mt-4"
+                    >
+                        <Text className="text-white font-black text-lg uppercase tracking-widest">Lagre vare</Text>
+                    </TouchableOpacity>
+                  </View>
+              </KeyboardAvoidingView>
+          </View>
+      )}
+
       {/* Scan Results Modal */}
-      <Modal visible={showScanResult} animationType="slide" presentationStyle="pageSheet">
-          <View className="flex-1 bg-white p-6">
-              <View className="flex-row justify-between items-center mb-6">
-                  <Text className="text-2xl font-bold">
-                    {scanType === 'receipt' ? 'Receipt Scan' : 'Video Scan'} Results
-                  </Text>
-                  <TouchableOpacity onPress={() => setShowScanResult(false)}>
+      <Modal visible={showScanResult} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowScanResult(false)}>
+          <View className="flex-1 bg-white">
+              <View className="px-8 pt-12 pb-6 flex-row justify-between items-center border-b border-gray-200">
+                  <View>
+                    <Text className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-1">{scanType === 'receipt' ? 'Kvittering' : 'Video-skann'}</Text>
+                    <Text className="text-3xl font-black text-gray-900 uppercase tracking-tight">Resultater</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setShowScanResult(false)} className="bg-gray-100 p-3 rounded-full">
                       <X size={24} color="#1F2937" />
                   </TouchableOpacity>
               </View>
@@ -285,28 +322,40 @@ export default function Cupboard() {
               {scanning ? (
                   <View className="flex-1 justify-center items-center">
                       <ActivityIndicator size="large" color="#4F46E5" />
-                      <Text className="mt-4 text-gray-500">Analyzing {scanType}...</Text>
+                      <Text className="mt-6 font-black text-gray-400 uppercase tracking-widest text-xs">Analyserer {scanType === 'receipt' ? 'kvittering' : 'video'}...</Text>
                   </View>
               ) : (
-                  <>
-                      <Text className="text-green-600 font-bold mb-4">Found {scannedItems.length} items</Text>
+                  <View className="flex-1 p-8">
+                      <View className="flex-row items-center gap-x-3 mb-8">
+                        <View className="w-12 h-12 bg-emerald-50 rounded-2xl items-center justify-center">
+                            <CheckCircle2 size={24} color="#10B981" />
+                        </View>
+                        <Text className="text-lg font-black text-gray-900">Fant {scannedItems.length} varer</Text>
+                      </View>
+
                       <FlatList
                           data={scannedItems}
                           keyExtractor={(i, idx) => idx.toString()}
+                          showsVerticalScrollIndicator={false}
                           renderItem={({item}) => (
-                              <View className="flex-row justify-between py-3 border-b border-gray-100">
-                                  <Text className="font-medium">{item.name}</Text>
-                                  <Text className="text-gray-500">{item.amount} {item.unit}</Text>
+                              <View className="flex-row justify-between items-center py-5 border-b border-gray-200">
+                                  <Text className="text-lg font-bold text-gray-700">{item.name}</Text>
+                                  <View className="bg-indigo-50 px-3 py-1.5 rounded-xl">
+                                    <Text className="text-xs font-black text-indigo-600 uppercase">{item.amount} {item.unit}</Text>
+                                  </View>
                               </View>
                           )}
                       />
-                      <TouchableOpacity
-                          onPress={saveScannedItems}
-                          className="bg-indigo-600 py-4 rounded-xl items-center mt-4 mb-8"
-                      >
-                          <Text className="text-white font-bold text-lg">Add All to Cupboard</Text>
-                      </TouchableOpacity>
-                  </>
+                      
+                      <View className="pt-8 pb-10">
+                        <TouchableOpacity
+                            onPress={saveScannedItems}
+                            className="bg-indigo-600 py-6 rounded-[32px] items-center shadow-2xl shadow-indigo-200"
+                        >
+                            <Text className="text-white font-black text-xl uppercase tracking-widest">Legg til alt</Text>
+                        </TouchableOpacity>
+                      </View>
+                  </View>
               )}
           </View>
       </Modal>

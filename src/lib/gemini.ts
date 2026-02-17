@@ -6,12 +6,30 @@ const ai = getAI(app, { backend: new GoogleAIBackend() });
 
 const VALID_UNITS = ['g', 'kg', 'l', 'dl', 'stk', 'ss', 'ts'];
 
+function extractJson(text: string): string {
+    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const firstIndex = cleaned.search(/[\[{]/);
+    const lastIndex = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
+    if (firstIndex !== -1 && lastIndex !== -1) {
+        return cleaned.slice(firstIndex, lastIndex + 1).trim();
+    }
+    return cleaned;
+}
+
+function parseJsonResponse<T>(text: string): T {
+    const jsonString = extractJson(text);
+    return JSON.parse(jsonString) as T;
+}
+
 async function getPromptInstructions(): Promise<string> {
     const ingredients = await getAllIngredients();
     const ingredientNames = ingredients.map(i => i.id).join(', ');
 
     return `
-       IMPORTANT: Return ONLY valid JSON. Do not include any markdown formatting like \`\`\`json or \`\`\`.
+    IMPORTANT: Return ONLY valid JSON. Do not include any markdown formatting like \`\`\`json or \`\`\`.
+    - Output must be a single JSON object/array with double quotes.
+    - No extra text before or after the JSON.
+    - No comments, no trailing commas.
 
        Strictly adhere to these rules for units:
        - Allowed units: ${VALID_UNITS.join(', ')}.
@@ -78,9 +96,8 @@ export async function parseCupboardVideo(videoFile: File): Promise<{ name: strin
         ]);
 
         const responseText = result.response.text();
-        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-        return JSON.parse(jsonString);
+        return parseJsonResponse<{ name: string, amount: number, unit: string }[]>(responseText);
     } catch (error) {
         console.error("Error parsing video:", error);
         throw new Error("Failed to analyze video.");
@@ -129,10 +146,7 @@ export async function parseReceiptImage(imageFile: File): Promise<{ name: string
 
         const responseText = result.response.text();
 
-        // Clean up potential markdown just in case, though prompt says strict
-        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        return JSON.parse(jsonString);
+        return parseJsonResponse<{ name: string, amount: number, unit: string }[]>(responseText);
     } catch (error) {
         console.error("Error parsing receipt:", error);
         throw new Error("Failed to analyze receipt.");
@@ -172,9 +186,16 @@ export async function generateRecipeFromText(text: string): Promise<{
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
-        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-        return JSON.parse(jsonString);
+        return parseJsonResponse<{
+            name: string,
+            description: string,
+            prepTime: number,
+            servings: number,
+            ingredients: { name: string, amount: number, unit: string }[],
+            instructions: string[],
+            nutrition: { calories: number, protein: number, carbs: number, fat: number }
+        }>(responseText);
     } catch (error) {
         console.error("Error generating recipe:", error);
         throw new Error("Failed to generate recipe.");
@@ -232,9 +253,16 @@ export async function generateRecipeFromImage(imageFile: File): Promise<{
         ]);
 
         const responseText = result.response.text();
-        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-        return JSON.parse(jsonString);
+        return parseJsonResponse<{
+            name: string,
+            description: string,
+            prepTime: number,
+            servings: number,
+            ingredients: { name: string, amount: number, unit: string }[],
+            instructions: string[],
+            nutrition: { calories: number, protein: number, carbs: number, fat: number }
+        }>(responseText);
     } catch (error) {
         console.error("Error generating recipe from image:", error);
         throw new Error("Failed to generate recipe from image.");

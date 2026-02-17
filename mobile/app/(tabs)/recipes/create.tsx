@@ -6,6 +6,8 @@ import { createMeal } from '../../../lib/api';
 import { Ingredient, Meal } from '../../../../src/types';
 import { Plus, X, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImageFromUri } from '../../../lib/storage';
+import UnitPicker from '../../../components/UnitPicker';
 
 export default function CreateRecipe() {
   const router = useRouter();
@@ -65,21 +67,16 @@ export default function CreateRecipe() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [16, 9],
-      quality: 0.5,
-      base64: true // We might need base64 for direct upload or URI for Firebase Storage
+      quality: 0.5
     });
 
     if (!result.canceled) {
-        // TODO: Upload to Firebase Storage and get URL.
-        // For now, we'll just use the local URI for preview if we can't upload easily without setup
-        // But the user requested "Image Upload instead" of URL input.
-        // Since setting up Firebase Storage upload in RN requires Blob/Fetch polyfills often,
-        // I will implement a placeholder that sets the URI.
-        // Real implementation requires `uploadBytes` to storage bucket.
         setImageUrl(result.assets[0].uri);
-        // Alert.alert('Note', 'Image upload to server requires Firebase Storage setup. Using local preview.');
     }
   };
+
+  const isLocalUri = (uri: string) =>
+    uri.startsWith('file:') || uri.startsWith('content:') || uri.startsWith('ph://');
 
   const handleSave = async () => {
     if (!user) return;
@@ -96,9 +93,15 @@ export default function CreateRecipe() {
 
     setLoading(true);
     try {
+      let finalImageUrl: string | null = imageUrl || null;
+      if (imageUrl && isLocalUri(imageUrl)) {
+        const imagePath = `meals/${user.uid}/cover_${Date.now()}`;
+        finalImageUrl = await uploadImageFromUri(imageUrl, imagePath);
+      }
+
       const newMeal: Omit<Meal, 'id'> = {
         name,
-        imageUrl: imageUrl || null,
+        imageUrl: finalImageUrl,
         servings: parseInt(servings) || 4,
         prepTime: parseInt(prepTime) || 30,
         costEstimate: null,
@@ -124,19 +127,20 @@ export default function CreateRecipe() {
     <View className="flex-1 bg-gray-50">
       <Stack.Screen
         options={{
-          headerTitle: 'New Recipe',
+          headerTitle: 'Add Recipe',
+          headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
           headerRight: () => (
-            <TouchableOpacity onPress={handleSave} disabled={loading}>
+            <TouchableOpacity onPress={handleSave} disabled={loading} activeOpacity={0.7} className="bg-indigo-600 px-4 py-1.5 rounded-full">
               {loading ? (
-                <ActivityIndicator color="#4F46E5" />
+                <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text className="text-indigo-600 font-bold text-lg">Save</Text>
+                <Text className="text-white font-bold">Save</Text>
               )}
             </TouchableOpacity>
           ),
           headerLeft: () => (
-             <TouchableOpacity onPress={() => router.back()}>
-                <Text className="text-gray-500 text-lg">Cancel</Text>
+             <TouchableOpacity onPress={() => router.back()} className="p-2">
+                <X size={22} color="#4B5563" />
              </TouchableOpacity>
           ),
           presentation: 'modal'
@@ -233,13 +237,10 @@ export default function CreateRecipe() {
                   onChangeText={(t) => updateIngredient(idx, 'amount', t)}
                   keyboardType="numeric"
                 />
-                 {/* Simple unit input for now, could be a picker */}
-                <TextInput
-                  className="w-16 bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 text-center"
-                  placeholder="Unit"
-                  placeholderTextColor="#9CA3AF"
+                <UnitPicker
                   value={ing.unit}
-                  onChangeText={(t) => updateIngredient(idx, 'unit', t)}
+                  onChange={(unit) => updateIngredient(idx, 'unit', unit)}
+                  className="w-20"
                 />
                 <TouchableOpacity onPress={() => removeIngredient(idx)} className="p-2 bg-red-50 rounded-lg">
                   <X size={18} color="#EF4444" />

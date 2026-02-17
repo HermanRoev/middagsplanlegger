@@ -1,123 +1,184 @@
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert, TextInput, ScrollView } from 'react-native';
-import { useEffect, useState } from 'react';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert, TextInput, ScrollView, Modal, Keyboard } from 'react-native';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/auth';
-import { getInboxMeals, voteForMeal, addSuggestion, approveSuggestion, rejectSuggestion } from '../../lib/api';
+import { getInboxMeals, voteForMeal, addSuggestion, approveSuggestion, rejectSuggestion, addPlannedSuggestionMeal } from '../../lib/api';
 import { Suggestion } from '../../../src/types';
-import { ThumbsUp, Check, X, Plus, Trash, Calendar } from 'lucide-react-native';
-import { formatDistanceToNow, addDays, format, isSameDay, parseISO } from 'date-fns';
+import { ThumbsUp, Check, X, Plus, Trash, Calendar, Utensils, MessageSquarePlus } from 'lucide-react-native';
+import { addDays, format, isSameDay, parseISO } from 'date-fns';
+import { nb } from 'date-fns/locale';
 
 export default function Inbox() {
   const { user } = useAuth();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newSuggestion, setNewSuggestion] = useState('');
   const [adding, setAdding] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null); // YYYY-MM-DD or null for General
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [approveTarget, setApproveTarget] = useState<Suggestion | null>(null);
+  const [approveDate, setApproveDate] = useState<string | null>(null);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+
+  const inputRef = useRef<TextInput>(null);
+  const [inputValue, setInputValue] = useState('');
+
+  // Stable primitive for dependency arrays — prevents re-renders when user object reference changes
+  const userId = user?.uid;
+  // Ref to access full user object in callbacks without it being a dependency
+  const userRef = useRef(user);
+  userRef.current = user;
 
   useEffect(() => {
+    if (!userId) return;
+    async function fetchInbox() {
+      try {
+        const data = await getInboxMeals();
+        setSuggestions(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
     fetchInbox();
-  }, [user]);
+  }, [userId]);
 
-  async function fetchInbox() {
-    if (!user) return;
+  const fetchInbox = useCallback(async () => {
+    if (!userId) return;
     try {
       const data = await getInboxMeals();
       setSuggestions(data);
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
-  }
+  }, [userId]);
 
-  const handleAddSuggestion = async () => {
-    if (!newSuggestion.trim() || !user) return;
+  const handleAddSuggestion = useCallback(async () => {
+    const u = userRef.current;
+    if (!inputValue.trim() || !u) return;
     setAdding(true);
     try {
         await addSuggestion(
-            newSuggestion,
-            user.uid,
-            user.displayName || user.email || 'User',
+            inputValue,
+            u.uid,
+            u.displayName || u.email || 'Bruker',
             selectedDate || undefined
         );
-        setNewSuggestion('');
-        // setSelectedDate(null); // Keep date selected for multiple suggestions? Or reset. Resetting feels safer.
+        setInputValue('');
+        Keyboard.dismiss();
         fetchInbox();
     } catch (error) {
-        Alert.alert('Error', 'Failed to add suggestion');
+        Alert.alert('Feil', 'Kunne ikke sende forslag');
     } finally {
         setAdding(false);
     }
-  };
+  }, [inputValue, selectedDate, fetchInbox]);
 
-  const handleVote = async (suggestion: Suggestion) => {
-    if (!user) return;
+  const handleVote = useCallback(async (suggestion: Suggestion) => {
+    const u = userRef.current;
+    if (!u) return;
     try {
-      const hasVoted = suggestion.votedBy?.includes(user.uid);
-      await voteForMeal(suggestion.id, user.uid, !hasVoted);
+      const hasVoted = suggestion.votedBy?.includes(u.uid);
+      await voteForMeal(suggestion.id, u.uid, !hasVoted);
 
       setSuggestions(prev => prev.map(s => {
         if (s.id === suggestion.id) {
           const newVotedBy = hasVoted
-            ? s.votedBy?.filter(id => id !== user.uid)
-            : [...(s.votedBy || []), user.uid];
+            ? s.votedBy?.filter(id => id !== u.uid)
+            : [...(s.votedBy || []), u.uid];
           return { ...s, votedBy: newVotedBy, votes: (newVotedBy || []).length };
         }
         return s;
       }));
     } catch (error) {
-      Alert.alert('Error', 'Failed to vote');
+      Alert.alert('Feil', 'Kunne ikke stemme');
     }
-  };
+  }, []);
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = useCallback(async (id: string) => {
+      const u = userRef.current;
       try {
+        // Use functional state access to avoid depending on suggestions array
+        let suggestion: Suggestion | undefined;
+        setSuggestions(prev => {
+          suggestion = prev.find(s => s.id === id);
+          return prev; // no mutation, just reading
+        });
+        if (!suggestion) return;
+          if (!suggestion.forDate) {
+            setApproveTarget(suggestion);
+            setApproveDate(selectedDate || format(new Date(), 'yyyy-MM-dd'));
+            setShowApproveModal(true);
+            return;
+          }
+          await addPlannedSuggestionMeal(
+            suggestion.text,
+            suggestion.forDate,
+            u?.uid,
+            u?.displayName || u?.email || 'Bruker'
+          );
           await approveSuggestion(id);
           setSuggestions(prev => prev.map(s => s.id === id ? { ...s, status: 'approved' } : s));
       } catch (error) {
-          Alert.alert('Error', 'Failed to approve');
+          Alert.alert('Feil', 'Kunne ikke godkjenne');
       }
+  }, [selectedDate]);
+
+  const confirmApprove = async () => {
+    if (!approveTarget || !approveDate) return;
+    const u = userRef.current;
+    try {
+      await addPlannedSuggestionMeal(
+        approveTarget.text,
+        approveDate,
+        u?.uid,
+        u?.displayName || u?.email || 'Bruker'
+      );
+      await approveSuggestion(approveTarget.id);
+      setSuggestions(prev => prev.map(s => s.id === approveTarget.id ? { ...s, status: 'approved' } : s));
+      setShowApproveModal(false);
+      setApproveTarget(null);
+    } catch (error) {
+      Alert.alert('Feil', 'Kunne ikke godkjenne');
+    }
   };
 
-  const handleReject = async (id: string) => {
-      Alert.alert('Delete', 'Are you sure you want to delete this suggestion?', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: async () => {
+  const handleReject = useCallback(async (id: string) => {
+      Alert.alert('Fjern forslag', 'Er du sikker på at du vil fjerne dette forslaget?', [
+          { text: 'Avbryt', style: 'cancel' },
+          { text: 'Fjern', style: 'destructive', onPress: async () => {
               try {
                   await rejectSuggestion(id);
                   setSuggestions(prev => prev.filter(s => s.id !== id));
               } catch (error) {
-                  Alert.alert('Error', 'Failed to delete');
+                  Alert.alert('Feil', 'Kunne ikke fjerne forslaget');
               }
           }}
       ]);
-  };
+  }, []);
 
-  // Date Chips Generation
-  const dates = [
-      { label: 'General', value: null },
-      { label: 'Today', value: format(new Date(), 'yyyy-MM-dd') },
-      { label: 'Tomorrow', value: format(addDays(new Date(), 1), 'yyyy-MM-dd') },
+  const dates = useMemo(() => [
+      { label: 'Generelt', value: null },
+      { label: 'I dag', value: format(new Date(), 'yyyy-MM-dd') },
+      { label: 'I morgen', value: format(addDays(new Date(), 1), 'yyyy-MM-dd') },
       ...Array.from({ length: 5 }).map((_, i) => {
           const d = addDays(new Date(), i + 2);
-          return { label: format(d, 'EEE d. MMM'), value: format(d, 'yyyy-MM-dd') };
+          return { label: format(d, 'EEE d. MMM', { locale: nb }), value: format(d, 'yyyy-MM-dd') };
       })
-  ];
+  ], []);
 
-  // Group Suggestions
-  const generalSuggestions = suggestions.filter(s => !s.forDate);
-  const datedSuggestions = suggestions.filter(s => s.forDate).sort((a, b) => (a.forDate! > b.forDate! ? 1 : -1));
+  const combinedData = useMemo(() => {
+    const general = suggestions
+        .filter(s => !s.forDate)
+        .sort((a, b) => (b.votes || 0) - (a.votes || 0));
 
-  // Combine for FlatList with Headers
-  // We will render a custom list where we intersperse headers?
-  // Easier to just use SectionList? Or just sort and use renderItem logic to show header when date changes.
-  // Actually, let's just stick to FlatList but sort by date, putting General first or last.
-  // Let's put General at the top, then dates sorted.
+    const dated = suggestions
+        .filter(s => !!s.forDate)
+        .sort((a, b) => (a.forDate || '').localeCompare(b.forDate || ''));
 
-  const combinedData = [...generalSuggestions, ...datedSuggestions];
+    return [...general, ...dated];
+  }, [suggestions]);
 
-  const renderItem = ({ item, index }: { item: Suggestion, index: number }) => {
-    const hasVoted = item.votedBy?.includes(user?.uid || '');
+  const renderItem = useCallback(({ item, index }: { item: Suggestion, index: number }) => {
+    const hasVoted = item.votedBy?.includes(userId || '');
     const isApproved = item.status === 'approved';
     const prevItem = index > 0 ? combinedData[index - 1] : null;
 
@@ -126,81 +187,88 @@ export default function Inbox() {
     const showDateHeader = item.forDate && (!prevItem || prevItem.forDate !== item.forDate);
 
     let headerText = '';
-    if (showGeneralHeader) headerText = 'General Ideas';
+    if (showGeneralHeader) headerText = 'Generelle ønsker';
     if (showDateHeader) {
         const d = parseISO(item.forDate!);
-        if (isSameDay(d, new Date())) headerText = 'Today';
-        else if (isSameDay(d, addDays(new Date(), 1))) headerText = 'Tomorrow';
-        else headerText = format(d, 'EEEE d. MMM');
+        if (isSameDay(d, new Date())) headerText = 'I dag';
+        else if (isSameDay(d, addDays(new Date(), 1))) headerText = 'I morgen';
+        else headerText = format(d, 'EEEE d. MMM', { locale: nb });
     }
 
     return (
       <View>
           {(showGeneralHeader || showDateHeader) && (
-              <Text className="text-gray-500 font-bold uppercase text-xs tracking-wider mb-2 mt-4 ml-1">
-                  {headerText}
-              </Text>
+              <View className="flex-row items-center gap-x-4 mt-8 mb-4 px-1">
+                  <Text className="text-gray-400 font-black uppercase text-[10px] tracking-[0.2em]">
+                      {headerText}
+                  </Text>
+                  <View className="h-px flex-1 bg-gray-100" />
+              </View>
           )}
 
-          <View className={`p-4 rounded-2xl mb-3 border shadow-sm ${isApproved ? 'bg-green-50 border-green-100' : 'bg-white border-gray-100'}`}>
-            <View className="flex-row justify-between items-start mb-2">
-            <View className="flex-1 mr-4">
-                <Text className="text-gray-900 font-semibold text-lg">
-                    {item.text}
-                </Text>
-                <View className="flex-row items-center mt-1">
-                    <Text className="text-gray-500 text-xs">
-                        {item.suggestedBy?.name || 'Unknown'}
+          <View className={`p-5 rounded-[28px] mb-4 border shadow-sm ${isApproved ? 'bg-emerald-50/30 border-emerald-100' : 'bg-white border-gray-100'}`}>
+            <View className="flex-row justify-between items-start mb-4">
+                <View className="flex-1 mr-4">
+                    <Text className="text-gray-900 font-black text-xl leading-tight">
+                        {item.text}
                     </Text>
-                    {item.forDate && (
-                         <View className="flex-row items-center bg-indigo-50 px-2 py-0.5 rounded ml-2">
-                             <Calendar size={10} color="#4F46E5" />
-                             <Text className="text-indigo-600 text-[10px] font-bold ml-1">
-                                 {format(parseISO(item.forDate), 'd. MMM')}
-                             </Text>
-                         </View>
-                    )}
+                    <View className="flex-row items-center mt-1.5">
+                        <Text className="text-gray-400 font-bold text-xs">
+                            {item.suggestedBy?.name || 'Ukjent'}
+                        </Text>
+                        {item.forDate && (
+                            <View className="flex-row items-center bg-indigo-50 px-2 py-0.5 rounded-lg ml-3">
+                                <Calendar size={10} color="#4F46E5" />
+                                <Text className="text-indigo-600 text-[10px] font-black uppercase tracking-widest ml-1">
+                                    {format(parseISO(item.forDate), 'd. MMM', { locale: nb })}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+                <View className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isApproved ? 'bg-emerald-100' : 'bg-indigo-50'}`}>
+                    <Utensils size={24} color={isApproved ? '#10B981' : '#6366F1'} />
                 </View>
             </View>
-            </View>
 
-            <View className="flex-row justify-between items-center mt-2 border-t border-gray-100 pt-2">
+            <View className="flex-row justify-between items-center mt-2 border-t border-gray-200 pt-4">
             {isApproved ? (
-                <View className="flex-row items-center">
-                    <View className="bg-green-200 px-2 py-1 rounded-full flex-row items-center mr-2">
-                        <Check size={12} color="#166534" />
-                        <Text className="text-green-800 text-xs font-bold ml-1">Approved</Text>
+                <View className="flex-row items-center justify-between w-full">
+                    <View className="bg-emerald-500 px-4 py-2 rounded-xl flex-row items-center shadow-lg shadow-emerald-100">
+                        <Check size={14} color="white" strokeWidth={3} />
+                        <Text className="text-white text-[10px] font-black uppercase tracking-widest ml-2">Godkjent</Text>
                     </View>
-                    <TouchableOpacity onPress={() => handleReject(item.id)} className="p-2">
-                        <Trash size={16} color="#EF4444" />
+                    <TouchableOpacity onPress={() => handleReject(item.id)} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <Trash size={18} color="#EF4444" opacity={0.5} />
                     </TouchableOpacity>
                 </View>
             ) : (
                 <View className="flex-row items-center justify-between w-full">
                     <TouchableOpacity
                         onPress={() => handleVote(item)}
-                        className={`flex-row items-center px-3 py-1.5 rounded-full border mr-2 ${
+                        activeOpacity={0.7}
+                        className={`flex-row items-center px-5 py-2.5 rounded-2xl border ${
                         hasVoted
                             ? 'bg-indigo-50 border-indigo-200'
-                            : 'bg-white border-gray-200'
+                            : 'bg-white border-gray-100'
                         }`}
                     >
                         <ThumbsUp
-                        size={14}
-                        color={hasVoted ? '#4F46E5' : '#6B7280'}
+                        size={16}
+                        color={hasVoted ? '#4F46E5' : '#9CA3AF'}
                         fill={hasVoted ? '#4F46E5' : 'transparent'}
                         />
-                        <Text className={`ml-1.5 font-bold text-sm ${hasVoted ? 'text-indigo-600' : 'text-gray-600'}`}>
+                        <Text className={`ml-2.5 font-black text-sm ${hasVoted ? 'text-indigo-600' : 'text-gray-400'}`}>
                         {item.votes || 0}
                         </Text>
                     </TouchableOpacity>
 
-                    <View className="flex-row">
-                        <TouchableOpacity onPress={() => handleApprove(item.id)} className="p-2 mr-1 bg-gray-50 rounded-full">
-                            <Check size={18} color="#16A34A" />
+                    <View className="flex-row gap-x-2">
+                        <TouchableOpacity onPress={() => handleApprove(item.id)} className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 shadow-sm">
+                            <Check size={20} color="#10B981" strokeWidth={3} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleReject(item.id)} className="p-2 bg-gray-50 rounded-full">
-                            <X size={18} color="#EF4444" />
+                        <TouchableOpacity onPress={() => handleReject(item.id)} className="p-3 bg-red-50 rounded-xl border border-red-100 shadow-sm">
+                            <X size={20} color="#EF4444" strokeWidth={3} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -209,54 +277,68 @@ export default function Inbox() {
         </View>
       </View>
     );
-  };
+  }, [userId, combinedData, handleVote, handleApprove, handleReject]);
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="bg-white border-b border-gray-100 pb-2">
-          {/* Date Selector */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 py-3" contentContainerStyle={{ paddingRight: 20 }}>
-              {dates.map((dateOption) => {
-                  const isSelected = selectedDate === dateOption.value;
-                  return (
-                      <TouchableOpacity
-                        key={dateOption.label}
-                        onPress={() => setSelectedDate(dateOption.value)}
-                        className={`mr-2 px-4 py-2 rounded-full border ${
-                            isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                          <Text className={`font-semibold text-xs ${isSelected ? 'text-white' : 'text-gray-600'}`}>
-                              {dateOption.label}
-                          </Text>
-                      </TouchableOpacity>
-                  );
-              })}
-          </ScrollView>
+    <View className="flex-1 bg-white">
+      {/* Header Area */}
+      <View className="bg-white px-6 pb-4 pt-16 border-b border-gray-200 flex-row justify-between items-end">
+        <View>
+          <Text className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Familien</Text>
+          <Text className="text-3xl font-black text-gray-900 tracking-tight">Forslag</Text>
+        </View>
+        <View className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100">
+            <MessageSquarePlus size={24} color="#6366F1" />
+        </View>
+      </View>
 
-          <View className="px-4 pb-2">
-              <View className="flex-row items-center bg-gray-50 rounded-xl px-4 py-2 border border-gray-200">
-                  <TextInput
-                      placeholder={`I want to eat... ${selectedDate ? `(${dates.find(d => d.value === selectedDate)?.label})` : ''}`}
-                      value={newSuggestion}
-                      onChangeText={setNewSuggestion}
-                      className="flex-1 mr-2 h-10 text-base"
-                      returnKeyType="done"
-                      onSubmitEditing={handleAddSuggestion}
-                  />
-                  <TouchableOpacity
-                      onPress={handleAddSuggestion}
-                      disabled={!newSuggestion.trim() || adding}
-                      className={`p-2 rounded-full ${!newSuggestion.trim() ? 'bg-gray-200' : 'bg-indigo-600'}`}
-                  >
-                      {adding ? (
-                          <ActivityIndicator size="small" color="white" />
-                      ) : (
-                          <Plus size={20} color="white" />
-                      )}
-                  </TouchableOpacity>
-              </View>
-          </View>
+      {/* Input Area */}
+      <View className="bg-white px-6 py-4 border-b border-gray-200">
+        <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-[20px] px-4 py-1 shadow-inner">
+          <TextInput
+            ref={inputRef}
+            className="flex-1 h-12 text-gray-900 font-bold"
+            placeholder="Hva har du lyst på?..."
+            placeholderTextColor="#9CA3AF"
+            value={inputValue}
+            onChangeText={setInputValue}
+            onSubmitEditing={handleAddSuggestion}
+            returnKeyType="done"
+            blurOnSubmit={false}
+          />
+          <TouchableOpacity
+            onPress={handleAddSuggestion}
+            disabled={!inputValue.trim() || adding}
+            className={`w-10 h-10 rounded-full items-center justify-center ${!inputValue.trim() ? 'bg-gray-200' : 'bg-indigo-600 shadow-lg shadow-indigo-200'}`}
+          >
+            {adding ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Plus size={20} color="white" />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-4" contentContainerStyle={{ paddingRight: 20 }}>
+            <View className="flex-row items-center gap-x-2">
+                {dates.map((dateOption) => {
+                    const isSelected = selectedDate === dateOption.value;
+                    return (
+                        <TouchableOpacity
+                            key={dateOption.label}
+                            onPress={() => setSelectedDate(dateOption.value)}
+                            className={`px-5 py-2.5 rounded-[18px] border ${
+                                isSelected ? 'bg-indigo-600 border-indigo-600 shadow-md shadow-indigo-100' : 'bg-white border-gray-100'
+                            }`}
+                        >
+                            <Text className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                                {dateOption.label}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+        </ScrollView>
       </View>
 
       {loading ? (
@@ -268,14 +350,56 @@ export default function Inbox() {
           data={combinedData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
           ListEmptyComponent={
-            <View className="flex-1 justify-center items-center mt-20">
-              <Text className="text-gray-400">No suggestions yet.</Text>
+            <View className="flex-1 justify-center items-center mt-20 opacity-30">
+              <MessageSquarePlus size={80} color="#9CA3AF" />
+              <Text className="text-gray-500 font-black uppercase tracking-widest mt-4 text-center">Ingen forslag ennå</Text>
             </View>
           }
         />
       )}
+
+      {/* Approve Modal */}
+      <Modal visible={showApproveModal} transparent animationType="slide" onRequestClose={() => setShowApproveModal(false)}>
+        <View className="flex-1 justify-end bg-black/50 p-4 pb-10">
+          <View className="bg-white rounded-[40px] p-8 shadow-2xl">
+            <View className="flex-row justify-between items-center mb-8">
+              <View>
+                <Text className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Godkjenn forslag</Text>
+                <Text className="text-2xl font-black text-gray-900 uppercase tracking-tight">Velg dato</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowApproveModal(false)} className="bg-gray-50 p-2 rounded-full">
+                <X size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <View className="gap-y-2 mb-8">
+              {dates.map((d) => (
+                <TouchableOpacity
+                  key={d.label}
+                  onPress={() => setApproveDate(d.value)}
+                  activeOpacity={0.7}
+                  className={`p-5 rounded-[24px] border ${approveDate === d.value ? 'bg-indigo-600 border-indigo-600 shadow-lg shadow-indigo-100' : 'bg-gray-50 border-gray-100'}`}
+                >
+                  <Text className={`font-black uppercase tracking-widest text-xs ${approveDate === d.value ? 'text-white' : 'text-gray-400'}`}>
+                    {d.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+                onPress={confirmApprove}
+                activeOpacity={0.8}
+                className="bg-indigo-600 rounded-[28px] py-5 items-center shadow-xl shadow-indigo-200"
+            >
+              <Text className="text-white font-black uppercase tracking-widest text-sm">Godkjenn og planlegg</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

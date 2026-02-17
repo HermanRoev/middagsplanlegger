@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChefHat, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react-native';
+import { ChefHat, Mail, Lock, ArrowRight } from 'lucide-react-native';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -25,8 +25,8 @@ export default function Login() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.replace('/(tabs)');
-    } catch (err: any) {
-      console.error(err);
+    } catch (_err: unknown) {
+      console.error(_err);
       setError('Invalid email or password');
     } finally {
       setLoading(false);
@@ -39,29 +39,29 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View className="flex-1 p-8 justify-center">
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+          <View className="flex-1 p-10 justify-center">
 
             {/* Header Section */}
-            <View className="items-center mb-12">
-              <View className="w-20 h-20 bg-indigo-50 rounded-3xl items-center justify-center mb-6 shadow-sm transform rotate-3">
-                <ChefHat size={40} color="#4F46E5" />
+            <View className="items-center mb-16">
+              <View className="w-24 h-24 bg-indigo-50 rounded-[32px] items-center justify-center mb-8 shadow-xl shadow-indigo-100 transform rotate-3 border border-indigo-100">
+                <ChefHat size={48} color="#4F46E5" />
               </View>
-              <Text className="text-3xl font-bold text-gray-900 mb-2">Welcome Back!</Text>
-              <Text className="text-gray-500 text-center">
-                Sign in to manage your recipes and meal plans
+              <Text className="text-4xl font-black text-gray-900 mb-3 tracking-tight uppercase">Velkommen</Text>
+              <Text className="text-gray-400 font-bold text-center leading-5 uppercase tracking-widest text-[10px]">
+                Logg inn for å planlegge dine måltider
               </Text>
             </View>
 
             {/* Form Section */}
-            <View className="space-y-4">
+            <View className="gap-y-6">
               <View>
-                <Text className="text-sm font-medium text-gray-700 mb-1.5 ml-1">Email</Text>
-                <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:border-indigo-500 focus:bg-white transition-all">
+                <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-6">E-post</Text>
+                <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-[28px] px-6 py-5 shadow-inner">
                   <Mail size={20} color="#9CA3AF" />
                   <TextInput
-                    className="flex-1 ml-3 text-gray-900 text-base"
-                    placeholder="Enter your email"
+                    className="flex-1 ml-4 text-gray-900 text-lg font-bold"
+                    placeholder="Din e-post"
                     placeholderTextColor="#9CA3AF"
                     value={email}
                     onChangeText={setEmail}
@@ -72,12 +72,12 @@ export default function Login() {
               </View>
 
               <View>
-                <Text className="text-sm font-medium text-gray-700 mb-1.5 ml-1">Password</Text>
-                <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:border-indigo-500 focus:bg-white transition-all">
+                <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-6">Passord</Text>
+                <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-[28px] px-6 py-5 shadow-inner">
                   <Lock size={20} color="#9CA3AF" />
                   <TextInput
-                    className="flex-1 ml-3 text-gray-900 text-base"
-                    placeholder="Enter your password"
+                    className="flex-1 ml-4 text-gray-900 text-lg font-bold"
+                    placeholder="Ditt passord"
                     placeholderTextColor="#9CA3AF"
                     value={password}
                     onChangeText={setPassword}
@@ -87,15 +87,16 @@ export default function Login() {
               </View>
 
               {error ? (
-                <View className="bg-red-50 p-3 rounded-lg flex-row items-center justify-center">
-                  <Text className="text-red-600 text-sm font-medium">{error}</Text>
+                <View className="bg-red-50 p-5 rounded-[24px] flex-row items-center justify-center border border-red-100">
+                  <Text className="text-red-600 text-xs font-black uppercase tracking-widest">{error}</Text>
                 </View>
               ) : null}
 
               <TouchableOpacity
                 onPress={handleLogin}
                 disabled={loading}
-                className={`bg-indigo-600 rounded-xl py-4 flex-row justify-center items-center shadow-lg shadow-indigo-200 mt-4 ${
+                activeOpacity={0.8}
+                className={`bg-indigo-600 rounded-[32px] py-6 flex-row justify-center items-center shadow-2xl shadow-indigo-200 mt-6 ${
                   loading ? 'opacity-70' : ''
                 }`}
               >
@@ -103,16 +104,18 @@ export default function Login() {
                   <ActivityIndicator color="white" />
                 ) : (
                   <>
-                    <Text className="text-white font-bold text-lg mr-2">Sign In</Text>
-                    <ArrowRight size={20} color="white" />
+                    <Text className="text-white font-black text-lg uppercase tracking-[0.2em] mr-3">Logg inn</Text>
+                    <ArrowRight size={22} color="white" />
                   </>
                 )}
               </TouchableOpacity>
             </View>
 
-            <View className="mt-8 flex-row justify-center">
-              <Text className="text-gray-500">Don't have an account? </Text>
-              <Text className="text-indigo-600 font-semibold">Contact Admin</Text>
+            <View className="mt-12 flex-row justify-center bg-gray-50 py-4 rounded-2xl border border-gray-100">
+              <Text className="text-gray-400 font-bold text-xs uppercase tracking-widest">Mangler du konto? </Text>
+              <TouchableOpacity>
+                <Text className="text-indigo-600 font-black text-xs uppercase tracking-widest">Kontakt admin</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>

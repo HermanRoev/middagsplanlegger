@@ -29,11 +29,11 @@ test.describe('Full E2E Flow', () => {
     await page.locator('input[type="number"]').nth(0).fill('4');
 
     // Add ingredient
-    await page.click('button:has-text("Add Ingredient")');
+    await page.getByTestId('add-ingredient-button').click();
 
     // Fill ingredient details
-    await page.getByPlaceholder('Name').last().fill('Pasta');
-    await page.getByPlaceholder('Qty').last().fill('500');
+    await page.getByPlaceholder('Ingredient name').last().fill('Pasta');
+    await page.getByPlaceholder('0', { exact: true }).last().fill('500');
     await page.locator('select').last().selectOption('g');
 
     // Add instructions

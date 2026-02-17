@@ -1,78 +1,68 @@
-import { Tabs, useRouter } from 'expo-router';
-import { ChefHat, Calendar, ShoppingCart, Package, User, MessageSquare } from 'lucide-react-native';
-import { TouchableOpacity, View, Platform } from 'react-native';
+import { Tabs } from 'expo-router';
+import { ChefHat, Calendar, ShoppingCart, Package, MessageSquare, Home } from 'lucide-react-native';
+import { Platform } from 'react-native';
 
 export default function TabLayout() {
-  const router = useRouter();
-
-  const HeaderRight = () => (
-    <TouchableOpacity
-      onPress={() => router.push('/profile')}
-      className="mr-4 p-2"
-    >
-      <User size={24} color="#374151" />
-    </TouchableOpacity>
-  );
-
   return (
     <Tabs
       screenOptions={{
-        headerShown: true, // Show header to display the Profile icon
-        headerTitle: '', // Remove the text title as requested
-        headerShadowVisible: false, // Remove shadow for cleaner look
-        headerStyle: {
-          backgroundColor: 'white',
-        },
-        headerRight: () => <HeaderRight />,
+        headerShown: false,
         tabBarStyle: {
           backgroundColor: 'white',
           borderTopWidth: 1,
           borderTopColor: '#F3F4F6',
-          height: Platform.OS === 'ios' ? 85 : 60,
-          paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
         },
         tabBarActiveTintColor: '#4F46E5',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarLabelStyle: {
-          fontWeight: '500',
-          fontSize: 12,
+          fontWeight: '600',
+          fontSize: 11,
+          marginTop: 2,
         },
       }}
     >
        <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Hjem',
+          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+        }}
+      />
+       <Tabs.Screen
         name="planner"
         options={{
-          title: 'Plan',
-          headerShown: false,
+          title: 'Planlegger',
           tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="shop"
         options={{
-          title: 'Shop',
+          title: 'Handel',
           tabBarIcon: ({ color, size }) => <ShoppingCart size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="recipes"
         options={{
-          title: 'Recipes',
+          title: 'Oppskrifter',
           tabBarIcon: ({ color, size }) => <ChefHat size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="inbox"
         options={{
-          title: 'Inbox',
+          title: 'Forslag',
           tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="cupboard"
         options={{
-          title: 'Cupboard',
+          title: 'Matbod',
           tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
         }}
       />
