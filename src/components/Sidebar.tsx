@@ -2,26 +2,32 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Calendar, ChefHat, ShoppingCart, LogOut, User, PlusCircle, Package, Inbox } from "lucide-react"
+import { Home, Calendar, ChefHat, ShoppingCart, LogOut, User, PlusCircle, Package, Inbox, Users, Shield } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 // import { motion } from "framer-motion"
 
-const navItems = [
-  { href: "/dashboard", icon: Home, label: "Home" },
-  { href: "/dashboard/planner", icon: Calendar, label: "Plan" },
-  { href: "/dashboard/recipes", icon: ChefHat, label: "Recipes" },
-  { href: "/dashboard/recipes/new", icon: PlusCircle, label: "New Recipe" },
-  { href: "/dashboard/shop", icon: ShoppingCart, label: "Shop" },
-  { href: "/dashboard/inbox", icon: Inbox, label: "Inbox" },
-  { href: "/dashboard/cupboard", icon: Package, label: "Cupboard" },
-  { href: "/dashboard/profile", icon: User, label: "Profile" },
+const defaultNavItems = [
+  { href: "/dashboard", icon: Home, label: "Hjem" },
+  { href: "/dashboard/planner", icon: Calendar, label: "Planlegg" },
+  { href: "/dashboard/recipes", icon: ChefHat, label: "Oppskrifter" },
+  { href: "/dashboard/recipes/new", icon: PlusCircle, label: "Ny Oppskrift" },
+  { href: "/dashboard/shop", icon: ShoppingCart, label: "Handlekurv" },
+  { href: "/dashboard/inbox", icon: Inbox, label: "Innboks" },
+  { href: "/dashboard/cupboard", icon: Package, label: "Skap" },
+  { href: "/dashboard/family", icon: Users, label: "Familie" },
+  { href: "/dashboard/profile", icon: User, label: "Profil" },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { logout } = useAuth()
+  const { logout, userRole } = useAuth()
+
+  const navItems = [
+    ...defaultNavItems,
+    ...(userRole === "admin" ? [{ href: "/dashboard/admin", icon: Shield, label: "Admin" }] : [])
+  ]
 
   return (
     <>
@@ -32,7 +38,7 @@ export function Sidebar() {
             Middagsplan
           </h1>
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href
@@ -40,8 +46,8 @@ export function Sidebar() {
               <Link key={item.href} href={item.href}>
                 <div className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
-                  isActive 
-                    ? "bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-700 font-medium shadow-sm" 
+                  isActive
+                    ? "bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-700 font-medium shadow-sm"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 )}>
                   <item.icon className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-600")} />
@@ -55,7 +61,7 @@ export function Sidebar() {
         <div className="p-4 border-t">
           <Button variant="ghost" className="w-full justify-start gap-3 text-gray-600 hover:text-red-600 hover:bg-red-50" onClick={logout}>
             <LogOut className="w-5 h-5" />
-            Sign Out
+            Logg ut
           </Button>
         </div>
       </aside>
@@ -63,7 +69,7 @@ export function Sidebar() {
       {/* Mobile Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex justify-around items-center p-2">
-          {navItems.filter(item => !["New Recipe", "Cupboard", "Inbox"].includes(item.label)).map((item) => {
+          {navItems.filter(item => !["/dashboard/recipes/new", "/dashboard/cupboard", "/dashboard/inbox", "/dashboard/admin"].includes(item.href)).map((item) => {
             const isActive = pathname === item.href
             return (
               <Link key={item.href} href={item.href} className="p-2">

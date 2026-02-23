@@ -40,3 +40,22 @@ next-env.d.ts
 
 dev.log
 mobile/node_modules
+
+# Firebase service account for MCP server
+firebase-service-account.json
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Package files
+*.tgz
+*.tar.gz
+*.old
+*.bak
+
+# Firebase files
+.firebase/
+firebase-debug.log*
+firebase-debug.*.log

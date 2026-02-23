@@ -6,25 +6,33 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Trash, Plus, Save } from "lucide-react"
+import { Plus, Save } from "lucide-react"
 import toast from 'react-hot-toast'
 import { collection, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { uploadImage } from '@/lib/storage'
 import { Ingredient } from '@/types'
 import { ImageUpload } from '@/components/ImageUpload'
+import { generateRecipeImage } from '@/lib/gemini'
+import { incrementUserStat } from '@/lib/stats'
+import { PageContainer } from "@/components/layout/PageLayout"
+import { PageHeader } from "@/components/ui/action-blocks"
+import { IngredientRow, StepRow, FormLabel } from "@/components/ui/forms"
 
 export default function CreateRecipePage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, householdId } = useAuth()
   const [name, setName] = useState('')
   // Changed defaults from 4/30 to '' to force user entry (or use placeholders)
   const [servings, setServings] = useState<number | ''>('')
   const [prepTime, setPrepTime] = useState<number | ''>('')
+  const [tags, setTags] = useState<string>('') // Comma separated string for UI
+  const [difficulty, setDifficulty] = useState<"Enkel" | "Middels" | "Avansert">('Middels')
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
   const [instructions, setInstructions] = useState<string[]>([''])
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
 
   // UseEffect for loading draft
   useEffect(() => {
@@ -35,12 +43,14 @@ export default function CreateRecipePage() {
         setName(data.name || '')
         setServings(data.servings || 4) // Drafts can default to 4 if missing
         setPrepTime(data.prepTime || 30)
+        setTags(data.tags ? data.tags.join(', ') : '')
+        if (data.difficulty) setDifficulty(data.difficulty)
         setIngredients(data.ingredients || [])
         setInstructions(data.instructions || [''])
-        toast.success("Loaded draft from AI")
+        toast.success("Lastet inn utkast fra AI")
         sessionStorage.removeItem('recipeDraft') // Clear after loading
       } catch (e) {
-        console.error("Failed to parse draft", e)
+        console.error("Kunne ikke laste inn utkast", e)
       }
     }
   }, [])
@@ -74,9 +84,9 @@ export default function CreateRecipePage() {
   }
 
   const handleSave = async () => {
-    if (!name) return toast.error("Please name the recipe")
-    if (!servings) return toast.error("Please enter servings")
-    if (!prepTime) return toast.error("Please enter prep time")
+    if (!name) return toast.error("Vennligst navngi oppskriften")
+    if (!servings) return toast.error("Vennligst oppgi antall porsjoner")
+    if (!prepTime) return toast.error("Vennligst oppgi forberedelsestid")
 
     setLoading(true)
     try {
@@ -89,6 +99,8 @@ export default function CreateRecipePage() {
         name,
         servings: Number(servings),
         prepTime: Number(prepTime),
+        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+        difficulty,
         ingredients,
         instructions,
         imageUrl,
@@ -96,82 +108,127 @@ export default function CreateRecipePage() {
         createdBy: user ? {
           id: user.uid,
           name: user.displayName || user.email || 'Unknown'
-        } : undefined
+        } : undefined,
+        householdId: householdId
       })
-      toast.success("Recipe saved!")
+      if (user) {
+        await incrementUserStat(user.uid, 'recipesCreated', 1)
+      }
+      toast.success("Oppskrift lagret!")
       router.push("/dashboard/recipes")
     } catch (error) {
       console.error(error)
-      toast.error("Failed to save recipe")
+      toast.error("Kunne ikke lagre oppskrift")
     } finally {
       setLoading(false)
     }
   }
 
+  const handleGenerateImage = async (descriptionPrompt: string): Promise<File | null> => {
+    if (!name.trim()) {
+      toast.error('Vennligst skriv inn et oppskriftsnavn først for å generere et bilde.', { id: 'image-gen' })
+      return null
+    }
+
+    setIsGeneratingImage(true)
+    let generatedFile = null
+
+    try {
+      toast.loading('Genererer et mesterverk...', { id: 'image-gen' })
+      generatedFile = await generateRecipeImage(name, descriptionPrompt)
+      toast.success('Bilde generert!', { id: 'image-gen' })
+    } catch (error) {
+      console.error(error)
+      toast.error('Kunne ikke generere bilde. Prøv igjen.', { id: 'image-gen' })
+    } finally {
+      setIsGeneratingImage(false)
+    }
+
+    return generatedFile
+  }
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-10">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Create Recipe</h1>
-          <p className="text-gray-500">Add a new meal to your collection.</p>
-        </div>
-        <Button onClick={handleSave} disabled={loading} variant="premium">
-          <Save className="w-4 h-4 mr-2" />
-          Save Recipe
+    <PageContainer className="space-y-8 pb-10">
+      <PageHeader
+        title="Opprett oppskrift"
+        description="Legg til et nytt måltid i samlingen din."
+      >
+        <Button onClick={handleSave} disabled={loading} variant="premium" className="rounded-[24px] px-8 shadow-lg shadow-indigo-100">
+          <Save className="w-5 h-5 mr-2" />
+          Lagre oppskrift
         </Button>
-      </div>
+      </PageHeader>
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Left Column: Image & Basic Info */}
         <div className="space-y-8 lg:col-span-1">
-           <Card className="border-0 shadow-md overflow-hidden">
-             <CardHeader className="pb-0">
-               <CardTitle>Cover Image</CardTitle>
-             </CardHeader>
-             <CardContent className="pt-6 pb-6">
-                <ImageUpload
-                   value={imageFile}
-                   onChange={setImageFile}
-                   className="min-h-[16rem] w-full"
-                />
-             </CardContent>
-           </Card>
+          <Card className="shadow-lg border-white/50">
+            <CardHeader className="pb-0">
+              <CardTitle>Omslagsbilde</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 pb-6">
+              <ImageUpload
+                value={imageFile}
+                onChange={setImageFile}
+                className="min-h-[16rem] w-full"
+                onGenerate={handleGenerateImage}
+                isGenerating={isGeneratingImage}
+              />
+            </CardContent>
+          </Card>
 
-           <Card className="border-0 shadow-md">
+          <Card className="shadow-lg border-white/50">
             <CardHeader>
-              <CardTitle>Details</CardTitle>
+              <CardTitle>Detaljer</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Recipe Name <span className="text-red-500">*</span></label>
-                <Input 
-                  placeholder="e.g. Grandma's Pancakes"
+                <FormLabel required>Navn på oppskrift</FormLabel>
+                <Input
+                  placeholder="Pannekaker, taco, lasagne..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-gray-50/50"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Servings <span className="text-red-500">*</span></label>
-                  <Input 
-                    type="number" 
+                  <FormLabel required>Porsjoner</FormLabel>
+                  <Input
+                    type="number"
                     value={servings}
                     onChange={(e) => setServings(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="bg-gray-50/50"
                     placeholder="4"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Prep Time (m) <span className="text-red-500">*</span></label>
-                  <Input 
-                    type="number" 
+                  <FormLabel required>Tid (min)</FormLabel>
+                  <Input
+                    type="number"
                     value={prepTime}
                     onChange={(e) => setPrepTime(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="bg-gray-50/50"
                     placeholder="30"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <FormLabel>Vanskelighetsgrad</FormLabel>
+                <select
+                  className="w-full h-10 rounded-md border border-input bg-gray-50/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value as "Enkel" | "Middels" | "Avansert")}
+                >
+                  <option value="Enkel">Enkel</option>
+                  <option value="Middels">Middels</option>
+                  <option value="Avansert">Avansert</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <FormLabel>Tags (kommaseparert)</FormLabel>
+                <Input
+                  placeholder="Raskt, Vegetar, Barn..."
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                />
               </div>
             </CardContent>
           </Card>
@@ -182,47 +239,27 @@ export default function CreateRecipePage() {
           <Card className="border-0 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Ingredients</CardTitle>
-                <CardDescription>List everything needed for this dish.</CardDescription>
+                <CardTitle>Ingredienser</CardTitle>
+                <CardDescription>Liste over alt som trengs for denne retten.</CardDescription>
               </div>
               <Button data-testid="add-ingredient-button" variant="ghost" size="sm" onClick={handleAddIngredient} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
-                <Plus className="w-4 h-4 mr-2" /> Add Item
+                <Plus className="w-4 h-4 mr-2" /> Legg til ny
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
               {ingredients.length === 0 && (
                 <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
-                  No ingredients added yet.
+                  Ingen ingredienser lagt til ennå.
                 </div>
               )}
               {ingredients.map((ing, i) => (
-                <div key={i} className="flex gap-2 items-start group">
-                  <Input 
-                    placeholder="Ingredient name"
-                    className="flex-1 bg-gray-50/50"
-                    value={ing.name}
-                    onChange={(e) => handleIngredientChange(i, 'name', e.target.value)}
-                  />
-                  <Input 
-                    type="number" 
-                    placeholder="0"
-                    className="w-20 bg-gray-50/50 text-center"
-                    value={ing.amount || ''}
-                    onChange={(e) => handleIngredientChange(i, 'amount', Number(e.target.value))}
-                  />
-                  <select 
-                    className="w-24 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={ing.unit}
-                    onChange={(e) => handleIngredientChange(i, 'unit', e.target.value)}
-                  >
-                    {['g', 'kg', 'l', 'dl', 'stk', 'ts', 'ss'].map(u => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                  </select>
-                  <Button variant="ghost" size="icon" onClick={() => handleRemoveIngredient(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500">
-                    <Trash className="w-4 h-4" />
-                  </Button>
-                </div>
+                <IngredientRow
+                  key={i}
+                  ingredient={ing}
+                  index={i}
+                  onChange={handleIngredientChange}
+                  onRemove={handleRemoveIngredient}
+                />
               ))}
             </CardContent>
           </Card>
@@ -230,34 +267,27 @@ export default function CreateRecipePage() {
           <Card className="border-0 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Instructions</CardTitle>
-                <CardDescription>Step-by-step cooking guide.</CardDescription>
+                <CardTitle>Instruksjoner</CardTitle>
+                <CardDescription>Steg-for-steg guide.</CardDescription>
               </div>
               <Button variant="ghost" size="sm" onClick={handleAddInstruction} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
-                <Plus className="w-4 h-4 mr-2" /> Add Step
+                <Plus className="w-4 h-4 mr-2" /> Legg til steg
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {instructions.map((inst, i) => (
-                <div key={i} className="flex gap-4 group">
-                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mt-1">
-                      {i + 1}
-                   </div>
-                   <textarea
-                    className="flex-1 min-h-[80px] p-3 rounded-md border border-input bg-gray-50/50 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
-                    value={inst}
-                    placeholder={`Step ${i + 1} details...`}
-                    onChange={(e) => handleInstructionChange(i, e.target.value)}
-                   />
-                   <Button variant="ghost" size="icon" onClick={() => handleRemoveInstruction(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 mt-2">
-                    <Trash className="w-4 h-4" />
-                  </Button>
-                </div>
+                <StepRow
+                  key={i}
+                  step={inst}
+                  index={i}
+                  onChange={handleInstructionChange}
+                  onRemove={handleRemoveInstruction}
+                />
               ))}
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
+    </PageContainer>
   )
 }

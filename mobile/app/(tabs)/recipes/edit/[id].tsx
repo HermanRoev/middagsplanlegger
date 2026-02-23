@@ -1,18 +1,22 @@
-import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../../context/auth';
 import { getRecipeById, updateMeal } from '../../../../lib/api';
 import { Ingredient, Meal } from '../../../../../src/types';
-import { Plus, X, Upload } from 'lucide-react-native';
+import { Plus, X, Upload, Trash2, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageFromUri } from '../../../../lib/storage';
 import UnitPicker from '../../../../components/UnitPicker';
+import { BlurView } from 'expo-blur';
+import { GlassCard } from '../../../../components/ui/GlassCard';
+import { GlassInput } from '../../../../components/ui/GlassInput';
+import { GlassButton } from '../../../../components/ui/GlassButton';
 
 export default function EditRecipe() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { user } = useAuth();
+  const { user, householdId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -25,32 +29,40 @@ export default function EditRecipe() {
     { name: '', amount: null, unit: 'stk' }
   ]);
   const [instructions, setInstructions] = useState<string[]>(['']);
+  const [tags, setTags] = useState('');
+  const [difficulty, setDifficulty] = useState<"Enkel" | "Middels" | "Avansert">("Enkel");
 
   useEffect(() => {
-      if (typeof id === 'string') {
-          loadRecipe(id);
-      }
+    if (typeof id === 'string') {
+      loadRecipe(id);
+    }
   }, [id]);
 
   const loadRecipe = async (recipeId: string) => {
-      try {
-          const data = await getRecipeById(recipeId);
-          if (data) {
-              setName(data.name);
-              setServings(data.servings?.toString() || '4');
-              setPrepTime(data.prepTime?.toString() || '30');
-              setImageUrl(data.imageUrl || '');
-              setIngredients(data.ingredients || []);
-              setInstructions(data.instructions || []);
-          } else {
-              Alert.alert('Error', 'Recipe not found');
-              router.back();
-          }
-      } catch (error) {
-          Alert.alert('Error', 'Failed to load recipe');
-      } finally {
-          setLoading(false);
+    try {
+      const data = await getRecipeById(recipeId);
+      if (data) {
+        setName(data.name);
+        setServings(data.servings?.toString() || '4');
+        setPrepTime(data.prepTime?.toString() || '30');
+        setImageUrl(data.imageUrl || '');
+        setIngredients(data.ingredients || []);
+        setInstructions(data.instructions || []);
+        if (data.tags) {
+          setTags(data.tags.join(', '));
+        }
+        if (data.difficulty) {
+          setDifficulty(data.difficulty);
+        }
+      } else {
+        Alert.alert('Error', 'Recipe not found');
+        router.back();
       }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load recipe');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addIngredient = () => {
@@ -100,7 +112,7 @@ export default function EditRecipe() {
     });
 
     if (!result.canceled) {
-        setImageUrl(result.assets[0].uri);
+      setImageUrl(result.assets[0].uri);
     }
   };
 
@@ -116,8 +128,8 @@ export default function EditRecipe() {
 
     const validIngredients = ingredients.filter(i => i.name.trim() !== '');
     if (validIngredients.length === 0) {
-        Alert.alert('Error', 'Please add at least one ingredient');
-        return;
+      Alert.alert('Error', 'Please add at least one ingredient');
+      return;
     }
 
     setSaving(true);
@@ -135,6 +147,8 @@ export default function EditRecipe() {
         prepTime: parseInt(prepTime) || 30,
         ingredients: validIngredients,
         instructions: instructions.filter(i => i.trim() !== ''),
+        tags: tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
+        difficulty,
       };
 
       await updateMeal(id, updates);
@@ -148,31 +162,38 @@ export default function EditRecipe() {
   };
 
   if (loading) {
-      return (
-          <View className="flex-1 justify-center items-center bg-gray-50">
-              <ActivityIndicator size="large" color="#4F46E5" />
-          </View>
-      );
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </View>
+    );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 text-white">
+      <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
+      <View style={StyleSheet.absoluteFill} className="bg-white/40" />
+
       <Stack.Screen
         options={{
-          headerTitle: 'Edit Recipe',
+          headerTitle: 'Rediger Oppskrift',
+          headerTransparent: true,
+          headerBlurEffect: 'light',
           headerRight: () => (
-            <TouchableOpacity onPress={handleSave} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator color="#4F46E5" />
-              ) : (
-                <Text className="text-indigo-600 font-bold text-lg">Save</Text>
-              )}
-            </TouchableOpacity>
+            <GlassButton
+              title="Lagre"
+              variant="primary"
+              onPress={handleSave}
+              disabled={saving}
+              loading={saving}
+            />
           ),
           headerLeft: () => (
-             <TouchableOpacity onPress={() => router.back()}>
-                <Text className="text-gray-500 text-lg">Cancel</Text>
-             </TouchableOpacity>
+            <GlassButton
+              variant="icon"
+              icon={<X size={20} color="#6B7280" />}
+              onPress={() => router.back()}
+            />
           ),
           presentation: 'modal'
         }}
@@ -183,137 +204,179 @@ export default function EditRecipe() {
         className="flex-1"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
-      <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Cover Image Section */}
-        <View className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
-           <Text className="text-sm font-bold text-gray-900 mb-3">Cover Image</Text>
-           <TouchableOpacity onPress={pickImage} className="flex-row items-center gap-3">
-              <View className="bg-gray-100 h-24 w-full rounded-xl items-center justify-center border-dashed border-2 border-gray-300">
-                 {imageUrl ? (
-                     <Image source={{ uri: imageUrl }} className="h-full w-full rounded-xl" resizeMode="cover" />
-                 ) : (
-                     <View className="items-center">
-                        <Upload size={24} color="#9CA3AF" />
-                        <Text className="text-gray-400 text-xs mt-2">Tap to upload</Text>
-                     </View>
-                 )}
-              </View>
-           </TouchableOpacity>
-        </View>
+        <ScrollView className="flex-1 px-4 pt-24" contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+          {/* Cover Image Section */}
+          <GlassCard className="mb-6">
+            <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Forsidebilde</Text>
+            <View className="relative">
+              <TouchableOpacity onPress={pickImage} className="flex-row items-center gap-3">
+                <View className="bg-white/40 h-48 w-full rounded-2xl items-center justify-center border-dashed border border-white/60 overflow-hidden shadow-sm">
+                  {imageUrl ? (
+                    <Image source={{ uri: imageUrl }} className="h-full w-full" resizeMode="cover" />
+                  ) : (
+                    <View className="items-center">
+                      <Camera size={32} color="#9CA3AF" />
+                      <Text className="text-gray-500 font-black uppercase tracking-widest text-[10px] mt-3">Trykk for å endre bilde</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
 
-        {/* Basic Details */}
-        <View className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
-            <Text className="text-lg font-bold text-gray-900 mb-4">Details</Text>
+              {imageUrl ? (
+                <View className="absolute top-3 right-3">
+                  <GlassButton
+                    variant="danger"
+                    icon={<Trash2 size={16} color="white" />}
+                    onPress={() => setImageUrl('')}
+                    className="w-10 h-10 p-0 items-center justify-center rounded-full"
+                  />
+                </View>
+              ) : null}
+            </View>
+          </GlassCard>
+
+          {/* Basic Details */}
+          <GlassCard className="mb-6">
+            <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 ml-2">Detaljer</Text>
 
             <View className="space-y-4">
               <View>
-                <Text className="text-xs font-semibold text-gray-500 uppercase mb-1 ml-1">Recipe Name <Text className="text-red-500">*</Text></Text>
-                <TextInput
-                  className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 font-medium"
+                <Text className="text-[10px] font-black text-gray-500 uppercase mb-2 ml-2">Navn <Text className="text-red-500">*</Text></Text>
+                <GlassInput
                   value={name}
                   onChangeText={setName}
-                  placeholder="e.g. Grandma's Pancakes"
-                  placeholderTextColor="#9CA3AF"
+                  placeholder="F.eks. Bestemors Pannekaker"
                 />
               </View>
 
               <View className="flex-row gap-4">
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-gray-500 uppercase mb-1 ml-1">Servings</Text>
-                  <TextInput
-                    className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 text-center"
+                  <Text className="text-[10px] font-black text-gray-500 uppercase mb-2 ml-2">Porsjoner</Text>
+                  <GlassInput
                     value={servings}
                     onChangeText={setServings}
                     keyboardType="numeric"
+                    textAlign="center"
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-gray-500 uppercase mb-1 ml-1">Prep Time (min)</Text>
-                  <TextInput
-                    className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 text-center"
+                  <Text className="text-[10px] font-black text-gray-500 uppercase mb-2 ml-2">Tid (min)</Text>
+                  <GlassInput
                     value={prepTime}
                     onChangeText={setPrepTime}
                     keyboardType="numeric"
+                    textAlign="center"
                   />
                 </View>
               </View>
-            </View>
-        </View>
 
-        {/* Ingredients */}
-        <View className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-lg font-bold text-gray-900">Ingredients</Text>
-            <TouchableOpacity onPress={addIngredient} className="bg-indigo-50 px-3 py-1.5 rounded-full flex-row items-center">
-              <Plus size={14} color="#4F46E5" />
-              <Text className="text-indigo-600 font-bold ml-1 text-xs">Add Item</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="space-y-3">
-            {ingredients.map((ing, idx) => (
-              <View key={idx} className="flex-row gap-2 items-center">
-                <TextInput
-                  className="flex-[2] bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900"
-                  placeholder="Item"
-                  placeholderTextColor="#9CA3AF"
-                  value={ing.name}
-                  onChangeText={(t) => updateIngredient(idx, 'name', t)}
+              <View>
+                <Text className="text-[10px] font-black text-gray-500 uppercase mb-2 ml-2">Tagger (komma-separert)</Text>
+                <GlassInput
+                  value={tags}
+                  onChangeText={setTags}
+                  placeholder="F.eks. Raskt, Barn, Fisk"
                 />
-                <TextInput
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 text-center"
-                  placeholder="0"
-                  placeholderTextColor="#9CA3AF"
-                  value={ing.amount?.toString() || ''}
-                  onChangeText={(t) => updateIngredient(idx, 'amount', t)}
-                  keyboardType="numeric"
-                />
-                <UnitPicker
-                  value={ing.unit}
-                  onChange={(unit) => updateIngredient(idx, 'unit', unit)}
-                  className="w-20"
-                />
-                <TouchableOpacity onPress={() => removeIngredient(idx)} className="p-2 bg-red-50 rounded-lg">
-                  <X size={18} color="#EF4444" />
-                </TouchableOpacity>
               </View>
-            ))}
-          </View>
-        </View>
 
-        {/* Instructions */}
-        <View className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-lg font-bold text-gray-900">Instructions</Text>
-            <TouchableOpacity onPress={addInstruction} className="bg-indigo-50 px-3 py-1.5 rounded-full flex-row items-center">
-              <Plus size={14} color="#4F46E5" />
-              <Text className="text-indigo-600 font-bold ml-1 text-xs">Add Step</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="space-y-4">
-            {instructions.map((inst, idx) => (
-              <View key={idx} className="flex-row gap-3 items-start">
-                <View className="mt-3 w-6 h-6 rounded-full bg-indigo-100 items-center justify-center">
-                    <Text className="text-indigo-600 font-bold text-xs">{idx + 1}</Text>
+              <View>
+                <Text className="text-[10px] font-black text-gray-500 uppercase mb-3 ml-2">Vanskelighetsgrad</Text>
+                <View className="flex-row gap-2">
+                  {(['Enkel', 'Middels', 'Avansert'] as const).map((level) => (
+                    <TouchableOpacity
+                      key={level}
+                      onPress={() => setDifficulty(level)}
+                      className={`flex-1 py-3 rounded-xl border outline-none items-center justify-center ${difficulty === level ? 'bg-indigo-600 border-indigo-500 shadow-md shadow-indigo-200' : 'bg-white/40 border-white/60'}`}
+                      activeOpacity={0.7}
+                    >
+                      <Text className={`font-black text-[10px] uppercase tracking-widest ${difficulty === level ? 'text-white' : 'text-gray-500'}`}>{level}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-                <TextInput
-                  className="flex-1 min-h-[80px] bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900"
-                  placeholder={`Step ${idx + 1} details...`}
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  value={inst}
-                  onChangeText={(t) => updateInstruction(idx, t)}
-                  textAlignVertical="top"
-                />
-                <TouchableOpacity onPress={() => removeInstruction(idx)} className="mt-3 p-2 bg-red-50 rounded-lg">
-                  <X size={18} color="#EF4444" />
-                </TouchableOpacity>
               </View>
-            ))}
-          </View>
-        </View>
-      </ScrollView>
+            </View>
+          </GlassCard>
+
+          {/* Ingredients */}
+          <GlassCard className="mb-6">
+            <View className="flex-row justify-between items-center mb-5">
+              <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Ingredienser</Text>
+              <GlassButton
+                variant="ghost"
+                icon={<Plus size={14} color="#4F46E5" />}
+                title="Legg til"
+                onPress={addIngredient}
+                className="py-1 px-3"
+              />
+            </View>
+
+            <View className="space-y-3">
+              {ingredients.map((ing, idx) => (
+                <View key={idx} className="flex-row gap-2 items-center">
+                  <TextInput
+                    className="flex-[2] bg-white/40 border border-white/60 shadow-sm rounded-xl p-3 text-gray-900 text-sm font-bold"
+                    placeholder="Vare"
+                    placeholderTextColor="#9CA3AF"
+                    value={ing.name}
+                    onChangeText={(t) => updateIngredient(idx, 'name', t)}
+                  />
+                  <TextInput
+                    className="flex-1 bg-white/40 border border-white/60 shadow-sm rounded-xl p-3 text-indigo-600 text-center text-sm font-black"
+                    placeholder="0"
+                    placeholderTextColor="#9CA3AF"
+                    value={ing.amount?.toString() || ''}
+                    onChangeText={(t) => updateIngredient(idx, 'amount', t)}
+                    keyboardType="numeric"
+                  />
+                  <UnitPicker
+                    value={ing.unit}
+                    onChange={(unit) => updateIngredient(idx, 'unit', unit)}
+                    className="w-20 bg-white/40"
+                  />
+                  <TouchableOpacity onPress={() => removeIngredient(idx)} className="p-2 bg-red-50 rounded-xl border border-red-100">
+                    <X size={18} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </GlassCard>
+
+          {/* Instructions */}
+          <GlassCard className="mb-6">
+            <View className="flex-row justify-between items-center mb-5">
+              <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Fremgangsmåte</Text>
+              <GlassButton
+                variant="ghost"
+                icon={<Plus size={14} color="#4F46E5" />}
+                title="Legg til steg"
+                onPress={addInstruction}
+                className="py-1 px-3"
+              />
+            </View>
+
+            <View className="space-y-4">
+              {instructions.map((inst, idx) => (
+                <View key={idx} className="flex-row gap-3 items-start">
+                  <View className="mt-2 w-8 h-8 rounded-xl bg-indigo-600 items-center justify-center shadow-md shadow-indigo-200">
+                    <Text className="text-white font-black text-sm">{idx + 1}</Text>
+                  </View>
+                  <TextInput
+                    className="flex-1 min-h-[80px] bg-white/40 border border-white/60 shadow-sm rounded-xl p-3 text-gray-700 text-sm font-medium"
+                    placeholder={`Steg ${idx + 1}...`}
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    value={inst}
+                    onChangeText={(t) => updateInstruction(idx, t)}
+                    textAlignVertical="top"
+                  />
+                  <TouchableOpacity onPress={() => removeInstruction(idx)} className="mt-2 p-2 bg-red-50 rounded-xl border border-red-100">
+                    <X size={18} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </GlassCard>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );

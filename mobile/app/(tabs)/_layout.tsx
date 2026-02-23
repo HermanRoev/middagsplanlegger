@@ -1,6 +1,9 @@
 import { Tabs } from 'expo-router';
-import { ChefHat, Calendar, ShoppingCart, Package, MessageSquare, Home } from 'lucide-react-native';
+import { ChefHat, Calendar, ShoppingCart, Home, Menu } from 'lucide-react-native';
 import { Platform } from 'react-native';
+
+import { BlurView } from 'expo-blur';
+import { StyleSheet } from 'react-native';
 
 export default function TabLayout() {
   return (
@@ -8,30 +11,36 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: 'white',
-          borderTopWidth: 1,
-          borderTopColor: '#F3F4F6',
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
           height: Platform.OS === 'ios' ? 88 : 64,
           paddingTop: 8,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8,
         },
+        tabBarBackground: () => (
+          <BlurView tint="light" intensity={60} style={StyleSheet.absoluteFill} className="bg-white/40 border-t border-white/40" />
+        ),
         tabBarActiveTintColor: '#4F46E5',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarLabelStyle: {
-          fontWeight: '600',
-          fontSize: 11,
+          fontWeight: '900',
+          fontSize: 10,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
           marginTop: 2,
         },
       }}
     >
-       <Tabs.Screen
+      <Tabs.Screen
         name="index"
         options={{
           title: 'Hjem',
           tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
         }}
       />
-       <Tabs.Screen
+      <Tabs.Screen
         name="planner"
         options={{
           title: 'Planlegger',
@@ -53,17 +62,33 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="more"
+        options={{
+          title: 'Mer',
+          tabBarIcon: ({ color, size }) => <Menu size={size} color={color} />,
+        }}
+      />
+
+      {/* Hidden Tabs (Accessible via the "Mer" menu) */}
+      <Tabs.Screen
         name="inbox"
         options={{
+          href: null,
           title: 'Forslag',
-          tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="cupboard"
         options={{
+          href: null,
           title: 'Matbod',
-          tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="family"
+        options={{
+          href: null,
+          title: 'Familie',
         }}
       />
     </Tabs>

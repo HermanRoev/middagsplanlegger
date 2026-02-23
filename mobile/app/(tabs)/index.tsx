@@ -1,21 +1,27 @@
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/auth';
-import { getPlannedMeals, getShoppingList, getUserRecipes } from '../../lib/api';
+import { getPlannedMeals, getShoppingList, getUserRecipes, getCupboardItems } from '../../lib/api';
+import { scoreMeals, RecipeScoreResult } from '../../lib/recommendations';
 import { Calendar, ChefHat, ShoppingCart, Plus, Clock, Users, ArrowRight, User } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
-import { PlannedMeal } from '../../src/types';
+import { PlannedMeal, Meal } from '../../../src/types';
+import { GlassHeader } from '../../components/ui/GlassHeader';
+import { GlassCard } from '../../components/ui/GlassCard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Home() {
-  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { user, householdId } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [plannedCount, setPlannedCount] = useState(0);
   const [recipesCount, setRecipesCount] = useState(0);
   const [shopCount, setShopCount] = useState(0);
   const [todayMeals, setTodayMeals] = useState<PlannedMeal[]>([]);
+  const [recommendation, setRecommendation] = useState<RecipeScoreResult | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -23,20 +29,33 @@ export default function Home() {
       setLoading(true);
       try {
         const todayDate = new Date();
-        const [planned, recipes, shopping] = await Promise.all([
-          getPlannedMeals(user.uid, todayDate),
-          getUserRecipes(user.uid),
-          getShoppingList(user.uid)
+        if (!householdId) return;
+        const [planned, recipes, shopping, cupboard] = await Promise.all([
+          getPlannedMeals(user!.uid, todayDate, householdId),
+          getUserRecipes(user!.uid, householdId),
+          getShoppingList(user!.uid, householdId),
+          getCupboardItems(user!.uid, householdId)
         ]);
-        
+
         setPlannedCount(planned.length);
         setRecipesCount(recipes.length);
-        const unchecked = [...shopping.manual, ...shopping.planned].filter((i: { checked: boolean }) => !i.checked);
+        const unchecked = [...shopping.manual, ...shopping.planned].filter((i: { checked?: boolean }) => !i.checked);
         setShopCount(unchecked.length);
-        
+
         const todayStr = todayDate.toISOString().split('T')[0];
         const today = planned.filter(p => p.date === todayStr);
         setTodayMeals(today);
+
+        if (recipes.length > 0) {
+          const scored = scoreMeals(recipes, cupboard);
+          // Filter out anything already planned for the week (similar to web)
+          const plannedIdsForWeek = new Set(planned.map((p: PlannedMeal) => p.mealId));
+          const availableRecommendations = scored.filter(s => !plannedIdsForWeek.has(s.meal.id));
+
+          if (availableRecommendations.length > 0) {
+            setRecommendation(availableRecommendations[0]);
+          }
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -49,27 +68,17 @@ export default function Home() {
   const todayText = format(new Date(), "EEEE d. MMMM", { locale: nb });
 
   return (
-    <View className="flex-1 bg-white">
-      {/* Header */}
-      <View className="bg-white px-6 pb-4 pt-16 border-b border-gray-200 flex-row justify-between items-end">
-        <View>
-          <Text className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{todayText}</Text>
-          <Text className="text-3xl font-black text-gray-900 tracking-tight">
-            Hei, <Text className="text-indigo-600">{user?.displayName?.split(' ')[0] || 'Kokk'}!</Text>
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => router.push('/profile')}
-          className="p-3 bg-gray-50 rounded-2xl border border-gray-100"
-          activeOpacity={0.7}
-        >
-          <User size={22} color="#4B5563" />
-        </TouchableOpacity>
-      </View>
+    <View className="flex-1">
+      {/* Absolute Frosted Glass Header */}
+      <GlassHeader
+        title={todayText}
+        subtitle={`Hei, ${user?.displayName?.split(' ')[0] || 'Kokk'}!`}
+        transparent
+      />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingTop: insets.top + 100, padding: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
 
@@ -80,120 +89,115 @@ export default function Home() {
         ) : (
           <View className="gap-y-6">
             {/* Featured Today Card */}
-            <TouchableOpacity 
-                activeOpacity={0.9}
-                onPress={() => todayMeals[0] ? router.push(`/(tabs)/recipes/${todayMeals[0].mealId}?plannedId=${todayMeals[0].id}`) : router.push('/(tabs)/planner')}
-                className="bg-white rounded-[40px] shadow-sm overflow-hidden border border-gray-200"
-            >
-                <View className="relative h-64 bg-gray-100">
-                    {todayMeals[0]?.imageUrl ? (
-                        <Image source={{ uri: todayMeals[0].imageUrl }} className="w-full h-full" resizeMode="cover" />
-                    ) : (
-                        <View className="w-full h-full items-center justify-center bg-indigo-50/50">
-                            <ChefHat size={60} color="#C7D2FE" />
+            <TouchableOpacity onPress={() => todayMeals[0] ? router.push(`/(tabs)/recipes/${todayMeals[0].mealId}?plannedId=${todayMeals[0].id}`) : router.push('/(tabs)/planner')} activeOpacity={0.8}>
+              <GlassCard className="p-0 overflow-hidden min-h-[220px]">
+                {todayMeals[0]?.imageUrl ? (
+                  <Image source={{ uri: todayMeals[0].imageUrl }} className="absolute inset-0 w-full h-full opacity-60" style={{ resizeMode: 'cover' }} />
+                ) : (
+                  <View className="absolute inset-0 bg-indigo-900/10" />
+                )}
+                <View className="flex-1 p-6 justify-between bg-black/20">
+                  <View className="bg-indigo-600/90 self-start px-3 py-1.5 rounded-full border border-indigo-400/50">
+                    <Text className="text-[10px] font-black text-white uppercase tracking-widest">I dag</Text>
+                  </View>
+                  <View>
+                    <Text className="text-3xl font-black text-white tracking-tight leading-tight mb-2 drop-shadow-lg">
+                      {todayMeals[0] ? todayMeals[0].mealName : 'Ingen planlagt middag'}
+                    </Text>
+                    {todayMeals[0] && (
+                      <View className="flex-row gap-x-4">
+                        <View className="flex-row items-center">
+                          <Clock size={14} color="rgba(255,255,255,0.8)" />
+                          <Text className="text-white ml-2 text-xs font-bold">{todayMeals[0].prepTime || 30} min</Text>
                         </View>
+                        <View className="flex-row items-center">
+                          <Users size={14} color="rgba(255,255,255,0.8)" />
+                          <Text className="text-white ml-2 text-xs font-bold">{todayMeals[0].plannedServings || 4} porsj.</Text>
+                        </View>
+                      </View>
                     )}
-                    <View className="absolute top-5 left-5 bg-indigo-600 px-4 py-2 rounded-2xl shadow-lg">
-                        <Text className="text-white font-black text-xs uppercase tracking-wider">Dagens middag</Text>
-                    </View>
+                  </View>
                 </View>
-                
-                <View className="p-8 bg-white flex-row justify-between items-center">
-                    <View className="flex-1 mr-4">
-                        {todayMeals.length > 0 ? (
-                            <>
-                                <Text className="text-2xl font-black text-gray-900 leading-tight mb-2">{todayMeals[0].mealName}</Text>
-                                <View className="flex-row items-center gap-x-4">
-                                    <View className="flex-row items-center">
-                                        <Clock size={14} color="#6366F1" />
-                                        <Text className="ml-1.5 text-xs font-bold text-gray-400">{todayMeals[0].prepTime || 30} min</Text>
-                                    </View>
-                                    <View className="flex-row items-center">
-                                        <Users size={14} color="#6366F1" />
-                                        <Text className="ml-1.5 text-xs font-bold text-gray-400">{todayMeals[0].plannedServings} pers</Text>
-                                    </View>
-                                </View>
-                            </>
-                        ) : (
-                            <>
-                                <Text className="text-xl font-black text-gray-400 italic">Ingen plan for i dag</Text>
-                                <Text className="text-xs font-bold text-gray-300 uppercase tracking-widest mt-1">Planlegg noe godt!</Text>
-                            </>
-                        )}
-                    </View>
-                    <View className="w-12 h-12 bg-indigo-50 rounded-2xl items-center justify-center">
-                        <ArrowRight size={24} color="#4F46E5" />
-                    </View>
-                </View>
+              </GlassCard>
             </TouchableOpacity>
+
+            {recommendation && todayMeals.length === 0 && (
+              <TouchableOpacity onPress={() => router.push(`/(tabs)/recipes/${recommendation.meal.id}`)} activeOpacity={0.8}>
+                <GlassCard className="p-0 overflow-hidden flex-row">
+                  <View className="w-1/3 min-h-[120px] bg-indigo-900/10">
+                    {recommendation.meal.imageUrl && (
+                      <Image source={{ uri: recommendation.meal.imageUrl }} className="w-full h-full" style={{ resizeMode: 'cover' }} />
+                    )}
+                  </View>
+                  <View className="flex-1 p-4 justify-center">
+                    <Text className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Dagens anbefaling</Text>
+                    <Text className="text-lg font-black text-gray-900 leading-tight mb-1" numberOfLines={2}>
+                      {recommendation.meal.name}
+                    </Text>
+                    <Text className="text-xs font-bold text-gray-500">
+                      Du har {recommendation.matchPercentage}% av ingrediensene
+                    </Text>
+                  </View>
+                </GlassCard>
+              </TouchableOpacity>
+            )}
 
             {/* Stats Row */}
             <View className="flex-row gap-x-4">
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/planner')}
-                className="flex-1 bg-white rounded-[32px] p-5 items-center border border-gray-200 shadow-sm"
-              >
-                <View className="w-10 h-10 rounded-2xl bg-blue-100 items-center justify-center mb-2">
-                  <Calendar size={20} color="#3B82F6" />
-                </View>
-                <Text className="text-2xl font-black text-gray-900">{plannedCount}</Text>
-                <Text className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1">Planlagt</Text>
+              <TouchableOpacity className="flex-1" onPress={() => router.push('/(tabs)/planner')} activeOpacity={0.7}>
+                <GlassCard className="items-center py-5 px-2">
+                  <View className="w-12 h-12 rounded-2xl bg-blue-100 items-center justify-center mb-3">
+                    <Calendar size={24} color="#3B82F6" />
+                  </View>
+                  <Text className="text-2xl font-black text-gray-900 mb-1">{plannedCount}</Text>
+                  <Text className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Planlagt</Text>
+                </GlassCard>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/shop')}
-                className="flex-1 bg-white rounded-[32px] p-5 items-center border border-gray-200 shadow-sm"
-              >
-                <View className="w-10 h-10 rounded-2xl bg-emerald-100 items-center justify-center mb-2">
-                  <ShoppingCart size={20} color="#10B981" />
-                </View>
-                <Text className="text-2xl font-black text-gray-900">{shopCount}</Text>
-                <Text className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">Handle</Text>
+              <TouchableOpacity className="flex-1" onPress={() => router.push('/(tabs)/shop')} activeOpacity={0.7}>
+                <GlassCard className="items-center py-5 px-2">
+                  <View className="w-12 h-12 rounded-2xl bg-emerald-100 items-center justify-center mb-3">
+                    <ShoppingCart size={24} color="#10B981" />
+                  </View>
+                  <Text className="text-2xl font-black text-gray-900 mb-1">{shopCount}</Text>
+                  <Text className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Handle</Text>
+                </GlassCard>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/recipes')}
-                className="flex-1 bg-white rounded-[32px] p-5 items-center border border-gray-200 shadow-sm"
-              >
-                <View className="w-10 h-10 rounded-2xl bg-purple-100 items-center justify-center mb-2">
-                  <ChefHat size={20} color="#8B5CF6" />
-                </View>
-                <Text className="text-2xl font-black text-gray-900">{recipesCount}</Text>
-                <Text className="text-[10px] font-black text-purple-600 uppercase tracking-widest mt-1">Matretter</Text>
+              <TouchableOpacity className="flex-1" onPress={() => router.push('/(tabs)/recipes')} activeOpacity={0.7}>
+                <GlassCard className="items-center py-5 px-2">
+                  <View className="w-12 h-12 rounded-2xl bg-purple-100 items-center justify-center mb-3">
+                    <ChefHat size={24} color="#8B5CF6" />
+                  </View>
+                  <Text className="text-2xl font-black text-gray-900 mb-1">{recipesCount}</Text>
+                  <Text className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Matretter</Text>
+                </GlassCard>
               </TouchableOpacity>
             </View>
 
             {/* Quick Actions List */}
             <View className="mt-4 gap-y-4">
-                <Text className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Hurtigvalg</Text>
-                
-                <TouchableOpacity
-                    onPress={() => router.push('/(tabs)/recipes/create')}
-                    activeOpacity={0.7}
-                    className="bg-indigo-600 p-6 rounded-[28px] flex-row items-center justify-between shadow-xl shadow-indigo-200"
-                >
-                    <View className="flex-row items-center">
-                        <View className="bg-white/20 p-3 rounded-2xl mr-4">
-                            <Plus size={24} color="white" />
-                        </View>
-                        <Text className="text-white font-black text-lg">Legg til ny oppskrift</Text>
-                    </View>
-                    <ArrowRight size={20} color="white" opacity={0.5} />
-                </TouchableOpacity>
+              <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Hurtigvalg</Text>
 
-                <TouchableOpacity
-                    onPress={() => router.push('/(tabs)/cupboard')}
-                    activeOpacity={0.7}
-                    className="bg-white p-6 rounded-[28px] flex-row items-center justify-between border border-gray-200 shadow-sm"
-                >
-                    <View className="flex-row items-center">
-                        <View className="bg-amber-50 p-3 rounded-2xl mr-4">
-                            <Plus size={24} color="#D97706" />
-                        </View>
-                        <Text className="text-gray-900 font-black text-lg">Sjekk matboden</Text>
-                    </View>
-                    <ArrowRight size={20} color="#D1D5DB" />
-                </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/recipes/create')} activeOpacity={0.8}>
+                <GlassCard className="flex-row items-center p-4 bg-indigo-600/90 border-indigo-500 shadow-indigo-300">
+                  <View className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-4">
+                    <Plus size={20} color="white" />
+                  </View>
+                  <Text className="flex-1 text-white font-black text-sm uppercase tracking-widest">Legg til ny oppskrift</Text>
+                  <ArrowRight size={20} color="white" />
+                </GlassCard>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => router.push('/(tabs)/cupboard')} activeOpacity={0.8}>
+                <GlassCard className="flex-row items-center p-4">
+                  <View className="w-10 h-10 rounded-xl bg-amber-50 items-center justify-center mr-4 border border-amber-100/50">
+                    <Plus size={20} color="#D97706" />
+                  </View>
+                  <Text className="flex-1 text-gray-700 font-bold text-sm">Sjekk matboden</Text>
+                  <ArrowRight size={20} color="#9CA3AF" />
+                </GlassCard>
+              </TouchableOpacity>
             </View>
           </View>
         )}

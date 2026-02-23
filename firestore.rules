@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if the user's document has the requested householdId
+    function isHouseholdMember(householdId) {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.householdId == householdId;
+    }
+
+    // Check if the user's document has the admin role OR if they have the admin custom auth claim
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || request.auth.token.admin == true);
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated(); // Users can read each other's profiles
+      
+      // Creating a profile: Only allow self, and role must be 'user' initially (or 'admin' can create admins)
+      allow create: if isAuthenticated() && request.auth.uid == userId &&
+        (request.resource.data.role == 'user' || isAdmin());
+        
+      // Updating a profile: Only allow self OR admin (Admin can change roles, self cannot change own role unless they are already admin)
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role) || 
+        isAdmin()
+      );
+      
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+    }
+    
+    match /invites/{inviteId} {
+      allow read: if true; // Anyone needs to read invites to verify code during signup
+      
+      // Anyone can update an invite to mark it as used (used=true, usedBy=uid)
+      allow update: if request.resource.data.used == true && 
+                       request.resource.data.usedBy != null;
+      
+      // Only admins can create or delete invites
+      allow create, delete: if isAdmin();
+    }
+    
+    match /meals/{mealId} {
+      allow read, update, delete: if isHouseholdMember(resource.data.householdId);
+      allow create: if isHouseholdMember(request.resource.data.householdId);
+    }
+    
+    match /plannedMeals/{planId} {
+      allow read, update, delete: if isHouseholdMember(resource.data.householdId);
+      allow create: if isHouseholdMember(request.resource.data.householdId);
+    }
+    
+    match /cupboard/{itemId} {
+      allow read, update, delete: if isHouseholdMember(resource.data.householdId);
+      allow create: if isHouseholdMember(request.resource.data.householdId);
+    }
+
+    match /shoppingList/{itemId} {
+      allow read, update, delete: if isHouseholdMember(resource.data.householdId);
+      allow create: if isHouseholdMember(request.resource.data.householdId);
+    }
+
+    match /shoppingChecked/{itemId} {
+      allow read, update, delete: if isHouseholdMember(resource.data.householdId);
+      allow create: if isHouseholdMember(request.resource.data.householdId);
+    }
+    
+    match /suggestions/{suggestionId} {
+      allow read, update, delete: if isHouseholdMember(resource.data.householdId);
+      allow create: if isHouseholdMember(request.resource.data.householdId);
+    }
+
+    match /userStats/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Default deny for everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

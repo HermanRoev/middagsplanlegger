@@ -4,3 +4,8 @@ export const COLLECTIONS = {
   INGREDIENTS: 'ingredients',
   CUPBOARD: 'cupboard',
 }
+
+// Fixed Household ID for family sharing.
+// In a full multi-tenant app, this would be fetched from the User doc.
+export const HOUSEHOLD_ID = 'family-middagsplanlegger'
+

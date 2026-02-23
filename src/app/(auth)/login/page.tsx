@@ -1,32 +1,40 @@
 "use client"
 
 import { useState } from "react"
-import { signInWithEmailAndPassword } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
+import { doc, getDoc } from "firebase/firestore"
+import { auth, db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { motion } from "framer-motion"
+import { PageLayout } from "@/components/layout/PageLayout"
+import { Chrome } from "lucide-react"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleGoogleLogin = async () => {
     setLoading(true)
-
     try {
-      await signInWithEmailAndPassword(auth, email, password)
-      toast.success("Welcome back!")
-      router.push("/dashboard")
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+
+      // Check if user has a document in Firestore
+      const userDoc = await getDoc(doc(db, "users", result.user.uid))
+
+      if (userDoc.exists()) {
+        toast.success("Velkommen tilbake!")
+        router.push("/dashboard")
+      } else {
+        // New user or hasn't entered invite code yet
+        toast("Velkommen! Vennligst skriv inn din familiekode.", { icon: "👋" })
+        router.push("/register")
+      }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to login";
+      const message = error instanceof Error ? error.message : "Failed to login with Google"
       toast.error(message)
     } finally {
       setLoading(false)
@@ -34,52 +42,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <motion.div 
+    <PageLayout variant="gray" align="center" className="p-4">
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full max-w-md glass">
+        <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Logg inn</CardTitle>
             <CardDescription className="text-center">
-              Enter your email below to login to your account
+              Logg inn eller registrer deg med Google for å fortsette
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Input
-                  type="email"
-                  placeholder="m@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" variant="premium" disabled={loading}>
-                {loading ? "Logging in..." : "Login"}
-              </Button>
-            </form>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="underline text-indigo-600 hover:text-indigo-500">
-                Sign up
-              </Link>
-            </div>
+          <CardContent className="flex flex-col items-center">
+            <Button
+              onClick={handleGoogleLogin}
+              variant="premium"
+              className="w-full max-w-sm flex items-center justify-center gap-3 py-6 text-lg"
+              disabled={loading}
+            >
+              <Chrome className="w-5 h-5" />
+              {loading ? "Logger inn..." : "Logg inn med Google"}
+            </Button>
           </CardContent>
         </Card>
       </motion.div>
-    </div>
+    </PageLayout>
   )
 }

@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    match /profile-pictures/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    match /meals/{allPaths=**} {
+      // Anyone logged in can upload meal photos
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

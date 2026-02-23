@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 
 export default function PlannerAddRecipe() {
-  const { user } = useAuth();
+  const { user, householdId } = useAuth();
   const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,9 +25,9 @@ export default function PlannerAddRecipe() {
   }, [user]);
 
   async function fetchRecipes() {
-    if (!user) return;
+    if (!user || !householdId) return;
     try {
-      const fetchedRecipes = await getUserRecipes(user.uid);
+      const fetchedRecipes = await getUserRecipes(user.uid, householdId);
       setRecipes(fetchedRecipes);
     } catch (error) {
       console.error("Error fetching recipes:", error);
@@ -40,10 +40,10 @@ export default function PlannerAddRecipe() {
     recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-    const handleRecipePress = (recipe: Meal) => {
-      const replaceParam = replaceId ? `&plannedId=${replaceId}` : '';
-      router.push(`/(tabs)/recipes/${recipe.id}?planningDate=${planningDate}${replaceParam}`);
-    };
+  const handleRecipePress = (recipe: Meal) => {
+    const replaceParam = replaceId ? `&plannedId=${replaceId}` : '';
+    router.push(`/(tabs)/recipes/${recipe.id}?planningDate=${planningDate}${replaceParam}`);
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -52,17 +52,17 @@ export default function PlannerAddRecipe() {
           <View className="flex-row items-center mb-1">
             <Calendar size={14} color="#4F46E5" />
             <Text className="ml-1.5 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em]">
-                Planlegger for {format(new Date(planningDate + 'T12:00:00'), 'EEEE d. MMM', { locale: nb })}
+              Planlegger for {format(new Date(planningDate + 'T12:00:00'), 'EEEE d. MMM', { locale: nb })}
             </Text>
           </View>
           <Text className="text-3xl font-black text-gray-900 tracking-tight">Velg oppskrift</Text>
         </View>
         <TouchableOpacity
-            onPress={() => router.back()}
-            className="p-3 bg-gray-50 rounded-2xl border border-gray-100"
-            activeOpacity={0.7}
+          onPress={() => router.back()}
+          className="p-3 bg-gray-50 rounded-2xl border border-gray-100"
+          activeOpacity={0.7}
         >
-            <X size={20} color="#4B5563" />
+          <X size={20} color="#4B5563" />
         </TouchableOpacity>
       </View>
 
@@ -88,7 +88,7 @@ export default function PlannerAddRecipe() {
           data={filteredRecipes}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-              <RecipeCard recipe={item} onPress={() => handleRecipePress(item)} />
+            <RecipeCard recipe={item} onPress={() => handleRecipePress(item)} />
           )}
           contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
           ListEmptyComponent={

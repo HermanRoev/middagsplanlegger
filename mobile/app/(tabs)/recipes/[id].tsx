@@ -1,14 +1,18 @@
-import { View, Text, Image, ScrollView, ActivityIndicator, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, Image, ScrollView, ActivityIndicator, TouchableOpacity, Alert, Modal, TextInput, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { addPlannedMeal, deletePlannedMeal, getPlannedMealById, getRecipeById, updateMeal, updatePlannedMeal } from '../../../lib/api';
+import { addPlannedMeal, deletePlannedMeal, getPlannedMealById, getRecipeById, updateMeal, updatePlannedMeal, deleteRecipe } from '../../../lib/api';
 import { useAuth } from '../../../context/auth';
 import { Meal, PlannedMeal } from '../../../../src/types';
+import { BlurView } from 'expo-blur';
 import { Clock, Users, Utensils, CircleDollarSign, Calendar, X, Star, Minus, Plus, Flame, ChefHat, Edit, Trash2, Save } from 'lucide-react-native';
 import { format, addDays, startOfToday } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
 import UnitPicker from '../../../components/UnitPicker';
+import { GlassButton } from '../../../components/ui/GlassButton';
+import { GlassCard } from '../../../components/ui/GlassCard';
+import { GlassInput } from '../../../components/ui/GlassInput';
 
 export default function RecipeDetail() {
   const params = useLocalSearchParams();
@@ -16,7 +20,7 @@ export default function RecipeDetail() {
   const planningDate = params.planningDate as string;
   const plannedId = params.plannedId as string | undefined;
 
-  const { user } = useAuth();
+  const { user, householdId } = useAuth();
   const [recipe, setRecipe] = useState<Meal | null>(null);
   const [plannedMeal, setPlannedMeal] = useState<PlannedMeal | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +37,29 @@ export default function RecipeDetail() {
   const [ingredientsY, setIngredientsY] = useState(0);
   const [instructionsY, setInstructionsY] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const handleDeleteRecipe = async () => {
+    if (!recipe) return;
+    try {
+      await deleteRecipe(recipe.id);
+      router.back();
+    } catch {
+      Alert.alert('Feil', 'Kunne ikke slette oppskriften');
+    }
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      "Slette oppskrift?",
+      "Er du sikker på at du vil slette denne oppskriften? Den vil automatisk bli fjernet fra alle fremtidige og tidligere middagsplaner.",
+      [
+        {
+          text: "Avbryt",
+          style: "cancel"
+        },
+        { text: "Slett oppskrift", onPress: handleDeleteRecipe, style: "destructive" }
+      ]
+    );
+  };
 
   useEffect(() => {
     async function loadRecipe() {
@@ -73,35 +100,38 @@ export default function RecipeDetail() {
   }, [cookMode]);
 
   const handleAddToPlan = async (dateStr: string) => {
-      if (!user || !recipe) return;
-      try {
-          if (plannedId) {
-            await updatePlannedMeal(plannedId, {
-                date: dateStr,
-                mealId: recipe.id,
-                mealName: recipe.name,
-                imageUrl: recipe.imageUrl || null,
-                plannedServings: currentServings,
-                ingredients: recipe.ingredients || [],
-                scaledIngredients: recipe.ingredients || [],
-                instructions: recipe.instructions || [],
-                prepTime: recipe.prepTime || null,
-                costEstimate: recipe.costEstimate || null,
-            });
-          } else {
-            await addPlannedMeal(user.uid, recipe, dateStr);
-          }
-          setDateModalVisible(false);
-          Alert.alert('Suksess', plannedId ? 'Måltidet er byttet ut!' : 'Lagt til i planen', [
-              { text: 'OK', onPress: () => {
-                  if (planningDate || plannedId) {
-                      router.dismissAll();
-                  }
-              }}
-          ]);
-      } catch {
-          Alert.alert('Feil', 'Kunne ikke legge til måltidet');
+    if (!user || !recipe) return;
+    try {
+      if (plannedId) {
+        await updatePlannedMeal(plannedId, {
+          date: dateStr,
+          mealId: recipe.id,
+          mealName: recipe.name,
+          imageUrl: recipe.imageUrl || undefined,
+          plannedServings: currentServings,
+          ingredients: recipe.ingredients || [],
+          scaledIngredients: recipe.ingredients || [],
+          instructions: recipe.instructions || [],
+          prepTime: recipe.prepTime || undefined,
+          costEstimate: recipe.costEstimate || undefined,
+        });
+      } else {
+        if (!householdId) return;
+        await addPlannedMeal(user.uid, recipe, dateStr, householdId);
       }
+      setDateModalVisible(false);
+      Alert.alert('Suksess', plannedId ? 'Måltidet er byttet ut!' : 'Lagt til i planen', [
+        {
+          text: 'OK', onPress: () => {
+            if (planningDate || plannedId) {
+              router.dismissAll();
+            }
+          }
+        }
+      ]);
+    } catch {
+      Alert.alert('Feil', 'Kunne ikke legge til måltidet');
+    }
   };
 
   const toggleIngredientCheck = (index: number) => {
@@ -111,11 +141,20 @@ export default function RecipeDetail() {
     setCheckedIngredients(next);
   };
 
-  const handleRate = async (rating: number) => {
-    if (!recipe) return;
+  const handleRate = async (ratingScore: number) => {
+    if (!recipe || !user) return;
     try {
-      await updateMeal(recipe.id, { rating });
-      setRecipe({ ...recipe, rating });
+      const currentRatings = recipe.ratings || {};
+      const newRatings = { ...currentRatings, [user.uid]: ratingScore };
+
+      const total = Object.values(newRatings).reduce((sum, val) => sum + val, 0);
+      const average = Number((total / Object.keys(newRatings).length).toFixed(1));
+
+      await updateMeal(recipe.id, {
+        ratings: newRatings,
+        rating: average
+      });
+      setRecipe({ ...recipe, ratings: newRatings, rating: average });
     } catch {
       Alert.alert('Feil', 'Kunne ikke gi vurdering');
     }
@@ -227,22 +266,28 @@ export default function RecipeDetail() {
   }));
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 text-white">
+      <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
+      <View style={StyleSheet.absoluteFill} className="bg-white/40" />
+
       {/* Custom header - floating over image */}
-      <View className="absolute top-0 left-0 right-0 z-20 flex-row justify-between items-center px-5 pt-16 pb-3">
-        <TouchableOpacity
-            onPress={() => router.back()}
-            className="bg-white/90 p-3 rounded-2xl shadow-sm"
-        >
-            <X size={20} color="#1F2937" />
-        </TouchableOpacity>
+      <View className="absolute top-0 left-0 right-0 z-20 flex-row justify-between items-center px-5 pt-12 pb-3">
+        <GlassButton variant="icon" icon={<X size={20} color="#1F2937" />} onPress={() => router.back()} />
         {user && recipe.createdBy?.id === user.uid && !isPlannedMode && (
-          <TouchableOpacity
-            onPress={() => router.push(`/(tabs)/recipes/edit/${recipe.id}`)}
-            className="bg-white/90 p-3 rounded-2xl shadow-sm"
-          >
-            <Edit size={20} color="#4F46E5" />
-          </TouchableOpacity>
+          <View className="flex-row gap-x-2">
+            <GlassButton
+              variant="icon"
+              icon={<Edit size={20} color="#4F46E5" />}
+              onPress={() => router.push(`/(tabs)/recipes/edit/${recipe.id}`)}
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}
+            />
+            <GlassButton
+              variant="icon"
+              icon={<Trash2 size={20} color="#EF4444" />}
+              onPress={confirmDelete}
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}
+            />
+          </View>
         )}
       </View>
 
@@ -262,7 +307,7 @@ export default function RecipeDetail() {
             />
           ) : (
             <View className="w-full h-full bg-indigo-50 items-center justify-center">
-               <ChefHat size={80} color="#C7D2FE" />
+              <ChefHat size={80} color="#C7D2FE" />
             </View>
           )}
           <View className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent" />
@@ -272,58 +317,64 @@ export default function RecipeDetail() {
         <View className="px-5 pt-6 pb-4">
           {/* Title + Rating */}
           <View className="flex-row justify-between items-start mb-5">
-              <View className="flex-1 mr-3">
-                  <Text className="text-2xl font-black text-gray-900 leading-tight">
-                      {recipe.name}
-                  </Text>
+            <View className="flex-[2] mr-3">
+              <Text className="text-2xl font-black text-gray-900 leading-tight">
+                {recipe.name}
+              </Text>
+            </View>
+            <View className="flex-1 items-end">
+              <View className="flex-row mb-1 bg-amber-50 p-1 rounded-xl border border-amber-100">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const userRating = user ? recipe.ratings?.[user.uid] || 0 : 0;
+                  return (
+                    <TouchableOpacity key={star} onPress={() => handleRate(star)} className="p-0.5">
+                      <Star size={16} color="#F59E0B" fill={star <= userRating ? "#F59E0B" : "transparent"} />
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-              <TouchableOpacity
-                  onPress={() => handleRate((recipe.rating || 0) + 1)}
-                  className="bg-amber-50 px-3 py-1.5 rounded-xl items-center border border-amber-100"
-              >
-                  <Star size={16} color="#F59E0B" fill={recipe.rating ? "#F59E0B" : "transparent"} />
-                  <Text className="text-amber-700 font-black text-xs mt-0.5">{recipe.rating?.toFixed(1) || '0.0'}</Text>
-              </TouchableOpacity>
+              <Text className="text-amber-700 font-bold text-[10px] uppercase tracking-widest">{recipe.rating?.toFixed(1) || '0.0'} SNITT</Text>
+            </View>
           </View>
 
           {/* Quick nav tabs */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5 py-1">
             <View className="flex-row items-center gap-x-2">
               <TouchableOpacity
                 onPress={() => scrollRef.current?.scrollTo({ y: ingredientsY + 240, animated: true })}
-                className="px-4 py-2 rounded-full bg-gray-50 border border-gray-100"
+                className="px-4 py-2 rounded-full border border-white/60 bg-white/40 shadow-sm"
                 activeOpacity={0.7}
               >
                 <Text className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Ingredienser</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => scrollRef.current?.scrollTo({ y: instructionsY + 240, animated: true })}
-                className="px-4 py-2 rounded-full bg-gray-50 border border-gray-100"
+                className="px-4 py-2 rounded-full border border-white/60 bg-white/40 shadow-sm"
                 activeOpacity={0.7}
               >
                 <Text className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Fremgangsmåte</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={toggleCookMode}
-                className={`flex-row items-center px-4 py-2 rounded-full border ${cookMode ? 'bg-amber-100 border-amber-200' : 'bg-gray-50 border-gray-100'}`}
+                className={`flex-row items-center px-4 py-2 rounded-full border shadow-sm ${cookMode ? 'bg-amber-100/80 border-amber-300' : 'bg-white/40 border-white/60'}`}
                 activeOpacity={0.7}
               >
                 <Flame size={13} color={cookMode ? '#D97706' : '#9CA3AF'} />
                 <Text className={`ml-1.5 text-[10px] font-black uppercase tracking-widest ${cookMode ? 'text-amber-700' : 'text-gray-500'}`}>
-                    Kokemodus
+                  Kokemodus
                 </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
 
           {/* Stats row — compact */}
-          <View className="flex-row justify-between mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+          <GlassCard className="flex-row justify-between mb-6 p-4">
             <View className="items-center flex-1">
               <Clock size={18} color="#6366F1" />
               <Text className="font-black text-gray-900 mt-1">{recipe.prepTime || '-'}m</Text>
               <Text className="text-[9px] text-gray-400 font-bold uppercase">Tid</Text>
             </View>
-            <View className="items-center flex-1 border-x border-gray-200/50">
+            <View className="items-center flex-1 border-x border-white/60">
               <Users size={18} color="#6366F1" />
               <Text className="font-black text-gray-900 mt-1">{currentServings || '-'}</Text>
               <Text className="text-[9px] text-gray-400 font-bold uppercase">Porsjoner</Text>
@@ -333,7 +384,7 @@ export default function RecipeDetail() {
               <Text className="font-black text-gray-900 mt-1">{recipe.costEstimate ? `${recipe.costEstimate}kr` : '-'}</Text>
               <Text className="text-[9px] text-gray-400 font-bold uppercase">Pris</Text>
             </View>
-          </View>
+          </GlassCard>
 
           {/* Planned mode badge */}
           {isPlannedMode && (
@@ -345,9 +396,9 @@ export default function RecipeDetail() {
                 </Text>
               </View>
               <TouchableOpacity
-                  onPress={handleMarkCooked}
-                  className={`px-3 py-1.5 rounded-xl ${isCooked ? 'bg-white/20' : 'bg-white shadow-sm'}`}
-                  activeOpacity={0.8}
+                onPress={handleMarkCooked}
+                className={`px-3 py-1.5 rounded-xl ${isCooked ? 'bg-white/20' : 'bg-white shadow-sm'}`}
+                activeOpacity={0.8}
               >
                 <Text className={`text-[10px] font-black uppercase tracking-widest ${isCooked ? 'text-white' : 'text-indigo-600'}`}>
                   {isCooked ? 'Ikke kokt' : 'Marker som kokt'}
@@ -358,101 +409,97 @@ export default function RecipeDetail() {
 
           {/* Servings adjuster */}
           {!isEditing && (
-            <View className="flex-row items-center justify-between mb-6 bg-gray-50 px-5 py-4 rounded-2xl border border-gray-100">
+            <GlassCard className="flex-row items-center justify-between mb-6 px-5 py-4">
               <View>
-                  <Text className="text-gray-900 font-black text-sm">Porsjoner</Text>
-                  <Text className="text-[10px] text-gray-400 font-bold">Juster ingredienser</Text>
+                <Text className="text-gray-900 font-black text-sm">Porsjoner</Text>
+                <Text className="text-[10px] text-gray-400 font-bold">Juster ingredienser</Text>
               </View>
               <View className="flex-row items-center gap-x-4">
-                <TouchableOpacity
+                <GlassButton
+                  variant="icon"
+                  icon={<Minus size={18} color="#4F46E5" strokeWidth={3} />}
                   onPress={() => setCurrentServings(Math.max(1, currentServings - 1))}
-                  className="w-10 h-10 rounded-xl bg-white items-center justify-center shadow-sm border border-gray-100"
-                  activeOpacity={0.7}
-                >
-                  <Minus size={18} color="#4F46E5" strokeWidth={3} />
-                </TouchableOpacity>
+                />
                 <Text className="text-xl font-black text-gray-900 w-6 text-center">{currentServings}</Text>
-                <TouchableOpacity
+                <GlassButton
+                  variant="icon"
+                  icon={<Plus size={18} color="#4F46E5" strokeWidth={3} />}
                   onPress={() => setCurrentServings(currentServings + 1)}
-                  className="w-10 h-10 rounded-xl bg-white items-center justify-center shadow-sm border border-gray-100"
-                  activeOpacity={0.7}
-                >
-                  <Plus size={18} color="#4F46E5" strokeWidth={3} />
-                </TouchableOpacity>
+                />
               </View>
-            </View>
+            </GlassCard>
           )}
 
           {/* Ingredients */}
           <View className="mb-8" onLayout={(e) => setIngredientsY(e.nativeEvent.layout.y)}>
             <View className="flex-row items-center justify-between mb-5">
               <View className="flex-row items-center">
-                  <View className="w-9 h-9 rounded-xl bg-indigo-50 items-center justify-center mr-3 border border-indigo-100">
-                      <Utensils size={18} color="#4F46E5" />
-                  </View>
-                  <Text className="text-xl font-black text-gray-900 tracking-tight uppercase">Ingredienser</Text>
+                <View className="w-9 h-9 rounded-xl bg-indigo-50 items-center justify-center mr-3 border border-indigo-100">
+                  <Utensils size={18} color="#4F46E5" />
+                </View>
+                <Text className="text-xl font-black text-gray-900 tracking-tight uppercase">Ingredienser</Text>
               </View>
               {isEditing ? (
-                  <TouchableOpacity onPress={addIngredient} className="bg-indigo-600 px-3 py-1.5 rounded-lg shadow-sm">
-                      <Plus size={14} color="white" />
-                  </TouchableOpacity>
+                <TouchableOpacity onPress={addIngredient} className="bg-indigo-600 px-3 py-1.5 rounded-lg shadow-sm">
+                  <Plus size={14} color="white" />
+                </TouchableOpacity>
               ) : (
-                  <View className="bg-indigo-50 px-2.5 py-1 rounded-lg">
-                      <Text className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
-                          {displayedIngredients.length} varer
-                      </Text>
-                  </View>
+                <View className="bg-indigo-50 px-2.5 py-1 rounded-lg">
+                  <Text className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                    {displayedIngredients.length} varer
+                  </Text>
+                </View>
               )}
             </View>
 
             <View className="gap-y-2">
               {isEditing ? (
-                  editIngredients.map((ing, idx) => (
-                      <View key={idx} className="flex-row gap-x-1.5 items-center bg-gray-50 p-1.5 rounded-xl border border-gray-100">
-                          <TextInput
-                              className="flex-[2] h-10 px-3 font-bold text-gray-900 text-sm"
-                              placeholder="Vare"
-                              value={ing.name}
-                              onChangeText={(t) => updateIngredient(idx, 'name', t)}
-                          />
-                          <TextInput
-                              className="w-14 h-10 px-1 font-black text-indigo-600 text-center text-sm"
-                              placeholder="0"
-                              value={ing.amount?.toString() || ''}
-                              onChangeText={(t) => updateIngredient(idx, 'amount', t)}
-                              keyboardType="numeric"
-                          />
-                          <UnitPicker
-                              value={ing.unit}
-                              onChange={(unit) => updateIngredient(idx, 'unit', unit)}
-                          />
-                          <TouchableOpacity onPress={() => removeIngredient(idx)} className="p-1.5 bg-red-50 rounded-lg">
-                              <X size={14} color="#EF4444" />
-                          </TouchableOpacity>
-                      </View>
-                  ))
+                editIngredients.map((ing, idx) => (
+                  <GlassCard key={idx} className="flex-row gap-x-1.5 items-center p-1.5">
+                    <TextInput
+                      className="flex-[2] h-10 px-3 font-bold text-gray-900 text-sm"
+                      placeholder="Vare"
+                      value={ing.name}
+                      onChangeText={(t) => updateIngredient(idx, 'name', t)}
+                    />
+                    <TextInput
+                      className="w-14 h-10 px-1 font-black text-indigo-600 text-center text-sm"
+                      placeholder="0"
+                      value={ing.amount?.toString() || ''}
+                      onChangeText={(t) => updateIngredient(idx, 'amount', t)}
+                      keyboardType="numeric"
+                    />
+                    <UnitPicker
+                      value={ing.unit}
+                      onChange={(unit) => updateIngredient(idx, 'unit', unit)}
+                    />
+                    <TouchableOpacity onPress={() => removeIngredient(idx)} className="p-1.5 bg-red-50 rounded-lg">
+                      <X size={14} color="#EF4444" />
+                    </TouchableOpacity>
+                  </GlassCard>
+                ))
               ) : (
-                  displayedIngredients.map((ing, idx) => (
+                displayedIngredients.map((ing, idx) => (
                   <TouchableOpacity
-                      key={idx}
-                      onPress={() => toggleIngredientCheck(idx)}
-                      activeOpacity={0.6}
-                      className={`flex-row justify-between items-center py-3.5 px-4 rounded-xl border ${
-                          checkedIngredients.has(idx)
-                          ? 'bg-gray-50/50 border-transparent opacity-50'
-                          : 'bg-white border-gray-100'
-                      }`}
+                    key={idx}
+                    onPress={() => toggleIngredientCheck(idx)}
+                    activeOpacity={0.6}
                   >
+                    <GlassCard className={`flex-row justify-between items-center py-3.5 px-4 ${checkedIngredients.has(idx)
+                      ? 'bg-black/5 opacity-50'
+                      : ''
+                      }`}>
                       <Text className={`text-gray-700 flex-1 font-bold text-base ${checkedIngredients.has(idx) ? 'line-through text-gray-400' : ''}`}>
-                          {ing.name}
+                        {ing.name}
                       </Text>
-                      <View className="bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
-                          <Text className="text-gray-900 font-black text-xs uppercase">
-                              {ing.amount} {ing.unit}
-                          </Text>
+                      <View className="bg-white/40 px-3 py-1 rounded-lg border border-white/60">
+                        <Text className="text-gray-900 font-black text-xs uppercase">
+                          {ing.amount} {ing.unit}
+                        </Text>
                       </View>
+                    </GlassCard>
                   </TouchableOpacity>
-                  ))
+                ))
               )}
             </View>
           </View>
@@ -460,25 +507,25 @@ export default function RecipeDetail() {
           {/* Instructions */}
           <View onLayout={(e) => setInstructionsY(e.nativeEvent.layout.y)}>
             <View className="flex-row items-center mb-6">
-               <View className="w-9 h-9 rounded-xl bg-indigo-50 items-center justify-center mr-3 border border-indigo-100">
-                  <ChefHat size={18} color="#4F46E5" />
-               </View>
-               <Text className="text-xl font-black text-gray-900 tracking-tight uppercase">Steg for steg</Text>
+              <View className="w-9 h-9 rounded-xl bg-indigo-50 items-center justify-center mr-3 border border-indigo-100">
+                <ChefHat size={18} color="#4F46E5" />
+              </View>
+              <Text className="text-xl font-black text-gray-900 tracking-tight uppercase">Steg for steg</Text>
             </View>
 
             <View className="gap-y-6">
               {recipe.instructions.map((step, idx) => (
                 <View key={idx} className="flex-row gap-x-4">
                   <View className="items-center">
-                      <View className="w-10 h-10 rounded-xl bg-indigo-600 items-center justify-center z-10 shadow-md shadow-indigo-200">
-                          <Text className="text-white font-black text-lg">{idx + 1}</Text>
-                      </View>
-                      {idx !== recipe.instructions.length - 1 && (
-                          <View className="w-0.5 flex-1 bg-indigo-50 my-1.5 rounded-full" />
-                      )}
+                    <View className="w-10 h-10 rounded-xl bg-indigo-600 items-center justify-center z-10 shadow-md shadow-indigo-200">
+                      <Text className="text-white font-black text-lg">{idx + 1}</Text>
+                    </View>
+                    {idx !== recipe.instructions.length - 1 && (
+                      <View className="w-0.5 flex-1 bg-indigo-50 my-1.5 rounded-full" />
+                    )}
                   </View>
                   <View className="flex-1 pt-0.5 pb-4">
-                      <Text className="text-gray-700 leading-relaxed text-base font-medium">{step}</Text>
+                    <Text className="text-gray-700 leading-relaxed text-base font-medium">{step}</Text>
                   </View>
                 </View>
               ))}
@@ -490,41 +537,37 @@ export default function RecipeDetail() {
             <View className="mt-8 gap-y-3">
               {isEditing ? (
                 <View className="flex-row gap-x-3">
-                  <TouchableOpacity
-                      onPress={handleSavePlanChanges}
-                      activeOpacity={0.8}
-                      className="flex-[2] bg-indigo-600 py-4 rounded-2xl items-center shadow-lg shadow-indigo-200"
-                  >
-                    <Save size={18} color="white" className="mb-1" />
-                    <Text className="text-white font-black uppercase tracking-widest text-xs">Lagre plan</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                      onPress={() => setIsEditing(false)}
-                      activeOpacity={0.7}
-                      className="flex-1 bg-gray-100 py-4 rounded-2xl items-center"
-                  >
-                    <X size={18} color="#4B5563" className="mb-1" />
-                    <Text className="text-gray-500 font-black uppercase tracking-widest text-[10px]">Avbryt</Text>
-                  </TouchableOpacity>
+                  <GlassButton
+                    title="Lagre plan"
+                    variant="primary"
+                    icon={<Save size={18} color="white" className="mb-1" />}
+                    onPress={handleSavePlanChanges}
+                    className="flex-[2]"
+                  />
+                  <GlassButton
+                    title="Avbryt"
+                    variant="secondary"
+                    icon={<X size={18} color="#4B5563" className="mb-1" />}
+                    onPress={() => setIsEditing(false)}
+                    className="flex-1"
+                  />
                 </View>
               ) : (
                 <View className="flex-row gap-x-3">
-                  <TouchableOpacity
-                      onPress={handleEnterEdit}
-                      activeOpacity={0.8}
-                      className="flex-[2] bg-white border border-gray-200 py-4 rounded-2xl items-center"
-                  >
-                    <Edit size={18} color="#4B5563" className="mb-1" />
-                    <Text className="text-gray-700 font-black uppercase tracking-widest text-[10px]">Rediger plan</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                      onPress={handleRemoveFromPlan}
-                      activeOpacity={0.7}
-                      className="flex-1 bg-red-50 border border-red-100 py-4 rounded-2xl items-center"
-                  >
-                    <Trash2 size={18} color="#EF4444" className="mb-1" />
-                    <Text className="text-red-600 font-black uppercase tracking-widest text-[10px]">Fjern</Text>
-                  </TouchableOpacity>
+                  <GlassButton
+                    title="Rediger plan"
+                    variant="secondary"
+                    icon={<Edit size={18} color="#4B5563" className="mb-1" />}
+                    onPress={handleEnterEdit}
+                    className="flex-[2]"
+                  />
+                  <GlassButton
+                    title="Fjern"
+                    variant="danger"
+                    icon={<Trash2 size={18} color="#EF4444" className="mb-1" />}
+                    onPress={handleRemoveFromPlan}
+                    className="flex-1"
+                  />
                 </View>
               )}
             </View>
@@ -555,42 +598,41 @@ export default function RecipeDetail() {
         animationType="slide"
         onRequestClose={() => setDateModalVisible(false)}
       >
-          <View className="flex-1 justify-end bg-black/50 p-4 pb-10">
-              <View className="bg-white rounded-[40px] p-8 shadow-2xl">
-                  <View className="flex-row justify-between items-center mb-8">
-                      <View>
-                        <Text className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Planlegg måltid</Text>
-                        <Text className="text-2xl font-black text-gray-900 tracking-tight">Velg dato</Text>
-                      </View>
-                      <TouchableOpacity onPress={() => setDateModalVisible(false)} className="bg-gray-50 p-2.5 rounded-full border border-gray-100">
-                          <X size={20} color="#6B7280" />
-                      </TouchableOpacity>
-                  </View>
-
-                  <View className="gap-y-2 mb-4">
-                      {Array.from({ length: 7 }).map((_, i) => {
-                          const date = addDays(startOfToday(), i);
-                          const dateStr = format(date, 'yyyy-MM-dd');
-                          return (
-                              <TouchableOpacity
-                                  key={i}
-                                  onPress={() => handleAddToPlan(dateStr)}
-                                  className="flex-row items-center p-4 bg-gray-50 rounded-2xl border border-gray-100"
-                                  activeOpacity={0.7}
-                              >
-                                  <Calendar size={18} color="#4F46E5" />
-                                  <Text className="ml-4 font-black text-gray-900 text-base flex-1">
-                                      {i === 0 ? 'I dag' : i === 1 ? 'I morgen' : format(date, 'EEEE', { locale: nb })}
-                                  </Text>
-                                  <Text className="text-gray-400 font-black text-xs uppercase tracking-widest">
-                                      {format(date, 'd. MMM', { locale: nb })}
-                                  </Text>
-                              </TouchableOpacity>
-                          );
-                      })}
-                  </View>
+        <View className="flex-1 justify-end bg-black/50 p-4 pb-10">
+          <View className="bg-white/95 rounded-[40px] p-8 shadow-2xl">
+            <View className="flex-row justify-between items-center mb-8">
+              <View>
+                <Text className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Planlegg måltid</Text>
+                <Text className="text-2xl font-black text-gray-900 tracking-tight">Velg dato</Text>
               </View>
+              <GlassButton variant="icon" icon={<X size={20} color="#6B7280" />} onPress={() => setDateModalVisible(false)} />
+            </View>
+
+            <View className="gap-y-2 mb-4">
+              {Array.from({ length: 7 }).map((_, i) => {
+                const date = addDays(startOfToday(), i);
+                const dateStr = format(date, 'yyyy-MM-dd');
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => handleAddToPlan(dateStr)}
+                    activeOpacity={0.7}
+                  >
+                    <GlassCard className="flex-row items-center p-4">
+                      <Calendar size={18} color="#4F46E5" />
+                      <Text className="ml-4 font-black text-gray-900 text-base flex-1">
+                        {i === 0 ? 'I dag' : i === 1 ? 'I morgen' : format(date, 'EEEE', { locale: nb })}
+                      </Text>
+                      <Text className="text-gray-400 font-black text-xs uppercase tracking-widest">
+                        {format(date, 'd. MMM', { locale: nb })}
+                      </Text>
+                    </GlassCard>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
+        </View>
       </Modal>
     </View>
   );

@@ -5,6 +5,7 @@ export interface Ingredient {
   name: string
   amount: number | null
   unit: string // Relaxed from literal union to string to allow flexible units from AI
+  isShopped?: boolean
 }
 
 export interface Nutrition {
@@ -25,12 +26,16 @@ export interface Meal {
   prepTime: number | null // Preparation time in minutes
   costEstimate: number | null // Estimated cost in NOK
   nutrition?: Nutrition
-  rating?: number // 0-5
+  rating?: number // 0-5 (computed average or legacy single rating)
+  ratings?: Record<string, number> // User-specific ratings map
+  tags?: string[] // e.g. ["Raskt", "Barn", "Fisk"]
+  difficulty?: "Enkel" | "Middels" | "Avansert"
   lastCooked?: string // ISO Date string
   createdBy?: {
     id: string
     name: string
   }
+  householdId?: string
 }
 
 export interface PlannedMeal {
@@ -55,6 +60,8 @@ export interface PlannedMeal {
   }
   originalMealId?: string
   notes?: string
+  householdId?: string
+  userId?: string
 }
 
 export interface CupboardItem {
@@ -65,6 +72,7 @@ export interface CupboardItem {
   amount: number | null
   wantedAmount: number | null
   threshold: number | null
+  householdId?: string
 }
 
 export interface Suggestion {
@@ -79,4 +87,5 @@ export interface Suggestion {
   }
   forDate?: string // YYYY-MM-DD (Optional, for suggesting a specific day)
   createdAt: string
+  householdId?: string
 }

@@ -5,7 +5,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "plannedBy.id",
+          "fieldPath": "householdId",
           "order": "ASCENDING"
         },
         {
@@ -19,11 +19,53 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "userId",
+          "fieldPath": "householdId",
           "order": "ASCENDING"
         },
         {
           "fieldPath": "ingredientName",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "suggestions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "householdId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "householdId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "shoppingList",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "checked",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "householdId",
           "order": "ASCENDING"
         }
       ]

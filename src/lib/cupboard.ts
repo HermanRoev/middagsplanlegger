@@ -7,6 +7,7 @@ import {
   doc,
   query,
   where,
+  getDoc
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { COLLECTIONS } from './constants'
@@ -17,9 +18,14 @@ export const getCupboardItems = async (): Promise<CupboardItem[]> => {
   const user = await getCurrentUser()
   if (!user) throw new Error('User not authenticated')
 
+  const userDoc = await getDoc(doc(db, "users", user.uid))
+  const householdId = userDoc.data()?.householdId
+
+  if (!householdId) return []
+
   const q = query(
     collection(db, COLLECTIONS.CUPBOARD),
-    where('userId', '==', user.uid)
+    where('householdId', '==', householdId)
   )
   const querySnapshot = await getDocs(q)
   return querySnapshot.docs.map(
@@ -33,11 +39,17 @@ export const addCupboardItem = async (
   const user = await getCurrentUser()
   if (!user) throw new Error('User not authenticated')
 
+  const userDoc = await getDoc(doc(db, "users", user.uid))
+  const householdId = userDoc.data()?.householdId
+
+  if (!householdId) throw new Error('User has no household')
+
   // Ensure ingredientName is lowercase for consistency
   const itemToAdd = {
     ...item,
     ingredientName: item.ingredientName.toLowerCase(),
     userId: user.uid,
+    householdId: householdId
   }
 
   return await addDoc(collection(db, COLLECTIONS.CUPBOARD), itemToAdd)

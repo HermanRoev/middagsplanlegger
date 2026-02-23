@@ -1,125 +1,98 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, } from 'react-native';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChefHat, Mail, Lock, ArrowRight } from 'lucide-react-native';
+import { ChefHat, Chrome } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+
+import { GlassScreen } from '../components/ui/GlassScreen';
+import { GlassButton } from '../components/ui/GlassButton';
+
+// Required for web browser auth sessions to close correctly
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
+  // Initialize Google Auth Request
+  // Replace these with your actual Android/iOS/Web Client IDs from Firebase Console -> Project Settings -> General -> Web App / iOS / Android App
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: "ANDROID_CLIENT_ID", // TODO: Configure inside Google Cloud Console
+    iosClientId: "IOS_CLIENT_ID",         // TODO: Configure inside Google Cloud Console
+    webClientId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID, // Temp placeholder until real web client id is provisioned.
+  });
 
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      handleGoogleLogin(id_token);
+    } else if (response?.type === 'error') {
+      setError('Google login ble avbrutt eller feilet.');
+    }
+  }, [response]);
+
+  const handleGoogleLogin = async (idToken: string) => {
     setLoading(true);
     setError('');
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.replace('/(tabs)');
+      const credential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(auth, credential);
+
+      // Check if user has a document in Firestore
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+
+      if (userDoc.exists()) {
+        router.replace('/(tabs)');
+      } else {
+        router.push('/register');
+      }
     } catch (_err: unknown) {
       console.error(_err);
-      setError('Invalid email or password');
+      setError('Kunne ikke logge inn med Google');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-          <View className="flex-1 p-10 justify-center">
-
-            {/* Header Section */}
-            <View className="items-center mb-16">
-              <View className="w-24 h-24 bg-indigo-50 rounded-[32px] items-center justify-center mb-8 shadow-xl shadow-indigo-100 transform rotate-3 border border-indigo-100">
-                <ChefHat size={48} color="#4F46E5" />
-              </View>
-              <Text className="text-4xl font-black text-gray-900 mb-3 tracking-tight uppercase">Velkommen</Text>
-              <Text className="text-gray-400 font-bold text-center leading-5 uppercase tracking-widest text-[10px]">
-                Logg inn for å planlegge dine måltider
-              </Text>
-            </View>
-
-            {/* Form Section */}
-            <View className="gap-y-6">
-              <View>
-                <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-6">E-post</Text>
-                <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-[28px] px-6 py-5 shadow-inner">
-                  <Mail size={20} color="#9CA3AF" />
-                  <TextInput
-                    className="flex-1 ml-4 text-gray-900 text-lg font-bold"
-                    placeholder="Din e-post"
-                    placeholderTextColor="#9CA3AF"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-                </View>
-              </View>
-
-              <View>
-                <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-6">Passord</Text>
-                <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-[28px] px-6 py-5 shadow-inner">
-                  <Lock size={20} color="#9CA3AF" />
-                  <TextInput
-                    className="flex-1 ml-4 text-gray-900 text-lg font-bold"
-                    placeholder="Ditt passord"
-                    placeholderTextColor="#9CA3AF"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                  />
-                </View>
-              </View>
-
-              {error ? (
-                <View className="bg-red-50 p-5 rounded-[24px] flex-row items-center justify-center border border-red-100">
-                  <Text className="text-red-600 text-xs font-black uppercase tracking-widest">{error}</Text>
-                </View>
-              ) : null}
-
-              <TouchableOpacity
-                onPress={handleLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-                className={`bg-indigo-600 rounded-[32px] py-6 flex-row justify-center items-center shadow-2xl shadow-indigo-200 mt-6 ${
-                  loading ? 'opacity-70' : ''
-                }`}
-              >
-                {loading ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <>
-                    <Text className="text-white font-black text-lg uppercase tracking-[0.2em] mr-3">Logg inn</Text>
-                    <ArrowRight size={22} color="white" />
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <View className="mt-12 flex-row justify-center bg-gray-50 py-4 rounded-2xl border border-gray-100">
-              <Text className="text-gray-400 font-bold text-xs uppercase tracking-widest">Mangler du konto? </Text>
-              <TouchableOpacity>
-                <Text className="text-indigo-600 font-black text-xs uppercase tracking-widest">Kontakt admin</Text>
-              </TouchableOpacity>
-            </View>
+    <GlassScreen bgVariant="glass" safeAreaEdges={['top', 'bottom']}>
+      <View className="flex-1 justify-center p-10">
+        {/* Header Section */}
+        <View className="items-center mb-16">
+          <View className="w-24 h-24 bg-indigo-600/10 rounded-[32px] items-center justify-center mb-8 shadow-xl shadow-indigo-200 transform rotate-3 border border-indigo-500/20">
+            <ChefHat size={48} color="#4F46E5" />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          <Text className="text-4xl font-black text-gray-900 mb-3 tracking-tight uppercase">Velkommen</Text>
+          <Text className="text-gray-500 font-bold text-center leading-5 uppercase tracking-widest text-[10px]">
+            Logg inn for å planlegge dine måltider
+          </Text>
+        </View>
+
+        {/* Form Section */}
+        <View className="gap-y-6">
+          {error ? (
+            <View className="bg-red-500/10 p-5 rounded-2xl flex-row items-center justify-center border border-red-500/20">
+              <Text className="text-red-600 text-[10px] font-black uppercase tracking-widest">{error}</Text>
+            </View>
+          ) : null}
+
+          <GlassButton
+            title="Logg inn med Google"
+            variant="primary"
+            onPress={() => promptAsync()}
+            loading={loading || !request}
+            icon={<Chrome size={20} color="white" />}
+            fullWidth
+            className="mt-2 py-4"
+          />
+        </View>
+      </View>
+    </GlassScreen>
   );
 }
