@@ -61,7 +61,7 @@ export function IngredientRow({
                     <UnitSelect
                         value={ingredient.unit}
                         onChange={(val) => onChange(index, 'unit', val)}
-                        className="h-8 w-14 text-xs"
+                        className="h-8 w-16 text-xs min-h-0 rounded-[12px] px-2 py-1"
                     />
                 </div>
                 <button
@@ -85,7 +85,7 @@ export function IngredientRow({
             <Input
                 type="number"
                 placeholder="Ant."
-                className="w-20 text-center"
+                className="w-32 text-center"
                 value={ingredient.amount || ''}
                 onChange={(e) => onChange(index, 'amount', Number(e.target.value))}
             />
@@ -98,7 +98,7 @@ export function IngredientRow({
                 variant="ghost"
                 size="icon"
                 onClick={() => onRemove(index)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500"
+                className="text-gray-400 hover:text-red-500"
             >
                 <Trash className="w-4 h-4" />
             </Button>

@@ -55,7 +55,7 @@ export default function RecipesContent() {
             setLoading(false)
         })
         return () => unsubscribe()
-    }, [])
+    }, [householdId])
 
     useEffect(() => {
         if (!user || !householdId) return
@@ -71,7 +71,7 @@ export default function RecipesContent() {
             setCupboardItems(names)
         })
         return () => unsubscribe()
-    }, [user])
+    }, [user, householdId])
 
     const checkCanCook = (recipe: Meal): boolean => {
         if (!recipe.ingredients || recipe.ingredients.length === 0) return false

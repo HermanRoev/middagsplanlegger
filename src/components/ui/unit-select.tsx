@@ -17,7 +17,7 @@ export function UnitSelect({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className={cn(
-                "min-h-[56px] rounded-[24px] border border-white/50 bg-white/40 backdrop-blur-md px-3 text-sm font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-white/80 focus:border-white transition-all shadow-sm",
+                "min-h-[56px] rounded-[24px] border border-white/50 bg-white/40 backdrop-blur-md px-5 py-4 font-bold text-gray-900 shadow-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-white/80 focus:border-white",
                 className
             )}
         >

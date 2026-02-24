@@ -8,7 +8,7 @@ import { firestoreMealSchema, firestorePlannedMealSchema } from "@/lib/validatio
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, Plus, Utensils, Check, Minus, Smartphone, Star } from "lucide-react"
+import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, Plus, Utensils, Check, Minus, Smartphone, Star, ChefHat } from "lucide-react"
 import { PageContainer } from "@/components/layout/PageLayout"
 import { IngredientRow } from "@/components/ui/forms"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
@@ -29,6 +29,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { incrementUserStat } from "@/lib/stats"
+import { CookingMode } from "@/components/ui/cooking-mode"
 
 export default function RecipeDetailsPage() {
     const { id } = useParams()
@@ -56,6 +57,9 @@ export default function RecipeDetailsPage() {
     // Dialog States
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
     const [showRemovePlanDialog, setShowRemovePlanDialog] = useState(false)
+
+    // Cooking Mode
+    const [cookingMode, setCookingMode] = useState(false)
 
     useEffect(() => {
         if (!id || id === 'leftover-placeholder') return
@@ -371,6 +375,16 @@ export default function RecipeDetailsPage() {
 
     return (
         <PageContainer className="space-y-8 pb-10">
+        <AnimatePresence mode="wait">
+        {cookingMode ? (
+            <CookingMode
+                key="cooking"
+                recipe={recipe}
+                servings={currentServings}
+                scaledIngredients={displayedIngredients ?? []}
+                onClose={() => setCookingMode(false)}
+            />
+        ) : (<motion.div key="normal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
             {/* Header / Hero */}
             <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-xl group bg-gray-100">
                 {recipe.imageUrl && recipe.imageUrl.trim() !== "" ? (
@@ -454,7 +468,15 @@ export default function RecipeDetailsPage() {
 
             {/* Actions Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-white/60 backdrop-blur-md p-3 rounded-2xl shadow-sm border border-white/70">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                    <Button
+                        onClick={() => setCookingMode(true)}
+                        variant="premium"
+                        className="rounded-xl"
+                        iconLeft={<ChefHat className="w-4 h-4" />}
+                    >
+                        Start matlaging
+                    </Button>
                     {!isPlannedMode && (
                         <Link href={`/dashboard/recipes/${id}/edit`}>
                             <Button variant="glass" className="rounded-xl" iconLeft={<Edit className="w-4 h-4" />}>Rediger oppskrift</Button>
@@ -676,6 +698,9 @@ export default function RecipeDetailsPage() {
                     </Card>
                 </div>
             </div>
+        </motion.div>
+        )}
+        </AnimatePresence>
         </PageContainer>
     )
 }

@@ -16,6 +16,42 @@ interface AuthContextType {
   loading: boolean
   logout: () => Promise<void>
   refreshAppPhotoUrl: () => Promise<void>
+  refreshProfile: () => Promise<void>
+}
+
+const AUTH_CACHE_KEY = "auth_profile_cache"
+
+interface AuthCache {
+  userRole: "admin" | "user" | null
+  hasProfile: boolean
+  householdId: string | null
+  appPhotoUrl: string | null
+}
+
+function readCache(): AuthCache | null {
+  try {
+    const raw = sessionStorage.getItem(AUTH_CACHE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as AuthCache
+  } catch {
+    return null
+  }
+}
+
+function writeCache(data: AuthCache) {
+  try {
+    sessionStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(data))
+  } catch {
+    // sessionStorage unavailable (e.g. private browsing edge cases)
+  }
+}
+
+function clearCache() {
+  try {
+    sessionStorage.removeItem(AUTH_CACHE_KEY)
+  } catch {
+    // ignore
+  }
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,17 +63,21 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   logout: async () => { },
   refreshAppPhotoUrl: async () => { },
+  refreshProfile: async () => { },
 })
 
 export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const cached = typeof window !== "undefined" ? readCache() : null
+
   const [user, setUser] = useState<User | null>(null)
-  const [userRole, setUserRole] = useState<"admin" | "user" | null>(null)
-  const [hasProfile, setHasProfile] = useState(false)
-  const [householdId, setHouseholdId] = useState<string | null>(null)
-  const [appPhotoUrl, setAppPhotoUrl] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState<"admin" | "user" | null>(cached?.userRole ?? null)
+  const [hasProfile, setHasProfile] = useState(cached?.hasProfile ?? false)
+  const [householdId, setHouseholdId] = useState<string | null>(cached?.householdId ?? null)
+  const [appPhotoUrl, setAppPhotoUrl] = useState<string | null>(cached?.appPhotoUrl ?? null)
+  // If we have a cache, skip the loading spinner — Firestore validates in background
+  const [loading, setLoading] = useState(!cached)
   const router = useRouter()
   const pathname = usePathname()
   const currentUserRef = React.useRef<User | null>(null)
@@ -48,10 +88,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userDoc = await getDoc(doc(db, "users", u.uid))
       if (userDoc.exists()) {
-        setAppPhotoUrl(userDoc.data().photoUrl || null)
+        const newUrl = userDoc.data().photoUrl || null
+        setAppPhotoUrl(newUrl)
+        const prev = readCache()
+        if (prev) writeCache({ ...prev, appPhotoUrl: newUrl })
       }
     } catch (error) {
       console.error("Error refreshing appPhotoUrl:", error)
+    }
+  }
+
+  const refreshProfile = async () => {
+    const u = currentUserRef.current
+    if (!u) return
+    try {
+      const idTokenResult = await u.getIdTokenResult()
+      const isAdmin = !!idTokenResult.claims.admin
+      const userDoc = await getDoc(doc(db, "users", u.uid))
+      if (userDoc.exists()) {
+        const role: "admin" | "user" = isAdmin ? "admin" : "user"
+        const hid = userDoc.data().householdId || null
+        const photo = userDoc.data().photoUrl || null
+        setUserRole(role)
+        setHasProfile(true)
+        setHouseholdId(hid)
+        setAppPhotoUrl(photo)
+        writeCache({ userRole: role, hasProfile: true, householdId: hid, appPhotoUrl: photo })
+      } else {
+        setUserRole(null)
+        setHasProfile(false)
+        setHouseholdId(null)
+        setAppPhotoUrl(null)
+        clearCache()
+      }
+    } catch (error) {
+      console.error("Error refreshing profile:", error)
     }
   }
 
@@ -59,35 +130,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         currentUserRef.current = firebaseUser
-        // Fetch user document to check for profile and role
+
         try {
           const idTokenResult = await firebaseUser.getIdTokenResult()
           const isAdmin = !!idTokenResult.claims.admin
 
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
           if (userDoc.exists()) {
-            setUserRole(isAdmin ? "admin" : "user")
-            setHasProfile(true)
-            setHouseholdId(userDoc.data().householdId || null)
-            setAppPhotoUrl(userDoc.data().photoUrl || null)
+            const role: "admin" | "user" = isAdmin ? "admin" : "user"
+            const hid = userDoc.data().householdId || null
+            const photo = userDoc.data().photoUrl || null
 
-            // Backfill googlePhotoUrl for existing accounts that predate this field
+            // Backfill googlePhotoUrl for existing accounts
             if (!userDoc.data().googlePhotoUrl && firebaseUser.photoURL) {
               updateDoc(doc(db, "users", firebaseUser.uid), {
                 googlePhotoUrl: firebaseUser.photoURL,
               }).catch(() => {})
             }
-            // Also backfill displayName if missing
+            // Backfill displayName if missing
             if (!userDoc.data().displayName && firebaseUser.displayName) {
               updateDoc(doc(db, "users", firebaseUser.uid), {
                 displayName: firebaseUser.displayName,
               }).catch(() => {})
             }
+
+            // All state updates happen together before setLoading
+            setUserRole(role)
+            setHasProfile(true)
+            setHouseholdId(hid)
+            setAppPhotoUrl(photo)
+            setUser(firebaseUser)
+            writeCache({ userRole: role, hasProfile: true, householdId: hid, appPhotoUrl: photo })
           } else {
             setUserRole(null)
             setHasProfile(false)
             setHouseholdId(null)
             setAppPhotoUrl(null)
+            setUser(firebaseUser)
+            clearCache()
           }
         } catch (error) {
           console.error("Error fetching user profile:", error)
@@ -95,8 +175,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setHasProfile(false)
           setHouseholdId(null)
           setAppPhotoUrl(null)
+          setUser(firebaseUser)
+          clearCache()
         }
-        setUser(firebaseUser)
       } else {
         currentUserRef.current = null
         setUser(null)
@@ -104,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setHasProfile(false)
         setHouseholdId(null)
         setAppPhotoUrl(null)
+        clearCache()
       }
       setLoading(false)
     })
@@ -117,25 +199,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const isPublicPage = pathname === "/"
 
       if (!user && !isAuthPage && !isPublicPage) {
-        // Not logged in and not on a public/auth page
         router.push("/")
       } else if (user && !hasProfile && pathname !== "/register") {
-        // Logged in but no profile (needs invite code) -> force to gatekeeper
         router.push("/register")
       } else if (user && hasProfile && (isAuthPage || isPublicPage)) {
-        // Logged in and has profile -> redirect away from auth/public pages to dashboard
         router.push("/dashboard")
       }
     }
   }, [user, hasProfile, loading, pathname, router])
 
   const logout = async () => {
+    clearCache()
     await signOut(auth)
     router.push("/")
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   return (
-    <AuthContext.Provider value={{ user, userRole, hasProfile, householdId, appPhotoUrl, loading, logout, refreshAppPhotoUrl }}>
+    <AuthContext.Provider value={{ user, userRole, hasProfile, householdId, appPhotoUrl, loading, logout, refreshAppPhotoUrl, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

@@ -156,7 +156,7 @@ export default function EditRecipePage() {
         title="Rediger oppskrift"
         description={`Oppdater detaljer for "${name}"`}
       >
-        <Button variant="ghost" onClick={() => router.back()} className="rounded-[24px] px-6">
+        <Button variant="glass" onClick={() => router.back()} className="rounded-[24px] px-6">
           <ArrowLeft className="w-4 h-4 mr-2" /> Avbryt
         </Button>
         <Button onClick={handleSave} disabled={saving} variant="premium" className="rounded-[24px] px-8 shadow-lg shadow-indigo-100">
