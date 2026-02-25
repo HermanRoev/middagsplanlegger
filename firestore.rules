@@ -26,8 +26,10 @@ service cloud.firestore {
         (request.resource.data.role == 'user' || isAdmin());
         
       // Updating a profile: Only allow self OR admin (Admin can change roles, self cannot change own role unless they are already admin)
+      // Uses .get() with default to safely handle docs that may not have a role field yet
       allow update: if isAuthenticated() && (
-        (request.auth.uid == userId && request.resource.data.role == resource.data.role) || 
+        (request.auth.uid == userId &&
+         request.resource.data.get('role', null) == resource.data.get('role', null)) ||
         isAdmin()
       );
       
@@ -36,11 +38,13 @@ service cloud.firestore {
     
     match /invites/{inviteId} {
       allow read: if true; // Anyone needs to read invites to verify code during signup
-      
-      // Anyone can update an invite to mark it as used (used=true, usedBy=uid)
-      allow update: if request.resource.data.used == true && 
-                       request.resource.data.usedBy != null;
-      
+
+      // Authenticated users can mark an unused invite as used (linking it to themselves)
+      allow update: if isAuthenticated() &&
+                       resource.data.used == false &&
+                       request.resource.data.used == true &&
+                       request.resource.data.usedBy == request.auth.uid;
+
       // Only admins can create or delete invites
       allow create, delete: if isAdmin();
     }

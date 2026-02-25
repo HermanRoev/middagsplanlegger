@@ -146,13 +146,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!userDoc.data().googlePhotoUrl && firebaseUser.photoURL) {
               updateDoc(doc(db, "users", firebaseUser.uid), {
                 googlePhotoUrl: firebaseUser.photoURL,
-              }).catch(() => {})
+              }).catch(() => { })
             }
             // Backfill displayName if missing
             if (!userDoc.data().displayName && firebaseUser.displayName) {
               updateDoc(doc(db, "users", firebaseUser.uid), {
                 displayName: firebaseUser.displayName,
-              }).catch(() => {})
+              }).catch(() => { })
             }
 
             // All state updates happen together before setLoading

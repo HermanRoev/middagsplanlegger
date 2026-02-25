@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from "firebase/auth"
+import { useState } from "react"
+import { signInWithPopup, signInWithRedirect, GoogleAuthProvider } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -19,34 +19,21 @@ function isMobile(): boolean {
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
-  // Handle redirect result when returning from Google on mobile
-  useEffect(() => {
-    getRedirectResult(auth).catch(() => {
-      // Redirect result errors are non-critical — onAuthStateChanged handles the rest
-    })
-  }, [])
-
   const handleGoogleLogin = async () => {
     setLoading(true)
     try {
       const provider = new GoogleAuthProvider()
 
       if (isMobile()) {
-        // Mobile: use redirect to stay in the same tab
         await signInWithRedirect(auth, provider)
-        // Page navigates away — no code runs after this
       } else {
-        // Desktop: use popup for a smoother experience
         await signInWithPopup(auth, provider)
-        // AuthContext's onAuthStateChanged will detect the login, fetch the profile,
-        // and redirect to /dashboard (existing user) or /register (new user).
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Kunne ikke logge inn med Google"
       toast.error(message)
       setLoading(false)
     }
-    // Don't setLoading(false) on success — the redirect will unmount this page.
   }
 
   return (

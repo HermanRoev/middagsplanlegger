@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import { collection, query, where, getDocs, updateDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, runTransaction } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { useRouter } from 'expo-router';
 import { Ticket, ArrowRight, LogOut } from 'lucide-react-native';
@@ -46,20 +46,34 @@ export default function Register() {
         throw new Error('Ugyldig eller allerede brukt kode.');
       }
 
-      const inviteDoc = querySnapshot.docs[0];
       const user = auth.currentUser;
+      const inviteDocRef = doc(db, 'invites', querySnapshot.docs[0].id);
 
-      // Mark invite as used
-      await updateDoc(doc(db, 'invites', inviteDoc.id), {
-        used: true,
-        usedBy: user.uid,
-        usedAt: new Date().toISOString(),
-      });
+      // Use a transaction to atomically consume invite + create user
+      // If user creation fails, the invite is NOT consumed.
+      await runTransaction(db, async (transaction) => {
+        const inviteSnap = await transaction.get(inviteDocRef);
+        if (!inviteSnap.exists() || inviteSnap.data().used) {
+          throw new Error('Ugyldig eller allerede brukt kode.');
+        }
 
-      // Create user profile
-      await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
-        createdAt: new Date().toISOString()
+        // Create user profile
+        transaction.set(doc(db, 'users', user.uid), {
+          email: user.email,
+          displayName: user.displayName || '',
+          googlePhotoUrl: user.photoURL || null,
+          photoUrl: null,
+          role: 'user',
+          createdAt: new Date().toISOString(),
+          householdId: 'family-middagsplanlegger',
+        });
+
+        // Mark invite as used
+        transaction.update(inviteDocRef, {
+          used: true,
+          usedBy: user.uid,
+          usedAt: new Date().toISOString(),
+        });
       });
 
       router.replace('/(tabs)');

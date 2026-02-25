@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react"
 import { signInWithPopup, signInWithRedirect, GoogleAuthProvider } from "firebase/auth"
-import { collection, query, where, getDocs, doc, updateDoc, setDoc } from "firebase/firestore"
+import { collection, query, where, getDocs, doc, runTransaction } from "firebase/firestore"
 import { auth, db } from "@/lib/firebase"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
@@ -150,7 +150,7 @@ function RegisterForm() {
     setLoading(true)
 
     try {
-      // 1. Check Invite Code
+      // 1. Find the invite code
       const invitesRef = collection(db, "invites")
       const q = query(invitesRef, where("code", "==", inviteCode), where("used", "==", false))
       const querySnapshot = await getDocs(q)
@@ -159,28 +159,38 @@ function RegisterForm() {
         throw new Error("Ugyldig eller allerede brukt invitasjonskode.")
       }
 
-      const inviteDoc = querySnapshot.docs[0]
+      const inviteDocRef = doc(db, "invites", querySnapshot.docs[0].id)
 
-      // 2. Mark invite as used and link to user
-      await updateDoc(doc(db, "invites", inviteDoc.id), {
-        used: true,
-        usedBy: user.uid,
-        usedAt: new Date().toISOString(),
-      })
+      // 2. Use a transaction to atomically consume invite + create user
+      //    If user creation fails, the invite is NOT consumed.
+      await runTransaction(db, async (transaction) => {
+        const inviteSnap = await transaction.get(inviteDocRef)
+        if (!inviteSnap.exists() || inviteSnap.data().used) {
+          throw new Error("Ugyldig eller allerede brukt invitasjonskode.")
+        }
 
-      // 3. Create user profile
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        displayName: user.displayName || "",
-        googlePhotoUrl: user.photoURL || null,
-        photoUrl: null,
-        createdAt: new Date().toISOString(),
-        householdId: "family-middagsplanlegger",
+        // Create user profile
+        transaction.set(doc(db, "users", user.uid), {
+          email: user.email,
+          displayName: user.displayName || "",
+          googlePhotoUrl: user.photoURL || null,
+          photoUrl: null,
+          role: "user",
+          createdAt: new Date().toISOString(),
+          householdId: "family-middagsplanlegger",
+        })
+
+        // Mark invite as used
+        transaction.update(inviteDocRef, {
+          used: true,
+          usedBy: user.uid,
+          usedAt: new Date().toISOString(),
+        })
       })
 
       toast.success("Konto opprettet og knyttet til familien!")
 
-      // 4. Refresh profile in AuthContext — updates hasProfile to true,
+      // 3. Refresh profile in AuthContext — updates hasProfile to true,
       // which triggers the redirect effect to navigate to /dashboard.
       await refreshProfile()
     } catch (error: unknown) {
