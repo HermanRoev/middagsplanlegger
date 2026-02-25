@@ -8,21 +8,21 @@ export default function LandingPage() {
     <PageLayout variant="gradient" align="center">
       <PageContainer size="sm" className="space-y-8 text-center">
         <Heading level="h1">
-          Master Your <GradientText>Kitchen</GradientText>
+          Mestre Ditt <GradientText>Kjøkken</GradientText>
         </Heading>
         <Text size="xl" className="max-w-2xl mx-auto">
-          The premium meal planner for the modern family. Smart imports, beautiful organization, and effortless shopping.
+          Den ultimate måltidsplanleggeren for den moderne familien. Smart import, vakker organisering og uanstrengt handling.
         </Text>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
           <Link href="/login">
             <Button size="xl" variant="premium" shape="pill">
-              Sign In
+              Logg inn
             </Button>
           </Link>
           <Link href="/register">
             <Button size="xl" variant="outline" shape="pill">
-              Have an invite?
+              Har du en invitasjon?
             </Button>
           </Link>
         </div>

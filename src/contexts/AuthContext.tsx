@@ -76,8 +76,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hasProfile, setHasProfile] = useState(cached?.hasProfile ?? false)
   const [householdId, setHouseholdId] = useState<string | null>(cached?.householdId ?? null)
   const [appPhotoUrl, setAppPhotoUrl] = useState<string | null>(cached?.appPhotoUrl ?? null)
-  // If we have a cache, skip the loading spinner — Firestore validates in background
-  const [loading, setLoading] = useState(!cached)
+  // Always start loading until onAuthStateChanged fires at least once.
+  // The cache pre-populates profile data but does NOT skip the auth check.
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
   const currentUserRef = React.useRef<User | null>(null)
@@ -194,17 +195,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!loading) {
-      const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/register")
-      const isPublicPage = pathname === "/"
+    if (loading) return
 
-      if (!user && !isAuthPage && !isPublicPage) {
-        router.push("/")
-      } else if (user && !hasProfile && pathname !== "/register") {
-        router.push("/register")
-      } else if (user && hasProfile && (isAuthPage || isPublicPage)) {
-        router.push("/dashboard")
-      }
+    const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/register")
+    const isPublicPage = pathname === "/"
+
+    let target: string | null = null
+
+    if (!user && !isAuthPage && !isPublicPage) {
+      target = "/"
+    } else if (user && !hasProfile && pathname !== "/register") {
+      target = "/register"
+    } else if (user && hasProfile && (isAuthPage || isPublicPage)) {
+      target = "/dashboard"
+    }
+
+    // Only redirect if we're not already on the target path (prevents loops)
+    if (target && pathname !== target) {
+      router.replace(target)
     }
   }, [user, hasProfile, loading, pathname, router])
 
@@ -216,7 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-sky-100">
         <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )

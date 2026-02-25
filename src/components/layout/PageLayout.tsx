@@ -25,7 +25,7 @@ export interface PageLayoutProps extends HTMLAttributes<HTMLDivElement>, Variant
 export const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(({ className, variant, align, children, ...props }, ref) => {
     return (
         <div ref={ref} className={cn(pageLayoutVariants({ variant, align, className }), "relative overflow-hidden")} {...props}>
-                <div className="relative z-10 flex-1 w-full flex flex-col">
+                <div className={cn("relative z-10 flex-1 w-full flex flex-col", align === "center" && "items-center justify-center")}>
                 {children}
             </div>
         </div>
@@ -33,7 +33,7 @@ export const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(({ classNa
 })
 PageLayout.displayName = "PageLayout"
 
-const pageContainerVariants = cva("w-full mx-auto p-6", {
+const pageContainerVariants = cva("w-full mx-auto px-4 py-5 sm:p-6", {
     variants: {
         size: {
             default: "max-w-7xl",

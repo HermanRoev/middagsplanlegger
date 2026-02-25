@@ -16,7 +16,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
-import { ThumbsUp, Check, X, MessageSquarePlus, Plus, Trash, Calendar, Utensils } from "lucide-react"
+import { DayPicker } from "@/components/ui/day-picker"
+import { ThumbsUp, Check, X, MessageSquarePlus, Plus, Trash, Calendar as CalendarIcon, Utensils } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import toast from "react-hot-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -172,146 +173,134 @@ export default function InboxPage() {
             />
 
             <div className="max-w-3xl mx-auto w-full space-y-10">
-            <Card className="shadow-lg border-white/50">
-                <CardContent className="p-6">
-                    <form onSubmit={handleAddSuggestion} className="space-y-4">
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <div className="flex-1 w-full space-y-3">
-                                <div className="relative group">
-                                    <Utensils className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 group-focus-within:text-indigo-500 transition-colors z-10 pointer-events-none" />
-                                    <Input
-                                        placeholder="Hva har du lyst på? (f.eks. Taco)"
-                                        value={newSuggestion}
-                                        onChange={(e) => setNewSuggestion(e.target.value)}
-                                        className="pl-12 text-base"
+                <Card className="shadow-lg border-white/50">
+                    <CardContent className="p-6">
+                        <form onSubmit={handleAddSuggestion} className="space-y-4">
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="flex-1 w-full space-y-3">
+                                    <div className="relative group">
+                                        <Utensils className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 group-focus-within:text-indigo-500 transition-colors z-10 pointer-events-none" />
+                                        <Input
+                                            placeholder="Hva har du lyst på? (f.eks. Taco)"
+                                            value={newSuggestion}
+                                            onChange={(e) => setNewSuggestion(e.target.value)}
+                                            className="pl-12 text-base"
+                                        />
+                                    </div>
+
+                                    <DayPicker
+                                        value={selectedDate}
+                                        onChange={setSelectedDate}
+                                        maxDays={10}
                                     />
                                 </div>
-
-                                <div className="flex items-center gap-3 bg-gray-50/30 p-2 rounded-xl border border-gray-100 w-fit">
-                                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest ml-2">Dag?</span>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            type="date"
-                                            value={selectedDate}
-                                            onChange={(e) => setSelectedDate(e.target.value)}
-                                            className="w-auto h-8 px-3 font-semibold text-gray-700 text-xs"
-                                            min={new Date().toISOString().split('T')[0]}
-                                        />
-                                        {selectedDate && (
-                                            <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDate("")} className="h-8 w-8 p-0 text-red-400 hover:bg-red-50 rounded-lg">
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
+                                <Button type="submit" variant="premium" size="xl" className="px-8 font-bold shadow-sm w-full sm:w-auto sm:self-start">
+                                    <Plus className="w-4 h-4 mr-2" /> Foreslå
+                                </Button>
                             </div>
-                            <Button type="submit" variant="premium" size="xl" className="px-8 font-bold shadow-sm w-full sm:w-auto sm:self-start">
-                                <Plus className="w-4 h-4 mr-2" /> Foreslå
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                        </form>
+                    </CardContent>
+                </Card>
 
-            <div className="space-y-6">
-                <AnimatePresence mode="popLayout">
-                    {sortedSuggestions.map((item, index) => {
-                        const prevItem = index > 0 ? sortedSuggestions[index - 1] : null
-                        const showGeneralHeader = index === 0 && !item.forDate
-                        const showDateHeader = item.forDate && (!prevItem || prevItem.forDate !== item.forDate)
+                <div className="space-y-6">
+                    <AnimatePresence mode="popLayout">
+                        {sortedSuggestions.map((item, index) => {
+                            const prevItem = index > 0 ? sortedSuggestions[index - 1] : null
+                            const showGeneralHeader = index === 0 && !item.forDate
+                            const showDateHeader = item.forDate && (!prevItem || prevItem.forDate !== item.forDate)
 
-                        let headerText = ''
-                        if (showGeneralHeader) headerText = 'Generelle ønsker'
-                        if (showDateHeader) {
-                            const d = parseISO(item.forDate!)
-                            if (isSameDay(d, new Date())) headerText = 'I dag'
-                            else if (isSameDay(d, addDays(new Date(), 1))) headerText = 'I morgen'
-                            else headerText = format(d, 'EEEE d. MMM', { locale: nb })
-                        }
+                            let headerText = ''
+                            if (showGeneralHeader) headerText = 'Generelle ønsker'
+                            if (showDateHeader) {
+                                const d = parseISO(item.forDate!)
+                                if (isSameDay(d, new Date())) headerText = 'I dag'
+                                else if (isSameDay(d, addDays(new Date(), 1))) headerText = 'I morgen'
+                                else headerText = format(d, 'EEEE d. MMM', { locale: nb })
+                            }
 
-                        return (
-                            <div key={item.id} className="space-y-3">
-                                {(showGeneralHeader || showDateHeader) && (
-                                    <div className="flex items-center gap-4 mt-8 mb-4">
-                                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] ml-1">
-                                            {headerText}
-                                        </h3>
-                                        <div className="h-px flex-1 bg-gray-100" />
-                                    </div>
-                                )}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                >
-                                    <Card className={`shadow-lg border-white/50 overflow-hidden transition-all hover:shadow-xl ${item.status === 'approved' ? 'bg-emerald-50/20' : ''}`}>
-                                        <CardContent className="p-5 flex items-center justify-between">
-                                            <div className="flex items-center gap-5">
-                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${item.status === 'approved' ? 'bg-emerald-100' : 'bg-indigo-50'}`}>
-                                                    <Utensils className={`w-6 h-6 ${item.status === 'approved' ? 'text-emerald-600' : 'text-indigo-600'}`} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-black text-xl text-gray-900 leading-tight">{item.text}</h3>
-                                                    <div className="flex items-center gap-3 mt-1">
-                                                        <span className="text-xs font-bold text-gray-400">Foreslått av {item.suggestedBy?.name}</span>
-                                                        {item.forDate && (
-                                                            <span className="bg-white/80 px-2 py-0.5 rounded-lg border border-gray-100 text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1">
-                                                                <Calendar className="w-3 h-3" />
-                                                                {format(parseISO(item.forDate), 'd. MMM')}
-                                                            </span>
-                                                        )}
+                            return (
+                                <div key={item.id} className="space-y-3">
+                                    {(showGeneralHeader || showDateHeader) && (
+                                        <div className="flex items-center gap-4 mt-8 mb-4">
+                                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] ml-1">
+                                                {headerText}
+                                            </h3>
+                                            <div className="h-px flex-1 bg-gray-100" />
+                                        </div>
+                                    )}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                    >
+                                        <Card className={`shadow-lg border-white/50 overflow-hidden transition-all hover:shadow-xl ${item.status === 'approved' ? 'bg-emerald-50/20' : ''}`}>
+                                            <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+                                                <div className="flex items-center gap-5">
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${item.status === 'approved' ? 'bg-emerald-100' : 'bg-indigo-50'}`}>
+                                                        <Utensils className={`w-6 h-6 ${item.status === 'approved' ? 'text-emerald-600' : 'text-indigo-600'}`} />
                                                     </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {item.status === 'pending' && (
-                                                    <div className="flex items-center bg-gray-50 rounded-2xl p-1 gap-1 border border-gray-100">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className={`rounded-xl px-4 font-black ${item.votedBy?.includes(user?.uid || '') ? 'text-indigo-600 bg-white shadow-sm' : 'text-gray-400 hover:text-indigo-600'}`}
-                                                            onClick={() => handleVote(item)}
-                                                        >
-                                                            <ThumbsUp className="w-4 h-4 mr-2" /> {item.votes || 0}
-                                                        </Button>
-                                                        <div className="w-px h-6 bg-gray-200 mx-1" />
-                                                        <Button size="icon" variant="ghost" className="text-emerald-600 hover:bg-emerald-100 rounded-xl" onClick={() => handleApprove(item)} title="Godkjenn & Planlegg">
-                                                            <Check className="w-5 h-5" />
-                                                        </Button>
-                                                        <Button size="icon" variant="ghost" className="text-red-400 hover:bg-red-50 rounded-xl" onClick={() => setRejectTarget(item.id)} title="Avvis">
-                                                            <X className="w-5 h-5" />
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                                {item.status === 'approved' && (
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-100">
-                                                            <Check className="w-4 h-4" /> Godkjent
+                                                    <div>
+                                                        <h3 className="font-black text-xl text-gray-900 leading-tight">{item.text}</h3>
+                                                        <div className="flex items-center gap-3 mt-1">
+                                                            <span className="text-xs font-bold text-gray-400">Foreslått av {item.suggestedBy?.name}</span>
+                                                            {item.forDate && (
+                                                                <span className="bg-white/80 px-2 py-0.5 rounded-lg border border-gray-100 text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1">
+                                                                    <CalendarIcon className="w-3 h-3" />
+                                                                    {format(parseISO(item.forDate), 'd. MMM')}
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        <Button size="icon" variant="ghost" className="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => setRejectTarget(item.id)} title="Fjern">
-                                                            <Trash className="w-5 h-5" />
-                                                        </Button>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {item.status === 'pending' && (
+                                                        <div className="flex items-center bg-gray-50 rounded-2xl p-1 gap-1 border border-gray-100">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className={`rounded-xl px-4 font-black ${item.votedBy?.includes(user?.uid || '') ? 'text-indigo-600 bg-white shadow-sm' : 'text-gray-400 hover:text-indigo-600'}`}
+                                                                onClick={() => handleVote(item)}
+                                                            >
+                                                                <ThumbsUp className="w-4 h-4 mr-2" /> {item.votes || 0}
+                                                            </Button>
+                                                            <div className="w-px h-6 bg-gray-200 mx-1" />
+                                                            <Button size="icon" variant="ghost" className="text-emerald-600 hover:bg-emerald-100 rounded-xl" onClick={() => handleApprove(item)} title="Godkjenn & Planlegg">
+                                                                <Check className="w-5 h-5" />
+                                                            </Button>
+                                                            <Button size="icon" variant="ghost" className="text-red-400 hover:bg-red-50 rounded-xl" onClick={() => setRejectTarget(item.id)} title="Avvis">
+                                                                <X className="w-5 h-5" />
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                    {item.status === 'approved' && (
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-100">
+                                                                <Check className="w-4 h-4" /> Godkjent
+                                                            </div>
+                                                            <Button size="icon" variant="ghost" className="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => setRejectTarget(item.id)} title="Fjern">
+                                                                <Trash className="w-5 h-5" />
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                </div>
+                            )
+                        })}
+                        {suggestions.length === 0 && (
+                            <div className="col-span-full">
+                                <EmptyStateBlock
+                                    icon={MessageSquarePlus}
+                                    title="Ingen forslag ennå"
+                                    description="Vær den første til å foreslå noe godt!"
+                                    className="rounded-[40px]"
+                                />
                             </div>
-                        )
-                    })}
-                    {suggestions.length === 0 && (
-                        <div className="col-span-full">
-                            <EmptyStateBlock
-                                icon={MessageSquarePlus}
-                                title="Ingen forslag ennå"
-                                description="Vær den første til å foreslå noe godt!"
-                                className="rounded-[40px]"
-                            />
-                        </div>
-                    )}
-                </AnimatePresence>
-            </div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
             <Dialog open={!!approveTarget} onOpenChange={(open) => !open && setApproveTarget(null)}>

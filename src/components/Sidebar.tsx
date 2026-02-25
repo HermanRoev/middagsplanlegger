@@ -2,11 +2,10 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Calendar, ChefHat, ShoppingCart, LogOut, User, PlusCircle, Package, Inbox, Users, Shield } from "lucide-react"
+import { Home, Calendar, ChefHat, ShoppingCart, LogOut, User, PlusCircle, Package, Inbox, Users, Shield, MoreHorizontal, Library } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-// import { motion } from "framer-motion"
 
 const defaultNavItems = [
   { href: "/dashboard", icon: Home, label: "Hjem" },
@@ -17,7 +16,16 @@ const defaultNavItems = [
   { href: "/dashboard/inbox", icon: Inbox, label: "Innboks" },
   { href: "/dashboard/cupboard", icon: Package, label: "Skap" },
   { href: "/dashboard/family", icon: Users, label: "Familie" },
+  { href: "/dashboard/manage", icon: Library, label: "Bibliotek" },
   { href: "/dashboard/profile", icon: User, label: "Profil" },
+]
+
+const mobileNavItems = [
+  { href: "/dashboard", icon: Home, label: "Hjem" },
+  { href: "/dashboard/planner", icon: Calendar, label: "Planlegg" },
+  { href: "/dashboard/shop", icon: ShoppingCart, label: "Handlekurv" },
+  { href: "/dashboard/recipes", icon: ChefHat, label: "Oppskrifter" },
+  { href: "/dashboard/more", icon: MoreHorizontal, label: "Mer" },
 ]
 
 export function Sidebar() {
@@ -66,19 +74,26 @@ export function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="flex justify-around items-center p-2">
-          {navItems.filter(item => !["/dashboard/recipes/new", "/dashboard/cupboard", "/dashboard/inbox", "/dashboard/admin"].includes(item.href)).map((item) => {
-            const isActive = pathname === item.href
+      {/* Mobile Navigation — 5 tabs matching mobile app pattern */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div className="flex justify-around items-center px-1 pt-1.5 pb-0.5">
+          {mobileNavItems.map((item) => {
+            const isActive = item.href === "/dashboard/more"
+              ? pathname.startsWith("/dashboard/more") || pathname === "/dashboard/cupboard" || pathname === "/dashboard/inbox" || pathname === "/dashboard/family" || pathname === "/dashboard/profile" || pathname === "/dashboard/admin"
+              : pathname === item.href
             return (
-              <Link key={item.href} href={item.href} className="p-2">
+              <Link key={item.href} href={item.href} className="min-w-[48px] min-h-[48px] flex items-center justify-center active:scale-90 transition-transform duration-100">
                 <div className={cn(
-                  "flex flex-col items-center gap-1 p-2 rounded-lg transition-all",
+                  "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200",
                   isActive ? "text-indigo-600" : "text-gray-400"
                 )}>
-                  <item.icon className={cn("w-6 h-6", isActive && "fill-current/20")} />
-                  <span className="text-[10px] font-medium">{item.label}</span>
+                  <div className={cn(
+                    "p-1 rounded-full transition-colors duration-200",
+                    isActive && "bg-indigo-100/80"
+                  )}>
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-semibold">{item.label}</span>
                 </div>
               </Link>
             )

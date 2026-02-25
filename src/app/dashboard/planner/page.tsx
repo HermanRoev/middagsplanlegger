@@ -17,7 +17,6 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import { incrementUserStat } from "@/lib/stats"
 import { ChevronLeft, ChevronRight, Plus, CalendarIcon, RefreshCw, Sparkles, Loader2 } from "lucide-react"
-import { Calendar } from "@/components/ui/calendar"
 import { PageContainer } from "@/components/layout/PageLayout"
 import { PageHeader, EmptyStateBlock } from "@/components/ui/action-blocks"
 import { PlannerMealCard } from "@/components/ui/cards"
@@ -48,16 +47,16 @@ export default function PlannerPage() {
   const [isAutofilling, setIsAutofilling] = useState(false)
 
   const startDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday start
+  const startDateKey = format(startDate, 'yyyy-MM-dd')
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i))
 
   useEffect(() => {
     if (!user || !householdId) return
-    const startStr = format(startDate, 'yyyy-MM-dd')
-    const endStr = format(addDays(startDate, 6), 'yyyy-MM-dd')
+    const endStr = format(addDays(new Date(startDateKey + 'T00:00:00'), 6), 'yyyy-MM-dd')
 
     const q = query(
       collection(db, "plannedMeals"),
-      where("date", ">=", startStr),
+      where("date", ">=", startDateKey),
       where("date", "<=", endStr),
       where("householdId", "==", householdId)
     )
@@ -82,7 +81,7 @@ export default function PlannerPage() {
       unsubMeals()
       unsubCupboard()
     }
-  }, [startDate, user, householdId])
+  }, [startDateKey, user, householdId])
 
   const handleMealClick = (meal: PlannedMeal) => {
     router.push(`/dashboard/recipes/${meal.mealId}?plannedId=${meal.id}`)
@@ -201,14 +200,14 @@ export default function PlannerPage() {
 
       if (savedCount > 0 && user) {
         await incrementUserStat(user.uid, 'mealsPlanned', savedCount)
-        toast.success(`Planla ${savedCount} smarte måltider!`, { id: toastId })
+        toast.success(`Planla ${savedCount} smarte måltider!`, { id: toastId, duration: 3000 })
       } else {
-        toast.error("Ingen måltider ble planlagt.", { id: toastId })
+        toast.error("Ingen måltider ble planlagt.", { id: toastId, duration: 4000 })
       }
 
     } catch (error) {
       console.error(error)
-      toast.error("Kunne ikke generere forslag.", { id: toastId })
+      toast.error("Kunne ikke generere forslag.", { id: toastId, duration: 4000 })
     } finally {
       setIsAutofilling(false)
     }
@@ -221,52 +220,42 @@ export default function PlannerPage() {
         description="Organiser måltidene for uken som kommer."
         className="print:hidden"
       >
-        <div className="flex items-center bg-white p-1 rounded-full border shadow-sm gap-2">
+        <div className="flex flex-col sm:flex-row items-center bg-white/60 backdrop-blur-xl p-1 rounded-2xl sm:rounded-full border border-white/50 shadow-lg gap-2 w-full sm:w-auto">
           <div className="flex items-center">
-            <Button variant="ghost" size="icon" shape="pill" className="hover:bg-gray-100" onClick={() => setCurrentDate(addDays(currentDate, -7))}>
+            <Button variant="glass" size="icon" shape="pill" onClick={() => setCurrentDate(addDays(currentDate, -7))}>
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </Button>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <div className="flex items-center gap-2 px-4 cursor-pointer hover:bg-gray-50 rounded-md transition-colors h-9">
-                  <CalendarIcon className="w-4 h-4 text-indigo-600" />
-                  <span className="font-semibold text-gray-900 min-w-[140px] text-center select-none text-sm">
-                    {format(startDate, "MMM d")} - {format(addDays(startDate, 6), "MMM d")}
-                  </span>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={currentDate}
-                  onSelect={handleDateSelect}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="flex items-center gap-2 px-4 h-9">
+              <CalendarIcon className="w-4 h-4 text-indigo-600" />
+              <span className="font-semibold text-gray-900 min-w-[140px] text-center select-none text-sm">
+                {format(startDate, "MMM d", { locale: nb })} – {format(addDays(startDate, 6), "MMM d", { locale: nb })}
+              </span>
+            </div>
 
-            <Button variant="ghost" size="icon" shape="pill" className="hover:bg-gray-100" onClick={() => setCurrentDate(addDays(currentDate, 7))}>
+            <Button variant="glass" size="icon" shape="pill" onClick={() => setCurrentDate(addDays(currentDate, 7))}>
               <ChevronRight className="w-5 h-5 text-gray-600" />
             </Button>
           </div>
 
-          <div className="w-px h-6 bg-gray-200 mx-1" />
+          <div className="hidden sm:block w-px h-6 bg-gray-200 mx-1" />
 
-          <Button variant="ghost" size="sm" shape="pill" onClick={() => setCurrentDate(new Date())}>
-            I dag
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="glass" size="sm" shape="pill" onClick={() => setCurrentDate(new Date())}>
+              I dag
+            </Button>
 
-          <Button
-            variant="premium"
-            size="sm"
-            onClick={handleAutofillWeek}
-            disabled={isAutofilling}
-            className="ml-2 rounded-full shadow-lg"
-          >
-            {isAutofilling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            Autofyll Uken
-          </Button>
+            <Button
+              variant="premium"
+              size="sm"
+              onClick={handleAutofillWeek}
+              disabled={isAutofilling}
+              className="rounded-full shadow-lg"
+            >
+              {isAutofilling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+              Autofyll Uken
+            </Button>
+          </div>
         </div>
       </PageHeader>
 
@@ -318,7 +307,7 @@ export default function PlannerPage() {
                   </div>
                 </div>
 
-                <CardContent className="p-4 flex-1 flex flex-col min-h-[220px] print:min-h-0 print:p-2">
+                <CardContent className="p-4 flex-1 flex flex-col min-h-[180px] md:min-h-[220px] print:min-h-0 print:p-2">
                   {meal ? (
                     <PlannerMealCard
                       meal={{

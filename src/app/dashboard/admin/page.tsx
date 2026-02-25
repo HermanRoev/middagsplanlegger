@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { collection, query, where, addDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { Copy, Plus, Ticket, Trash2 } from "lucide-react"
+import { Copy, Link, Plus, Ticket, Trash2 } from "lucide-react"
 import toast from "react-hot-toast"
 
 interface Invite {
@@ -86,9 +86,15 @@ export default function AdminPage() {
         }
     }
 
-    const copyToClipboard = (code: string) => {
+    const copyCode = (code: string) => {
         navigator.clipboard.writeText(code)
-        toast.success("Copied to clipboard!")
+        toast.success("Kode kopiert!")
+    }
+
+    const copyInviteLink = (code: string) => {
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
+        navigator.clipboard.writeText(`${baseUrl}/register?code=${code}`)
+        toast.success("Invitasjonslenke kopiert!")
     }
 
     if (loading || userRole !== "admin") {
@@ -107,7 +113,7 @@ export default function AdminPage() {
             />
             <div className="space-y-6">
                 <Card className="shadow-lg border-white/50">
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
                         <div>
                             <CardTitle className="text-xl flex items-center gap-2">
                                 <Ticket className="w-5 h-5 text-indigo-600" />
@@ -121,7 +127,7 @@ export default function AdminPage() {
                             onClick={generateInviteCode}
                             disabled={generating}
                             variant="premium"
-                            className="gap-2"
+                            className="gap-2 w-full sm:w-auto"
                         >
                             <Plus className="w-4 h-4" />
                             Generer kode
@@ -147,22 +153,34 @@ export default function AdminPage() {
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => deleteInviteCode(invite.id)}
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 h-8 w-8"
+                                                    className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 h-8 w-8"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
-                                            <div className="flex items-center justify-between bg-indigo-50 px-4 py-3 rounded-xl border border-indigo-100">
+                                            <div className="bg-indigo-50 px-4 py-3 rounded-xl border border-indigo-100 text-center">
                                                 <span className="font-mono text-xl font-black text-indigo-700 tracking-[0.2em]">
                                                     {invite.code}
                                                 </span>
+                                            </div>
+                                            <div className="flex gap-2">
                                                 <Button
                                                     variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => copyToClipboard(invite.code)}
-                                                    className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 h-8 w-8"
+                                                    size="sm"
+                                                    onClick={() => copyCode(invite.code)}
+                                                    className="flex-1 text-xs font-bold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 gap-1.5"
                                                 >
-                                                    <Copy className="w-4 h-4" />
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                    Kopier kode
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => copyInviteLink(invite.code)}
+                                                    className="flex-1 text-xs font-bold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 gap-1.5"
+                                                >
+                                                    <Link className="w-3.5 h-3.5" />
+                                                    Kopier lenke
                                                 </Button>
                                             </div>
                                         </CardContent>

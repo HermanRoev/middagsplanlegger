@@ -86,9 +86,24 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
+/* PWA standalone safe area */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Bottom nav needs to account for home indicator */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
@@ -96,7 +111,38 @@
   .glass {
     @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl;
   }
+
   .glass-dark {
     @apply bg-black/70 backdrop-blur-lg border border-white/10 shadow-xl;
   }
+
+  /* Active press feedback for native feel */
+  .press-scale {
+    @apply transition-transform duration-100 active:scale-[0.97];
+  }
+}
+
+/* Keyboard avoidance — scroll focused inputs into view */
+@media (max-width: 768px) {
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    scroll-margin-bottom: 120px;
+  }
+}
+
+/* Smooth momentum scrolling for iOS */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar but keep scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

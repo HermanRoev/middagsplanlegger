@@ -7,6 +7,8 @@ import { PlannedMeal } from "@/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { AutocompleteInput } from "@/components/ui/autocomplete-input"
+import { getAllIngredients } from "@/lib/ingredients"
 import { PageHeader, EmptyStateBlock, QuickAddBar } from "@/components/ui/action-blocks"
 import { Check, Plus, ShoppingCart, Trash2, Copy } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -34,6 +36,12 @@ export default function ShopPage() {
   const [items, setItems] = useState<ShopItem[]>([])
   const [newItem, setNewItem] = useState("")
   const [plannedCheckedState, setPlannedCheckedState] = useState<Record<string, boolean>>({})
+  const [ingredientSuggestions, setIngredientSuggestions] = useState<string[]>([])
+
+  // Fetch master ingredients for autocomplete
+  useEffect(() => {
+    getAllIngredients().then(list => setIngredientSuggestions(list.map(i => i.displayName)))
+  }, [])
 
   // 1. Fetch manually added items
   useEffect(() => {
@@ -266,10 +274,10 @@ export default function ShopPage() {
       await Promise.all([...manualPromises, ...checkedPromises])
 
       const itemCount = checkedItemsToMove.length;
-      toast.success(itemCount > 0 ? `Flyttet ${itemCount} varer til Matboden` : "Fjernet ferdige varer", { id: toastId })
+      toast.success(itemCount > 0 ? `Flyttet ${itemCount} varer til Matboden` : "Fjernet ferdige varer", { id: toastId, duration: 3000 })
     } catch (e) {
       console.error(e)
-      toast.error("Kunne ikke tømme listen", { id: toastId })
+      toast.error("Kunne ikke tømme listen", { id: toastId, duration: 4000 })
     }
   }
 
@@ -302,80 +310,88 @@ export default function ShopPage() {
       </PageHeader>
 
       <div className="max-w-3xl mx-auto w-full space-y-10">
-      <Card className="shadow-lg border-white/50">
-        <CardContent className="p-8">
-          <form onSubmit={handleFormSubmit} className="flex items-center gap-3 mb-8">
-            <Input
-              placeholder="Hva trenger du? (f.eks. Melk, Brød)"
-              value={newItem}
-              onChange={(e) => setNewItem(e.target.value)}
-              className="text-base font-medium shadow-inner"
-            />
-            <Button type="submit" variant="premium" size="xl" className="shrink-0 px-8 font-black shadow-lg shadow-indigo-100">
-              <Plus className="w-5 h-5 mr-2" /> Legg til
-            </Button>
-          </form>
-
-          {/* Staples Quick Add */}
-          <QuickAddBar
-            items={STAPLES}
-            onAdd={addItem}
-            className="pb-6 border-b border-gray-50 mb-6"
-          />
-
-          <div className="space-y-3">
-            {items.length === 0 && (
-              <EmptyStateBlock
-                icon={ShoppingCart}
-                title="Listen er tom"
-                description="Legg til varer manuelt eller planlegg måltider."
+        <Card className="shadow-lg border-white/50">
+          <CardContent className="p-5 sm:p-8">
+            <form onSubmit={handleFormSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8">
+              <AutocompleteInput
+                placeholder="Hva trenger du? (f.eks. Melk, Brød)"
+                value={newItem}
+                onChange={setNewItem}
+                suggestions={ingredientSuggestions}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleFormSubmit(e)
+                  }
+                }}
+                className="flex-1"
+                inputClassName="text-base font-medium shadow-inner"
               />
-            )}
-            <AnimatePresence mode="popLayout">
-              {sortedItems.map((item) => (
-                <motion.div
-                  key={item.id}
-                  layout
-                  transition={{
-                    layout: { type: "spring", stiffness: 300, damping: 30 }
-                  }}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${item.checked ? 'bg-gray-50/50 border-transparent opacity-60' : 'bg-white border-gray-100 shadow-sm hover:shadow-md'}`}
-                >
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <button
-                      onClick={() => toggleItem(item.id, !item.checked, item.source)}
-                      className={`w-8 h-8 shrink-0 rounded-xl border-2 flex items-center justify-center transition-all ${item.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 bg-gray-50/50 hover:border-indigo-500'}`}
-                    >
-                      {item.checked && <Check className="w-5 h-5 stroke-[3px]" />}
-                    </button>
-                    <div className="flex items-center gap-3 flex-wrap min-w-0">
-                      <span className={`text-lg font-black tracking-tight transition-all duration-300 ${item.checked ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-                        {item.name}
-                      </span>
-                      {item.source === 'planned' && (
-                        <div className="flex items-center gap-2 opacity-80">
-                          <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-md">
-                            {formatUnit(item.amount, item.unit as Unit)}
-                          </span>
-                          <span className="text-[10px] font-bold text-gray-400 uppercase">Planlagt</span>
-                        </div>
-                      )}
+              <Button type="submit" variant="premium" size="xl" className="shrink-0 px-8 font-black shadow-lg shadow-indigo-100 w-full sm:w-auto">
+                <Plus className="w-5 h-5 mr-2" /> Legg til
+              </Button>
+            </form>
+
+            {/* Staples Quick Add */}
+            <QuickAddBar
+              items={STAPLES}
+              onAdd={addItem}
+              className="pb-6 border-b border-gray-50 mb-6"
+            />
+
+            <div className="space-y-3">
+              {items.length === 0 && (
+                <EmptyStateBlock
+                  icon={ShoppingCart}
+                  title="Listen er tom"
+                  description="Legg til varer manuelt eller planlegg måltider."
+                />
+              )}
+              <AnimatePresence mode="popLayout">
+                {sortedItems.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    transition={{
+                      layout: { type: "spring", stiffness: 300, damping: 30 }
+                    }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${item.checked ? 'bg-gray-50/50 border-transparent opacity-60' : 'bg-white border-gray-100 shadow-sm hover:shadow-md'}`}
+                  >
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <button
+                        onClick={() => toggleItem(item.id, !item.checked, item.source)}
+                        className={`w-8 h-8 shrink-0 rounded-xl border-2 flex items-center justify-center transition-all ${item.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 bg-gray-50/50 hover:border-indigo-500'}`}
+                      >
+                        {item.checked && <Check className="w-5 h-5 stroke-[3px]" />}
+                      </button>
+                      <div className="flex items-center gap-3 flex-wrap min-w-0">
+                        <span className={`text-lg font-black tracking-tight transition-all duration-300 ${item.checked ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                          {item.name}
+                        </span>
+                        {item.source === 'planned' && (
+                          <div className="flex items-center gap-2 opacity-80">
+                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-md">
+                              {formatUnit(item.amount, item.unit as Unit)}
+                            </span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Planlagt</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  {item.source === 'manual' && (
-                    <Button variant="ghost" size="icon" onClick={() => deleteManualItem(item.id)} className="h-10 w-10 shrink-0 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl">
-                      <Trash2 className="w-5 h-5" />
-                    </Button>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </CardContent>
-      </Card>
+                    {item.source === 'manual' && (
+                      <Button variant="ghost" size="icon" onClick={() => deleteManualItem(item.id)} className="h-10 w-10 shrink-0 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl">
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </PageContainer>
   )

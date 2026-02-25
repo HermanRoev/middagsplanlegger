@@ -1,6 +1,8 @@
 import { getAI, getGenerativeModel, GoogleAIBackend, getImagenModel } from 'firebase/ai'
 import { app } from './firebase'
 import { getAllIngredients } from './ingredients'
+import { getAllTags } from './tags'
+import { getCupboardItems } from './cupboard'
 
 const ai = getAI(app, { backend: new GoogleAIBackend() });
 
@@ -22,8 +24,14 @@ function parseJsonResponse<T>(text: string): T {
 }
 
 async function getPromptInstructions(): Promise<string> {
-    const ingredients = await getAllIngredients();
-    const ingredientNames = ingredients.map(i => i.id).join(', ');
+    const [ingredients, tags, cupboardItems] = await Promise.all([
+        getAllIngredients(),
+        getAllTags(),
+        getCupboardItems().catch(() => []),
+    ]);
+    const ingredientNames = ingredients.map(i => i.displayName).join(', ');
+    const tagNames = tags.map(t => t.id).join(', ');
+    const cupboardNames = cupboardItems.map(c => c.ingredientName).join(', ');
 
     return `
     ROLE AND CONTEXT:
@@ -58,6 +66,17 @@ async function getPromptInstructions(): Promise<string> {
 
        If an extracted ingredient closely matches one in this list (case-insensitive, singular/plural), use the EXACT name from the list.
        Existing Ingredients List: [${ingredientNames}]
+
+    CUPBOARD CONTEXT:
+       The user currently has these items in their pantry/cupboard: [${cupboardNames}].
+       When generating or suggesting recipes, PRIORITIZE using ingredients they already have on hand.
+       This doesn't mean you should only use cupboard items — just prefer them when it makes sense.
+
+    TAG RULES:
+       - Return tags as a JSON array of strings.
+       - PREFER reusing tags from this existing list when applicable: [${tagNames}]
+       - You may create new tags if none in the list are a good fit, but keep them short (1-2 words), in Norwegian.
+       - Aim for 2-5 tags per recipe.
     `;
 }
 
@@ -376,21 +395,16 @@ export async function generateRecipeImage(dishName: string, description: string)
             } as any
         });
 
-        const basePrompt = `A professional, high-quality, photorealistic food photography shot of ${dishName}.`;
         let prompt = "";
 
         if (description && description.trim() !== "") {
-            prompt = `${basePrompt} 
-        User provided styling description: "${description}".
-        
-        CRITICAL INSTRUCTIONS: 
-        1. The primary subject MUST be exactly "${dishName}". Ignore the user description if it describes a completely different food item.
-        2. NEVER include any text, words, letters, labels, or watermarks in the image. The user description is for styling only, NOT text to be written.`;
+            // Lead with the user's description so Imagen prioritizes it
+            prompt = `${description.trim()}. The dish is ${dishName}. Professional food photography, photorealistic, highly detailed, 4k. No text or watermarks.`;
         } else {
-            prompt = `${basePrompt} 
-        The image should be beautifully plated, feature cinematic lighting, look appetizing, and be set on a nice dining table with a neutral background. Highly detailed, 4k.`;
+            prompt = `A professional, high-quality, photorealistic food photography shot of ${dishName}. Beautifully plated, cinematic lighting, appetizing, set on a nice dining table with a neutral background. Highly detailed, 4k. No text or watermarks.`;
         }
 
+        console.log("[Imagen] Generating image with prompt:", prompt);
         const result = await model.generateImages(prompt);
 
         if (!result.images || result.images.length === 0) {

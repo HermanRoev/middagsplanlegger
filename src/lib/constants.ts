@@ -3,6 +3,7 @@ export const COLLECTIONS = {
   MEAL_PLANS: 'mealPlans',
   INGREDIENTS: 'ingredients',
   CUPBOARD: 'cupboard',
+  TAGS: 'tags',
 }
 
 // Fixed Household ID for family sharing.

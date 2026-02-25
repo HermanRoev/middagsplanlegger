@@ -2,6 +2,8 @@
 
 import { Sidebar } from "@/components/Sidebar"
 import { PageLayout } from "@/components/layout/PageLayout"
+import { PageTransition } from "@/components/layout/PageTransition"
+import { SwipeBack } from "@/components/ui/swipe-back"
 
 export default function DashboardLayout({
   children,
@@ -11,9 +13,13 @@ export default function DashboardLayout({
   return (
     <PageLayout variant="gradient">
       <Sidebar />
-      <main className="md:pl-64 pb-20 md:pb-0 min-h-screen transition-all duration-300 ease-in-out relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {children}
-      </main>
+      <SwipeBack>
+        <main className="md:pl-64 pb-20 md:pb-0 min-h-screen transition-all duration-300 ease-in-out relative z-10">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </main>
+      </SwipeBack>
     </PageLayout>
   )
 }

@@ -21,12 +21,14 @@ export function StatCard({
     bgClass: string
 }) {
     return (
-        <Card className="p-6 flex flex-col items-center text-center border-white/50">
-            <div className={cn("p-3 rounded-2xl mb-3 border border-white/50", bgClass)}>
-                <Icon className={cn("w-6 h-6", colorClass)} />
+        <Card className="p-3 sm:p-6 flex items-center gap-3 sm:flex-col sm:items-center sm:text-center border-white/50">
+            <div className={cn("p-2 sm:p-3 rounded-xl sm:rounded-2xl sm:mb-3 border border-white/50 shrink-0", bgClass)}>
+                <Icon className={cn("w-5 h-5 sm:w-6 sm:h-6", colorClass)} />
             </div>
-            <div className="text-3xl font-black text-gray-900">{value}</div>
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-2">{label}</div>
+            <div className="flex flex-col sm:items-center">
+                <div className="text-xl sm:text-3xl font-black text-gray-900 leading-tight">{value}</div>
+                <div className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] sm:tracking-[0.2em] sm:mt-2">{label}</div>
+            </div>
         </Card>
     )
 }
@@ -272,7 +274,7 @@ export function PlannerMealCard({
             {/* Remove button — top-left, hover-only */}
             {!isExpired && (
                 <div
-                    className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity print:hidden z-10"
+                    className="absolute top-3 left-3 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity print:hidden z-10"
                     onClick={(e) => { e.stopPropagation(); onRemove(); }}
                 >
                     <div className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md border border-gray-100 text-gray-400 hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer" title="Fjern fra plan">
@@ -284,7 +286,7 @@ export function PlannerMealCard({
             {/* Replace button — top-right, hover-only */}
             {!isExpired && (
                 <div
-                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity print:hidden z-10"
+                    className="absolute top-3 right-3 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity print:hidden z-10"
                     onClick={(e) => { e.stopPropagation(); onReplace(); }}
                 >
                     <div className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md border border-gray-100 text-gray-400 hover:text-indigo-600 hover:border-indigo-400 transition-colors cursor-pointer" title="Bytt ut middag">

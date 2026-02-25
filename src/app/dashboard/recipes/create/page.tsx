@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Plus, Save } from "lucide-react"
+import { Plus, Save, Loader2 } from "lucide-react"
 import toast from 'react-hot-toast'
 import { collection, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -18,6 +18,9 @@ import { incrementUserStat } from '@/lib/stats'
 import { PageContainer } from "@/components/layout/PageLayout"
 import { PageHeader } from "@/components/ui/action-blocks"
 import { IngredientRow, StepRow, FormLabel } from "@/components/ui/forms"
+import { TagInput } from "@/components/ui/tag-input"
+import { getAllIngredients, addIngredientToMasterList } from '@/lib/ingredients'
+import { getAllTags, addTag } from '@/lib/tags'
 
 export default function CreateRecipePage() {
   const router = useRouter()
@@ -26,13 +29,15 @@ export default function CreateRecipePage() {
   // Changed defaults from 4/30 to '' to force user entry (or use placeholders)
   const [servings, setServings] = useState<number | ''>('')
   const [prepTime, setPrepTime] = useState<number | ''>('')
-  const [tags, setTags] = useState<string>('') // Comma separated string for UI
+  const [tags, setTags] = useState<string[]>([])
   const [difficulty, setDifficulty] = useState<"Enkel" | "Middels" | "Avansert">('Middels')
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
   const [instructions, setInstructions] = useState<string[]>([''])
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [allIngredientNames, setAllIngredientNames] = useState<string[]>([])
+  const [allTagNames, setAllTagNames] = useState<string[]>([])
 
   // UseEffect for loading draft
   useEffect(() => {
@@ -43,16 +48,21 @@ export default function CreateRecipePage() {
         setName(data.name || '')
         setServings(data.servings || 4) // Drafts can default to 4 if missing
         setPrepTime(data.prepTime || 30)
-        setTags(data.tags ? data.tags.join(', ') : '')
+        setTags(Array.isArray(data.tags) ? data.tags : [])
         if (data.difficulty) setDifficulty(data.difficulty)
         setIngredients(data.ingredients || [])
         setInstructions(data.instructions || [''])
-        toast.success("Lastet inn utkast fra AI")
         sessionStorage.removeItem('recipeDraft') // Clear after loading
       } catch (e) {
         console.error("Kunne ikke laste inn utkast", e)
       }
     }
+  }, [])
+
+  // Fetch master lists on mount
+  useEffect(() => {
+    getAllIngredients().then(list => setAllIngredientNames(list.map(i => i.displayName)))
+    getAllTags().then(list => setAllTagNames(list.map(t => t.id)))
   }, [])
 
   const handleAddIngredient = () => {
@@ -99,7 +109,7 @@ export default function CreateRecipePage() {
         name,
         servings: Number(servings),
         prepTime: Number(prepTime),
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+        tags,
         difficulty,
         ingredients,
         instructions,
@@ -111,6 +121,12 @@ export default function CreateRecipePage() {
         } : undefined,
         householdId: householdId
       })
+
+      // Persist new tags and ingredients to master lists
+      await Promise.all([
+        ...tags.map(t => addTag(t)),
+        ...ingredients.map(i => addIngredientToMasterList(i.name)),
+      ])
       if (user) {
         await incrementUserStat(user.uid, 'recipesCreated', 1)
       }
@@ -223,11 +239,11 @@ export default function CreateRecipePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <FormLabel>Tags (kommaseparert)</FormLabel>
-                <Input
-                  placeholder="Raskt, Vegetar, Barn..."
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
+                <FormLabel>Tags</FormLabel>
+                <TagInput
+                  tags={tags}
+                  allTags={allTagNames}
+                  onChange={setTags}
                 />
               </div>
             </CardContent>
@@ -259,6 +275,7 @@ export default function CreateRecipePage() {
                   index={i}
                   onChange={handleIngredientChange}
                   onRemove={handleRemoveIngredient}
+                  ingredientSuggestions={allIngredientNames}
                 />
               ))}
             </CardContent>

@@ -17,6 +17,9 @@ import { generateRecipeImage } from '@/lib/gemini'
 import { PageContainer } from "@/components/layout/PageLayout"
 import { PageHeader } from "@/components/ui/action-blocks"
 import { IngredientRow, StepRow, FormLabel } from "@/components/ui/forms"
+import { TagInput } from "@/components/ui/tag-input"
+import { getAllIngredients, addIngredientToMasterList } from '@/lib/ingredients'
+import { getAllTags, addTag } from '@/lib/tags'
 
 export default function EditRecipePage() {
   const router = useRouter()
@@ -30,12 +33,14 @@ export default function EditRecipePage() {
   const [name, setName] = useState('')
   const [servings, setServings] = useState<number | ''>('')
   const [prepTime, setPrepTime] = useState<number | ''>('')
-  const [tags, setTags] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [difficulty, setDifficulty] = useState<"Enkel" | "Middels" | "Avansert">('Middels')
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
   const [instructions, setInstructions] = useState<string[]>([''])
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
+  const [allIngredientNames, setAllIngredientNames] = useState<string[]>([])
+  const [allTagNames, setAllTagNames] = useState<string[]>([])
 
   // Load existing recipe
   useEffect(() => {
@@ -52,7 +57,7 @@ export default function EditRecipePage() {
         setName(data.name || '')
         setServings(data.servings || 4)
         setPrepTime(data.prepTime || 30)
-        setTags(data.tags ? data.tags.join(', ') : '')
+        setTags(Array.isArray(data.tags) ? data.tags : [])
         if (data.difficulty) setDifficulty(data.difficulty as "Enkel" | "Middels" | "Avansert")
         setIngredients(data.ingredients || [])
         setInstructions(data.instructions?.length ? data.instructions : [''])
@@ -67,6 +72,12 @@ export default function EditRecipePage() {
     }
     fetchRecipe()
   }, [id, router])
+
+  // Fetch master lists on mount
+  useEffect(() => {
+    getAllIngredients().then(list => setAllIngredientNames(list.map(i => i.displayName)))
+    getAllTags().then(list => setAllTagNames(list.map(t => t.id)))
+  }, [])
 
   const handleAddIngredient = () => setIngredients([...ingredients, { name: '', amount: 0, unit: 'stk' }])
   const handleIngredientChange = (index: number, field: keyof Ingredient, value: string | number) => {
@@ -100,7 +111,7 @@ export default function EditRecipePage() {
         name,
         servings: Number(servings),
         prepTime: Number(prepTime),
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+        tags,
         difficulty,
         ingredients,
         instructions,
@@ -108,6 +119,12 @@ export default function EditRecipePage() {
         updatedAt: new Date().toISOString(),
         updatedBy: user ? { id: user.uid, name: user.displayName || user.email || 'Ukjent' } : undefined,
       })
+
+      // Persist new tags and ingredients to master lists
+      await Promise.all([
+        ...tags.map(t => addTag(t)),
+        ...ingredients.map(i => addIngredientToMasterList(i.name)),
+      ])
 
       toast.success("Oppskrift oppdatert!")
       router.push(`/dashboard/recipes/${id}`)
@@ -170,7 +187,7 @@ export default function EditRecipePage() {
         <div className="space-y-8 lg:col-span-1">
           <Card className="shadow-lg border-white/50">
             <CardHeader className="pb-0">
-              <CardTitle>Omslagsbilde</CardTitle>
+              <CardTitle>Matfoto ✨</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 pb-6">
               <ImageUpload
@@ -230,11 +247,11 @@ export default function EditRecipePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <FormLabel>Tags (kommaseparert)</FormLabel>
-                <Input
-                  placeholder="Raskt, Vegetar, Barn..."
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
+                <FormLabel>Tags</FormLabel>
+                <TagInput
+                  tags={tags}
+                  allTags={allTagNames}
+                  onChange={setTags}
                 />
               </div>
             </CardContent>
@@ -266,6 +283,7 @@ export default function EditRecipePage() {
                   index={i}
                   onChange={handleIngredientChange}
                   onRemove={handleRemoveIngredient}
+                  ingredientSuggestions={allIngredientNames}
                 />
               ))}
             </CardContent>

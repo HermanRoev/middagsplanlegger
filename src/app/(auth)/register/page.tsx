@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
+import { signInWithPopup, signInWithRedirect, GoogleAuthProvider } from "firebase/auth"
 import { collection, query, where, getDocs, doc, updateDoc, setDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { auth, db } from "@/lib/firebase"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -10,8 +11,13 @@ import { useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
 import { motion } from "framer-motion"
 import { PageLayout } from "@/components/layout/PageLayout"
-import { LogOut } from "lucide-react"
+import { LogOut, Chrome, ArrowRight } from "lucide-react"
 import Image from "next/image"
+
+function isMobile(): boolean {
+  if (typeof window === "undefined") return false
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+}
 
 function OtpInput({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const refs = useRef<(HTMLInputElement | null)[]>([])
@@ -97,6 +103,7 @@ function OtpInput({ value, onChange }: { value: string[]; onChange: (v: string[]
 function RegisterForm() {
   const [chars, setChars] = useState<string[]>(Array(6).fill(""))
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const { user, logout, refreshProfile } = useAuth()
   const searchParams = useSearchParams()
 
@@ -108,11 +115,27 @@ function RegisterForm() {
       cleaned.split("").forEach((ch, i) => { next[i] = ch })
       setChars(next)
     }
-    // Auth guard is handled by AuthContext — no need to check auth.currentUser here.
   }, [searchParams])
 
   const inviteCode = chars.join("")
   const isComplete = inviteCode.length === 6
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true)
+    try {
+      const provider = new GoogleAuthProvider()
+
+      if (isMobile()) {
+        await signInWithRedirect(auth, provider)
+      } else {
+        await signInWithPopup(auth, provider)
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Kunne ikke logge inn med Google"
+      toast.error(message)
+      setGoogleLoading(false)
+    }
+  }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -162,7 +185,7 @@ function RegisterForm() {
       await refreshProfile()
     } catch (error: unknown) {
       console.error(error)
-      const message = error instanceof Error ? error.message : "Failed to verify invite."
+      const message = error instanceof Error ? error.message : "Kunne ikke verifisere koden."
       toast.error(message)
       setLoading(false)
     }
@@ -178,34 +201,63 @@ function RegisterForm() {
         className="w-full max-w-md flex flex-col items-center gap-6"
       >
         {/* App logo */}
-        <div className="text-center">
+        <div className="text-center space-y-1">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Middagsplan
           </h1>
+          <p className="text-sm text-gray-500 font-medium">Bli med i familien</p>
         </div>
 
-        <Card className="w-full shadow-xl border-white/60 bg-white/80 backdrop-blur-md relative">
-          {/* Logout button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-3 right-3 text-gray-400 hover:text-red-500 hover:bg-red-50 z-10"
-            onClick={logout}
-            title="Logg ut"
-          >
-            <LogOut className="w-4 h-4" />
-          </Button>
+        {/* Step 1: Sign in with Google (if not signed in) */}
+        {!user ? (
+          <Card className="w-full shadow-xl border-white/60 bg-white/80 backdrop-blur-md">
+            <CardHeader className="pb-2 text-center space-y-1">
+              <div className="mx-auto w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mb-2">
+                <span className="text-lg font-black text-indigo-600">1</span>
+              </div>
+              <CardTitle className="text-2xl font-bold">Logg inn først</CardTitle>
+              <CardDescription className="text-sm">
+                Du trenger en Google-konto for å bli med.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2 pb-6">
+              <Button
+                onClick={handleGoogleLogin}
+                variant="premium"
+                className="w-full flex items-center justify-center gap-3 py-6 text-lg"
+                disabled={googleLoading}
+              >
+                <Chrome className="w-5 h-5" />
+                {googleLoading ? "Logger inn..." : "Logg inn med Google"}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Step 2: Enter invite code (signed in) */
+          <Card className="w-full shadow-xl border-white/60 bg-white/80 backdrop-blur-md relative">
+            {/* Logout button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-3 right-3 text-gray-400 hover:text-red-500 hover:bg-red-50 z-10"
+              onClick={logout}
+              title="Logg ut"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
 
-          <CardHeader className="pb-2 text-center space-y-1">
-            <CardTitle className="text-2xl font-bold">Bli med i familien</CardTitle>
-            <CardDescription className="text-sm">
-              Skriv inn invitasjonskoden du har fått av administratoren.
-            </CardDescription>
-          </CardHeader>
+            <CardHeader className="pb-2 text-center space-y-1">
+              <div className="mx-auto w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mb-2">
+                <span className="text-lg font-black text-emerald-600">2</span>
+              </div>
+              <CardTitle className="text-2xl font-bold">Skriv inn invitasjonskode</CardTitle>
+              <CardDescription className="text-sm">
+                Du har fått en 6-tegns kode av administratoren.
+              </CardDescription>
+            </CardHeader>
 
-          <CardContent className="space-y-6 pt-2">
-            {/* Who is registering */}
-            {user && (
+            <CardContent className="space-y-6 pt-2">
+              {/* Who is registering */}
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 border border-gray-100">
                 {user.photoURL ? (
                   <Image
@@ -225,27 +277,28 @@ function RegisterForm() {
                   <p className="text-xs text-gray-400 truncate">{user.email}</p>
                 </div>
               </div>
-            )}
 
-            <form onSubmit={handleRegister} className="space-y-5">
-              <div className="space-y-2">
-                <p className="text-xs text-center text-gray-400 font-medium uppercase tracking-widest">
-                  Invitasjonskode
-                </p>
-                <OtpInput value={chars} onChange={setChars} />
-              </div>
+              <form onSubmit={handleRegister} className="space-y-5">
+                <div className="space-y-2">
+                  <p className="text-xs text-center text-gray-400 font-medium uppercase tracking-widest">
+                    Invitasjonskode
+                  </p>
+                  <OtpInput value={chars} onChange={setChars} />
+                </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                variant="premium"
-                disabled={loading || !isComplete}
-              >
-                {loading ? "Sjekker kode..." : "Bli med"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <Button
+                  type="submit"
+                  className="w-full flex items-center justify-center gap-2 py-6 text-lg"
+                  variant="premium"
+                  disabled={loading || !isComplete}
+                >
+                  {loading ? "Sjekker kode..." : "Bli med"}
+                  {!loading && <ArrowRight className="w-4 h-4" />}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
       </motion.div>
     </PageLayout>
   )

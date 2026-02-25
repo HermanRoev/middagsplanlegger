@@ -2,6 +2,7 @@ import "./globals.css"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { Toaster } from "react-hot-toast"
 import { Geist, Geist_Mono } from "next/font/google"
+import type { Viewport } from "next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,9 +14,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+}
+
 export const metadata = {
   title: "Middagsplanlegger",
-  description: "Premium Meal Planning for Families",
+  description: "Smartere måltidsplanlegging for hele familien",
+  themeColor: "#e0f2fe",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default" as const,
+    title: "Middagsplan",
+  },
 }
 
 export default function RootLayout({
@@ -24,11 +39,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="no">
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-gray-50/50 antialiased selection:bg-indigo-100 selection:text-indigo-900`}>
         <AuthProvider>
           {children}
-          <Toaster position="bottom-right" toastOptions={{ className: 'glass' }} />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              className: 'glass',
+              duration: 3000,
+              success: { duration: 3000 },
+              error: { duration: 4000 },
+              loading: { duration: 10000 },
+            }}
+          />
         </AuthProvider>
       </body>
     </html>

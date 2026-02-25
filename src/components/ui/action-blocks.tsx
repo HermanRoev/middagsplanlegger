@@ -16,7 +16,7 @@ export function PageHeader({
     return (
         <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-4 w-full", className)}>
             <div className="flex-1 flex flex-col justify-end">
-                {description && <div className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{description}</div>}
+                {description && <div className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 line-clamp-1 sm:line-clamp-none">{description}</div>}
                 <h1 className="text-3xl font-black text-gray-900 tracking-tight">{title}</h1>
             </div>
             {children && (
@@ -92,21 +92,25 @@ export function QuickAddBar({
     className?: string
 }) {
     return (
-        <div className={cn("flex items-center gap-2 overflow-x-auto no-scrollbar", className)}>
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl mr-2 flex-shrink-0">
-                <Zap className="w-4 h-4 text-gray-500" />
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+        <div className={cn("relative", className)}>
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl mr-2 flex-shrink-0">
+                    <Zap className="w-4 h-4 text-gray-500" />
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+                </div>
+                {items.map(item => (
+                    <button
+                        key={item}
+                        type="button"
+                        onClick={() => onAdd(item)}
+                        className="px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap border flex-shrink-0 bg-white text-gray-600 border-gray-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95"
+                    >
+                        + {item}
+                    </button>
+                ))}
             </div>
-            {items.map(item => (
-                <button
-                    key={item}
-                    type="button"
-                    onClick={() => onAdd(item)}
-                    className="px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap border flex-shrink-0 bg-white text-gray-600 border-gray-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200"
-                >
-                    + {item}
-                </button>
-            ))}
+            {/* Fade indicator showing more pills are available */}
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white/80 to-transparent pointer-events-none sm:hidden" />
         </div>
     )
 }

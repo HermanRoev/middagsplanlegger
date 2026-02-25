@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
+import { useAuth } from '../../context/auth';
 import { GlassScreen } from '../../components/ui/GlassScreen';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Users, ShieldCheck, Mail, CalendarDays, ShoppingCart, Utensils, ChefHat } from 'lucide-react-native';
@@ -28,13 +29,15 @@ interface FamilyMember extends UserProfile {
 export default function Family() {
     const [members, setMembers] = useState<FamilyMember[]>([]);
     const [loading, setLoading] = useState(true);
+    const { householdId } = useAuth();
 
     const fetchFamilyMembers = async () => {
-        if (!auth.currentUser) return;
+        if (!auth.currentUser || !householdId) return;
 
         try {
             setLoading(true);
-            const usersSnapshot = await getDocs(collection(db, "users"));
+            const q = query(collection(db, "users"), where("householdId", "==", householdId));
+            const usersSnapshot = await getDocs(q);
             const usersData: UserProfile[] = usersSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()

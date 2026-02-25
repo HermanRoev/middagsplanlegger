@@ -88,7 +88,7 @@ export default function ProfilePage() {
                     newAppPhotoUrl = await uploadImage(imageFile, `users/${auth.currentUser.uid}/avatar_${Date.now()}`)
                     toast.dismiss(toastId)
                 } catch (e) {
-                    toast.error("Kunne ikke laste opp bilde", { id: toastId })
+                    toast.error("Kunne ikke laste opp bilde", { id: toastId, duration: 4000 })
                     throw e
                 }
             }
@@ -243,7 +243,7 @@ export default function ProfilePage() {
                                         value={displayName}
                                         onChange={(e) => setDisplayName(e.target.value)}
                                         placeholder="Ditt navn"
-                                        className="pl-10 h-11 transition-all shadow-inner"
+                                        className="pl-10 transition-all shadow-inner"
                                     />
                                 </div>
                             </div>

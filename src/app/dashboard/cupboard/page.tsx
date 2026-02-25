@@ -6,6 +6,8 @@ import { db } from "@/lib/firebase"
 import { CupboardItem } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { AutocompleteInput } from "@/components/ui/autocomplete-input"
+import { getAllIngredients } from "@/lib/ingredients"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2, Search, Package, Camera, Video } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -33,6 +35,7 @@ export default function CupboardPage() {
     const [newUnit, setNewUnit] = useState("stk")
     const [searchTerm, setSearchTerm] = useState("")
     const [deleteId, setDeleteId] = useState<string | null>(null)
+    const [ingredientSuggestions, setIngredientSuggestions] = useState<string[]>([])
 
     // Scanning State
     const [isScanning, setIsScanning] = useState(false)
@@ -51,6 +54,11 @@ export default function CupboardPage() {
         })
         return () => unsubscribe()
     }, [user])
+
+    // Fetch master ingredients for autocomplete
+    useEffect(() => {
+        getAllIngredients().then(list => setIngredientSuggestions(list.map(i => i.displayName)))
+    }, [])
 
     const handleAdd = async () => {
         if (!newItem.trim() || !user || !householdId) return
@@ -243,16 +251,17 @@ export default function CupboardPage() {
             <div className="grid gap-8 lg:grid-cols-3">
                 {/* Left Column: Add & Search */}
                 <div className="lg:col-span-1 space-y-6">
-                    <Card className="shadow-lg border-white/50 overflow-hidden">
+                    <Card className="shadow-lg border-white/50">
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg font-bold">Legg til vare</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-3">
-                                <Input
+                                <AutocompleteInput
                                     placeholder="Varenavn (f.eks. Melk)"
                                     value={newItem}
-                                    onChange={(e) => setNewItem(e.target.value)}
+                                    onChange={setNewItem}
+                                    suggestions={ingredientSuggestions}
                                 />
                                 <div className="flex items-center gap-2">
                                     <Input
@@ -320,7 +329,7 @@ export default function CupboardPage() {
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => setDeleteId(item.id)}
-                                                        className="h-10 w-10 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        className="h-10 w-10 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                                                     >
                                                         <Trash2 className="w-5 h-5" />
                                                     </Button>

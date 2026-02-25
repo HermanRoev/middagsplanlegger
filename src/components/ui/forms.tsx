@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { UnitSelect } from "@/components/ui/unit-select"
+import { AutocompleteInput } from "@/components/ui/autocomplete-input"
 import { Trash, X } from "lucide-react"
 import { Ingredient } from "@/types"
 
@@ -32,7 +33,8 @@ export function IngredientRow({
     index,
     onChange,
     onRemove,
-    compact = false
+    compact = false,
+    ingredientSuggestions
 }: {
     ingredient: Ingredient
     index: number
@@ -40,16 +42,29 @@ export function IngredientRow({
     onRemove: (index: number) => void
     /** Compact mode: smaller inputs, used in recipe detail edit mode */
     compact?: boolean
+    /** Optional autocomplete suggestions for the ingredient name field */
+    ingredientSuggestions?: string[]
 }) {
     if (compact) {
         return (
             <div className="flex gap-2 w-full items-center">
-                <Input
-                    value={ingredient.name}
-                    onChange={(e) => onChange(index, 'name', e.target.value)}
-                    className="h-8 text-xs"
-                    placeholder="Navn"
-                />
+                {ingredientSuggestions ? (
+                    <AutocompleteInput
+                        suggestions={ingredientSuggestions}
+                        value={ingredient.name}
+                        onChange={(val) => onChange(index, 'name', val)}
+                        placeholder="Navn"
+                        className="flex-1"
+                        inputClassName="h-8 text-xs"
+                    />
+                ) : (
+                    <Input
+                        value={ingredient.name}
+                        onChange={(e) => onChange(index, 'name', e.target.value)}
+                        className="h-8 text-xs"
+                        placeholder="Navn"
+                    />
+                )}
                 <div className="flex gap-1">
                     <Input
                         type="number"
@@ -76,16 +91,26 @@ export function IngredientRow({
 
     return (
         <div className="flex gap-2 items-center group">
-            <Input
-                placeholder="Navn"
-                className="flex-1"
-                value={ingredient.name}
-                onChange={(e) => onChange(index, 'name', e.target.value)}
-            />
+            {ingredientSuggestions ? (
+                <AutocompleteInput
+                    suggestions={ingredientSuggestions}
+                    value={ingredient.name}
+                    onChange={(val) => onChange(index, 'name', val)}
+                    placeholder="Navn"
+                    className="flex-1"
+                />
+            ) : (
+                <Input
+                    placeholder="Navn"
+                    className="flex-1"
+                    value={ingredient.name}
+                    onChange={(e) => onChange(index, 'name', e.target.value)}
+                />
+            )}
             <Input
                 type="number"
                 placeholder="Ant."
-                className="w-32 text-center"
+                className="w-20 sm:w-32 text-center"
                 value={ingredient.amount || ''}
                 onChange={(e) => onChange(index, 'amount', Number(e.target.value))}
             />
@@ -98,7 +123,7 @@ export function IngredientRow({
                 variant="ghost"
                 size="icon"
                 onClick={() => onRemove(index)}
-                className="text-gray-400 hover:text-red-500"
+                className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500"
             >
                 <Trash className="w-4 h-4" />
             </Button>
@@ -121,11 +146,11 @@ export function StepRow({
 }) {
     return (
         <div className="flex gap-4 group">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mt-1">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm mt-1 shadow-sm">
                 {index + 1}
             </div>
             <textarea
-                className="flex-1 min-h-[80px] p-3 rounded-md border border-input bg-gray-50/50 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+                className="flex-1 min-h-[80px] p-3 rounded-xl border border-white/50 bg-white/40 backdrop-blur-md text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
                 value={step}
                 placeholder={`Steg ${index + 1} detaljer...`}
                 onChange={(e) => onChange(index, e.target.value)}
@@ -134,7 +159,7 @@ export function StepRow({
                 variant="ghost"
                 size="icon"
                 onClick={() => onRemove(index)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 mt-2"
+                className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 mt-2"
             >
                 <Trash className="w-4 h-4" />
             </Button>

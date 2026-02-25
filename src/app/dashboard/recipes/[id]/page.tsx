@@ -8,7 +8,7 @@ import { firestoreMealSchema, firestorePlannedMealSchema } from "@/lib/validatio
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, Plus, Utensils, Check, Minus, Smartphone, Star, ChefHat } from "lucide-react"
+import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, Plus, Utensils, Check, Minus, Star, ChefHat, Flame } from "lucide-react"
 import { PageContainer } from "@/components/layout/PageLayout"
 import { IngredientRow } from "@/components/ui/forms"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
@@ -29,7 +29,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { incrementUserStat } from "@/lib/stats"
-import { CookingMode } from "@/components/ui/cooking-mode"
+
 
 export default function RecipeDetailsPage() {
     const { id } = useParams()
@@ -43,7 +43,6 @@ export default function RecipeDetailsPage() {
 
     // Display State
     const [currentServings, setCurrentServings] = useState(4)
-    const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null)
     const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set())
 
     // Edit State for Planned Meal
@@ -58,8 +57,7 @@ export default function RecipeDetailsPage() {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
     const [showRemovePlanDialog, setShowRemovePlanDialog] = useState(false)
 
-    // Cooking Mode
-    const [cookingMode, setCookingMode] = useState(false)
+
 
     useEffect(() => {
         if (!id || id === 'leftover-placeholder') return
@@ -108,28 +106,7 @@ export default function RecipeDetailsPage() {
         return () => unsubscribe()
     }, [plannedId])
 
-    useEffect(() => {
-        return () => {
-            if (wakeLock) wakeLock.release()
-        }
-    }, [wakeLock])
 
-    const toggleWakeLock = async () => {
-        if (wakeLock) {
-            await wakeLock.release()
-            setWakeLock(null)
-            toast("Kokemodus deaktivert", { icon: "🌙" })
-        } else {
-            try {
-                const sentinel = await navigator.wakeLock.request('screen')
-                setWakeLock(sentinel)
-                toast("Kokemodus aktivert! Skjermen holdes på.", { icon: "☀️" })
-            } catch (err) {
-                console.error(err)
-                toast.error("Wake Lock støttes ikke")
-            }
-        }
-    }
 
     const toggleIngredientCheck = (index: number) => {
         const next = new Set(checkedIngredients)
@@ -375,332 +352,326 @@ export default function RecipeDetailsPage() {
 
     return (
         <PageContainer className="space-y-8 pb-10">
-        <AnimatePresence mode="wait">
-        {cookingMode ? (
-            <CookingMode
-                key="cooking"
-                recipe={recipe}
-                servings={currentServings}
-                scaledIngredients={displayedIngredients ?? []}
-                onClose={() => setCookingMode(false)}
-            />
-        ) : (<motion.div key="normal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
-            {/* Header / Hero */}
-            <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-xl group bg-gray-100">
-                {recipe.imageUrl && recipe.imageUrl.trim() !== "" ? (
-                    <>
-                        <Image
-                            src={recipe.imageUrl}
-                            alt={recipe.name}
-                            fill
-                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                            priority
-                            unoptimized
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    </>
-                ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-purple-50 to-indigo-50 flex items-center justify-center">
-                        <span className="text-5xl font-black text-indigo-200/60 text-center px-8">{recipe.name}</span>
-                    </div>
-                )}
-                <div className="absolute inset-0 p-8 flex flex-col justify-between">
-                    <div className="flex justify-between items-start relative z-10">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className={recipe.imageUrl && recipe.imageUrl.trim() !== ""
-                                ? "bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-white/30"
-                                : "bg-white/80 backdrop-blur-md border-white shadow-md text-gray-700 hover:bg-white"
-                            }
-                            onClick={() => router.back()}
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" /> Tilbake
-                        </Button>
-                        {isPlannedMode && (
-                            <div className="flex gap-2">
-                                {isCooked && <span className="bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-1"><Check className="w-3 h-3" /> Laget</span>}
-                                <div className="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-lg animate-in fade-in slide-in-from-top-4">
-                                    Planlagt {format(new Date(plannedMeal.date), "d. MMMM", { locale: nb })}
+            <div className="space-y-8">
+                {/* Header / Hero */}
+                <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-xl group bg-gray-100">
+                    {recipe.imageUrl && recipe.imageUrl.trim() !== "" ? (
+                        <>
+                            <Image
+                                src={recipe.imageUrl}
+                                alt={recipe.name}
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                priority
+                                unoptimized
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        </>
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-purple-50 to-indigo-50 flex items-center justify-center">
+                            <span className="text-5xl font-black text-indigo-200/60 text-center px-8">{recipe.name}</span>
+                        </div>
+                    )}
+                    <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                        <div className="flex justify-between items-start relative z-10">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className={recipe.imageUrl && recipe.imageUrl.trim() !== ""
+                                    ? "bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-white/30"
+                                    : "bg-white/80 backdrop-blur-md border-white shadow-md text-gray-700 hover:bg-white"
+                                }
+                                onClick={() => router.back()}
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-2" /> Tilbake
+                            </Button>
+                            {isPlannedMode && (
+                                <div className="flex gap-2">
+                                    {isCooked && <span className="bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-1"><Check className="w-3 h-3" /> Laget</span>}
+                                    <div className="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-lg animate-in fade-in slide-in-from-top-4">
+                                        Planlagt {format(new Date(plannedMeal.date), "d. MMMM", { locale: nb })}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
 
-                    <div className="relative z-10">
-                        <div className="flex items-end justify-between">
-                            <div>
-                                <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${recipe.imageUrl && recipe.imageUrl.trim() !== "" ? "text-white drop-shadow-lg" : "text-gray-900"}`}>{recipe.name}</h1>
-                                <div className="flex flex-wrap gap-4 font-medium">
-                                    <span className={`flex items-center gap-2 backdrop-blur-sm px-3 py-1.5 rounded-full ${recipe.imageUrl && recipe.imageUrl.trim() !== "" ? "bg-black/20 text-white/90" : "bg-white/80 text-gray-700 shadow-sm"}`}><Clock className="w-4 h-4" /> {recipe.prepTime} min</span>
-                                    <span className={`flex items-center gap-2 backdrop-blur-sm px-3 py-1.5 rounded-full ${recipe.imageUrl && recipe.imageUrl.trim() !== "" ? "bg-black/20 text-white/90" : "bg-white/80 text-gray-700 shadow-sm"}`}><Users className="w-4 h-4" /> {currentServings} porsjoner</span>
+                        <div className="relative z-10">
+                            <div className="flex items-end justify-between">
+                                <div>
+                                    <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${recipe.imageUrl && recipe.imageUrl.trim() !== "" ? "text-white drop-shadow-lg" : "text-gray-900"}`}>{recipe.name}</h1>
+                                    <div className="flex flex-wrap gap-4 font-medium">
+                                        <span className={`flex items-center gap-2 backdrop-blur-sm px-3 py-1.5 rounded-full ${recipe.imageUrl && recipe.imageUrl.trim() !== "" ? "bg-black/20 text-white/90" : "bg-white/80 text-gray-700 shadow-sm"}`}><Clock className="w-4 h-4" /> {recipe.prepTime} min</span>
+                                        <span className={`flex items-center gap-2 backdrop-blur-sm px-3 py-1.5 rounded-full ${recipe.imageUrl && recipe.imageUrl.trim() !== "" ? "bg-black/20 text-white/90" : "bg-white/80 text-gray-700 shadow-sm"}`}><Users className="w-4 h-4" /> {currentServings} porsjoner</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Rating Stars */}
-                            {renderRatingUI()}
+                                {/* Rating Stars */}
+                                {renderRatingUI()}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Nutrition Badge (If available) */}
-            {recipe.nutrition && (
-                <div className="grid grid-cols-4 gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
-                    <div>
-                        <div className="text-xs text-gray-500 uppercase font-bold">Kalorier</div>
-                        <div className="font-semibold text-gray-900">{recipe.nutrition.calories || '-'} kcal</div>
+                {/* Nutrition Badge (If available) */}
+                {recipe.nutrition && (
+                    <div className="grid grid-cols-4 gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold">Kalorier</div>
+                            <div className="font-semibold text-gray-900">{recipe.nutrition.calories || '-'} kcal</div>
+                        </div>
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold">Protein</div>
+                            <div className="font-semibold text-gray-900">{recipe.nutrition.protein || '-'} g</div>
+                        </div>
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold">Karbo</div>
+                            <div className="font-semibold text-gray-900">{recipe.nutrition.carbs || '-'} g</div>
+                        </div>
+                        <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold">Fett</div>
+                            <div className="font-semibold text-gray-900">{recipe.nutrition.fat || '-'} g</div>
+                        </div>
                     </div>
-                    <div>
-                        <div className="text-xs text-gray-500 uppercase font-bold">Protein</div>
-                        <div className="font-semibold text-gray-900">{recipe.nutrition.protein || '-'} g</div>
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 uppercase font-bold">Karbo</div>
-                        <div className="font-semibold text-gray-900">{recipe.nutrition.carbs || '-'} g</div>
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 uppercase font-bold">Fett</div>
-                        <div className="font-semibold text-gray-900">{recipe.nutrition.fat || '-'} g</div>
-                    </div>
-                </div>
-            )}
+                )}
 
-            {/* Actions Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white/60 backdrop-blur-md p-3 rounded-2xl shadow-sm border border-white/70">
-                <div className="flex gap-2 flex-wrap">
-                    <Button
-                        onClick={() => setCookingMode(true)}
-                        variant="premium"
-                        className="rounded-xl"
-                        iconLeft={<ChefHat className="w-4 h-4" />}
-                    >
-                        Start matlaging
-                    </Button>
-                    {!isPlannedMode && (
-                        <Link href={`/dashboard/recipes/${id}/edit`}>
-                            <Button variant="glass" className="rounded-xl" iconLeft={<Edit className="w-4 h-4" />}>Rediger oppskrift</Button>
-                        </Link>
-                    )}
-                    {isPlannedMode && !isEditing && (
-                        <>
-                            <Button
-                                variant={isCooked ? "glass" : "premium"}
-                                onClick={handleMarkCooked}
-                                className={isCooked ? "rounded-xl text-emerald-600 border-emerald-200/60 bg-emerald-50/60 hover:bg-emerald-100/80" : "rounded-xl"}
-                                iconLeft={isCooked ? undefined : <Utensils className="w-4 h-4" />}
-                            >
-                                {isCooked ? "Merk som ulaget" : "Merk som laget"}
-                            </Button>
-                            <Button variant="glass" className="rounded-xl" iconLeft={<Edit className="w-4 h-4" />} onClick={handleEnterEditMode}>Rediger plan</Button>
-                        </>
-                    )}
-                    {isPlannedMode && isEditing && (
-                        <>
-                            <Button onClick={handleSavePlanChanges} disabled={loading} variant="premium" className="rounded-xl" iconLeft={<Save className="w-4 h-4" />}>Lagre endringer</Button>
-                            <Button variant="glass" className="rounded-xl" onClick={() => setIsEditing(false)}>Avbryt</Button>
-                        </>
-                    )}
-                </div>
+                {/* Actions Toolbar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white/60 backdrop-blur-md p-3 rounded-2xl shadow-sm border border-white/70">
+                    <div className="flex gap-2 flex-wrap">
+                        {!isPlannedMode && (
+                            <Link href={`/dashboard/recipes/${id}/edit`}>
+                                <Button variant="glass" size="icon" className="rounded-xl sm:w-auto sm:px-4"><Edit className="w-4 h-4" /><span className="hidden sm:inline sm:ml-2">Rediger oppskrift</span></Button>
+                            </Link>
+                        )}
+                        {isPlannedMode && !isEditing && (
+                            <>
+                                <Button
+                                    variant={isCooked ? "glass" : "premium"}
+                                    onClick={handleMarkCooked}
+                                    className={isCooked ? "rounded-xl text-emerald-600 border-emerald-200/60 bg-emerald-50/60 hover:bg-emerald-100/80" : "rounded-xl"}
+                                    iconLeft={isCooked ? undefined : <Utensils className="w-4 h-4" />}
+                                >
+                                    <span className="hidden sm:inline">{isCooked ? "Merk som ulaget" : "Merk som laget"}</span>
+                                </Button>
+                                <Button variant="glass" size="icon" className="rounded-xl sm:w-auto sm:px-4" onClick={handleEnterEditMode}><Edit className="w-4 h-4" /><span className="hidden sm:inline sm:ml-2">Rediger plan</span></Button>
+                            </>
+                        )}
+                        {isPlannedMode && isEditing && (
+                            <>
+                                <Button onClick={handleSavePlanChanges} disabled={loading} variant="premium" className="rounded-xl" iconLeft={<Save className="w-4 h-4" />}><span className="hidden sm:inline">Lagre endringer</span></Button>
+                                <Button variant="glass" className="rounded-xl" onClick={() => setIsEditing(false)}>Avbryt</Button>
+                            </>
+                        )}
+                    </div>
 
-                <div className="flex gap-2">
-                    <Button
-                        variant="glass"
-                        size="icon"
-                        onClick={toggleWakeLock}
-                        className={`rounded-xl ${wakeLock ? "text-amber-500 border-amber-200/60 bg-amber-50/60" : ""}`}
-                        title={wakeLock ? "Skjermen holdes på" : "Hold skjermen på"}
-                    >
-                        <Smartphone className="w-5 h-5" />
-                    </Button>
+                    <div className="flex gap-2">
 
-                    {isPlannedMode ? (
-                        <>
-                            <Dialog open={showRemovePlanDialog} onOpenChange={setShowRemovePlanDialog}>
+                        {isPlannedMode ? (
+                            <>
+                                <Dialog open={showRemovePlanDialog} onOpenChange={setShowRemovePlanDialog}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="glass-destructive" size="icon" className="rounded-xl sm:w-auto sm:px-4"><Trash2 className="w-4 h-4" /><span className="hidden sm:inline sm:ml-2">Fjern fra plan</span></Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Fjerne fra plan?</DialogTitle>
+                                            <DialogDescription>Dette vil fjerne {recipe.name} fra {format(new Date(plannedMeal.date), "d. MMMM", { locale: nb })}.</DialogDescription>
+                                        </DialogHeader>
+                                        <DialogFooter>
+                                            <Button variant="ghost" onClick={() => setShowRemovePlanDialog(false)}>Avbryt</Button>
+                                            <Button variant="destructive" onClick={handleRemovePlanned}>Fjern</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+
+                                <Button variant="glass" size="icon" className="rounded-xl sm:w-auto sm:px-4" onClick={() => router.push(`/dashboard/recipes?planDate=${plannedMeal.date}&replaceId=${plannedMeal.id}`)}><ArrowRightLeft className="w-4 h-4" /><span className="hidden sm:inline sm:ml-2">Bytt ut</span></Button>
+                            </>
+                        ) : (
+                            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                                 <DialogTrigger asChild>
-                                    <Button variant="glass-destructive" className="rounded-xl" iconLeft={<Trash2 className="w-4 h-4" />}>Fjern fra plan</Button>
+                                    <Button variant="glass-destructive" size="icon" className="rounded-xl sm:w-auto sm:px-4"><Trash2 className="w-4 h-4" /><span className="hidden sm:inline sm:ml-2">Slett oppskrift</span></Button>
                                 </DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader>
-                                        <DialogTitle>Fjerne fra plan?</DialogTitle>
-                                        <DialogDescription>Dette vil fjerne {recipe.name} fra {format(new Date(plannedMeal.date), "d. MMMM", { locale: nb })}.</DialogDescription>
+                                        <DialogTitle>Slette oppskrift?</DialogTitle>
+                                        <DialogDescription>
+                                            Er du sikker på at du vil slette <strong>{recipe.name}</strong>? Dette kan ikke angres.
+                                        </DialogDescription>
                                     </DialogHeader>
                                     <DialogFooter>
-                                        <Button variant="ghost" onClick={() => setShowRemovePlanDialog(false)}>Avbryt</Button>
-                                        <Button variant="destructive" onClick={handleRemovePlanned}>Fjern</Button>
+                                        <Button variant="ghost" onClick={() => setShowDeleteDialog(false)}>Avbryt</Button>
+                                        <Button variant="destructive" onClick={handleDelete}>Slett</Button>
                                     </DialogFooter>
                                 </DialogContent>
                             </Dialog>
-
-                            <Button variant="glass" className="rounded-xl" iconLeft={<ArrowRightLeft className="w-4 h-4" />} onClick={() => router.push(`/dashboard/recipes?planDate=${plannedMeal.date}&replaceId=${plannedMeal.id}`)}>Bytt ut</Button>
-                        </>
-                    ) : (
-                        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                            <DialogTrigger asChild>
-                                <Button variant="glass-destructive" className="rounded-xl" iconLeft={<Trash2 className="w-4 h-4" />}>Slett oppskrift</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Slette oppskrift?</DialogTitle>
-                                    <DialogDescription>
-                                        Er du sikker på at du vil slette <strong>{recipe.name}</strong>? Dette kan ikke angres.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter>
-                                    <Button variant="ghost" onClick={() => setShowDeleteDialog(false)}>Avbryt</Button>
-                                    <Button variant="destructive" onClick={handleDelete}>Slett</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    )}
-                </div>
-            </div>
-
-            {/* Content Grid */}
-            <div className="grid md:grid-cols-3 gap-8">
-                {/* Ingredients Column */}
-                <div className="md:col-span-1 space-y-6">
-                    {/* Notes Section (Only for Planned Mode) */}
-                    {isPlannedMode && (
-                        <Card className="border-indigo-100 bg-indigo-50/30 shadow-sm">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-lg text-indigo-900">Notater</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {isEditing ? (
-                                    <Textarea
-                                        value={editNotes}
-                                        onChange={(e) => setEditNotes(e.target.value)}
-                                        placeholder="Legg til notater for dette måltidet..."
-                                        className="bg-white"
-                                    />
-                                ) : (
-                                    <p className="text-gray-700 italic text-sm">{displayedNotes || "Ingen notater lagt til."}</p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Servings Adjuster */}
-                    {!isEditing && (
-                        <Card className="bg-gray-50 border-dashed">
-                            <CardContent className="p-4 flex items-center justify-between">
-                                <span className="font-medium text-gray-700">Beregn ingredienser for:</span>
-                                <div className="flex items-center gap-3 bg-white rounded-lg border px-2 py-1 shadow-sm">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 hover:bg-gray-100 rounded-full"
-                                        onClick={() => setCurrentServings(Math.max(1, currentServings - 1))}
-                                    >
-                                        <Minus className="w-3 h-3" />
-                                    </Button>
-                                    <span className="font-bold w-4 text-center">{currentServings}</span>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 hover:bg-gray-100 rounded-full"
-                                        onClick={() => setCurrentServings(currentServings + 1)}
-                                    >
-                                        <Plus className="w-3 h-3" />
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Servings Adjuster (For Editing Plan) */}
-                    {isPlannedMode && isEditing && (
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-lg">Juster planlagte porsjoner</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-4">
-                                    <Button variant="outline" size="icon" onClick={() => setEditServings(Math.max(1, editServings - 1))}>-</Button>
-                                    <span className="text-xl font-bold w-8 text-center">{editServings}</span>
-                                    <Button variant="outline" size="icon" onClick={() => setEditServings(editServings + 1)}>+</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    <Card className="h-fit">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle>Ingredienser</CardTitle>
-                            {isEditing && (
-                                <Button variant="ghost" size="sm" onClick={handleAddIngredient} className="h-8 w-8 p-0">
-                                    <Plus className="w-4 h-4" />
-                                </Button>
-                            )}
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="space-y-3">
-                                <AnimatePresence>
-                                    {displayedIngredients?.map((ing, i) => {
-                                        const isChecked = checkedIngredients.has(i)
-                                        return (
-                                            <motion.li
-                                                layout
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                key={i}
-                                                className={`flex items-center justify-between border-b border-gray-100 pb-2 last:border-0 text-sm transition-colors ${isChecked && !isEditing ? 'text-gray-400 line-through' : ''}`}
-                                                onClick={() => !isEditing && toggleIngredientCheck(i)}
-                                                style={{ cursor: !isEditing ? 'pointer' : 'default' }}
-                                            >
-                                                {isEditing ? (
-                                                    <IngredientRow
-                                                        ingredient={ing}
-                                                        index={i}
-                                                        onChange={handleIngredientChange}
-                                                        onRemove={handleRemoveIngredient}
-                                                        compact
-                                                    />
-                                                ) : (
-                                                    <>
-                                                        <span className="font-medium flex items-center gap-2">
-                                                            {isChecked && <Check className="w-3 h-3" />}
-                                                            {ing.name}
-                                                        </span>
-                                                        <span className="whitespace-nowrap">{ing.amount} {ing.unit}</span>
-                                                    </>
-                                                )}
-                                            </motion.li>
-                                        )
-                                    })}
-                                </AnimatePresence>
-                            </ul>
-                        </CardContent>
-                    </Card>
+                        )}
+                    </div>
                 </div>
 
-                {/* Instructions Column */}
-                <div className="md:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Fremgangsmåte</CardTitle>
-                            <CardDescription>Steg-for-steg guide til å lage dette måltidet.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-8">
-                                {recipe.instructions?.map((step, i) => (
-                                    <div key={i} className="flex gap-4 group">
-                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                                            {i + 1}
-                                        </div>
-                                        <p className="text-gray-700 mt-1 leading-relaxed text-lg">{renderRichText(step)}</p>
+                {/* Content Grid */}
+                <div className="grid md:grid-cols-3 gap-8">
+                    {/* Ingredients Column */}
+                    <div className="md:col-span-1 space-y-6">
+                        {/* Notes Section (Only for Planned Mode) */}
+                        {isPlannedMode && (
+                            <Card className="border-indigo-100 bg-indigo-50/30 shadow-sm">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-lg text-indigo-900">Notater</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={editNotes}
+                                            onChange={(e) => setEditNotes(e.target.value)}
+                                            placeholder="Legg til notater for dette måltidet..."
+                                            className="bg-white"
+                                        />
+                                    ) : (
+                                        <p className="text-gray-700 italic text-sm">{displayedNotes || "Ingen notater lagt til."}</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Servings Adjuster */}
+                        {!isEditing && (
+                            <Card>
+                                <CardContent className="p-4 flex items-center justify-between">
+                                    <span className="font-medium text-gray-700">Beregn ingredienser for:</span>
+                                    <div className="flex items-center gap-3 bg-white/60 rounded-lg border border-white/80 px-2 py-1 shadow-sm">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 hover:bg-gray-100 rounded-full"
+                                            onClick={() => setCurrentServings(Math.max(1, currentServings - 1))}
+                                        >
+                                            <Minus className="w-3 h-3" />
+                                        </Button>
+                                        <span className="font-bold w-4 text-center">{currentServings}</span>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 hover:bg-gray-100 rounded-full"
+                                            onClick={() => setCurrentServings(currentServings + 1)}
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                        </Button>
                                     </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Servings Adjuster (For Editing Plan) */}
+                        {isPlannedMode && isEditing && (
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-lg">Juster planlagte porsjoner</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center gap-4">
+                                        <Button variant="outline" size="icon" onClick={() => setEditServings(Math.max(1, editServings - 1))}>-</Button>
+                                        <span className="text-xl font-bold w-8 text-center">{editServings}</span>
+                                        <Button variant="outline" size="icon" onClick={() => setEditServings(editServings + 1)}>+</Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        <Card className="h-fit">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                                        <ChefHat className="w-4 h-4 text-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-lg">Ingredienser</CardTitle>
+                                        <CardDescription className="text-xs text-gray-400">{displayedIngredients?.length || 0} varer</CardDescription>
+                                    </div>
+                                </div>
+                                {isEditing && (
+                                    <Button variant="ghost" size="sm" onClick={handleAddIngredient} className="h-8 w-8 p-0">
+                                        <Plus className="w-4 h-4" />
+                                    </Button>
+                                )}
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="space-y-1">
+                                    <AnimatePresence>
+                                        {displayedIngredients?.map((ing, i) => {
+                                            const isChecked = checkedIngredients.has(i)
+                                            return (
+                                                <motion.li
+                                                    layout
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    key={i}
+                                                    className={`flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0 text-sm transition-all ${isChecked && !isEditing ? 'opacity-40' : ''}`}
+                                                    onClick={() => !isEditing && toggleIngredientCheck(i)}
+                                                    style={{ cursor: !isEditing ? 'pointer' : 'default' }}
+                                                >
+                                                    {isEditing ? (
+                                                        <IngredientRow
+                                                            ingredient={ing}
+                                                            index={i}
+                                                            onChange={handleIngredientChange}
+                                                            onRemove={handleRemoveIngredient}
+                                                            compact
+                                                        />
+                                                    ) : (
+                                                        <>
+                                                            <span className="font-medium flex items-center gap-3">
+                                                                <div className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all ${isChecked ? 'bg-indigo-500 text-white' : 'bg-indigo-50 border border-indigo-100'}`}>
+                                                                    {isChecked ? <Check className="w-3 h-3" strokeWidth={3} /> : <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />}
+                                                                </div>
+                                                                <span className={isChecked ? 'line-through' : ''}>{ing.name}</span>
+                                                            </span>
+                                                            <span className="text-xs font-bold text-indigo-500 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-xl tabular-nums whitespace-nowrap">
+                                                                {ing.amount} {ing.unit}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </motion.li>
+                                            )
+                                        })}
+                                    </AnimatePresence>
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Instructions Column */}
+                    <div className="md:col-span-2">
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                                        <Flame className="w-4 h-4 text-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-lg">Fremgangsmåte</CardTitle>
+                                        <CardDescription>Steg-for-steg guide til å lage dette måltidet.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-8 relative">
+                                    {/* Vertical connecting line */}
+                                    <div className="absolute left-[13px] top-3.5 bottom-3.5 w-px bg-indigo-100" />
+
+                                    {recipe.instructions?.map((step, i) => (
+                                        <div key={i} className="flex gap-4 group relative">
+                                            <div className="flex-shrink-0 w-7 h-7 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-indigo-200 z-10">
+                                                {i + 1}
+                                            </div>
+                                            <p className="text-gray-700 mt-0.5 leading-relaxed text-base">{renderRichText(step)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
-        </motion.div>
-        )}
-        </AnimatePresence>
-        </PageContainer>
+        </PageContainer >
     )
 }
