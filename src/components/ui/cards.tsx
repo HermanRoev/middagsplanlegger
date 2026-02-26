@@ -106,7 +106,7 @@ export function HeroMealCard({
                             )}
                         </div>
                         <Button asChild size="xl" shape="pill" className="w-full text-[14px] uppercase tracking-widest font-black shadow-xl shadow-indigo-200" iconRight={<ArrowRight className="w-6 h-6" />}>
-                            <Link href={`/dashboard/recipes/${meal.mealId || meal.id}${meal.mealId ? `?plannedId=${meal.id}` : ''}`}>
+                            <Link href={`/dashboard/recipes/view?id=${meal.mealId || meal.id}${meal.mealId ? `&plannedId=${meal.id}` : ''}`}>
                                 Start koking
                             </Link>
                         </Button>

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Clock, Users, Trash2, Edit, Save, ArrowLeft, ArrowRightLeft, Plus, Utensils, Check, Minus, Star, ChefHat, Flame } from "lucide-react"
 import { PageContainer } from "@/components/layout/PageLayout"
 import { IngredientRow } from "@/components/ui/forms"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import toast from "react-hot-toast"
 import Link from "next/link"
@@ -32,8 +32,8 @@ import { incrementUserStat } from "@/lib/stats"
 
 
 export default function RecipeDetailsPage() {
-    const { id } = useParams()
     const searchParams = useSearchParams()
+    const id = searchParams.get('id')
     const plannedId = searchParams.get('plannedId')
     const router = useRouter()
     const { user } = useAuth()
@@ -438,7 +438,7 @@ export default function RecipeDetailsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-white/60 backdrop-blur-md p-3 rounded-2xl shadow-sm border border-white/70">
                     <div className="flex gap-2 flex-wrap">
                         {!isPlannedMode && (
-                            <Link href={`/dashboard/recipes/${id}/edit`}>
+                            <Link href={`/dashboard/recipes/edit?id=${id}`}>
                                 <Button variant="glass" size="icon" className="rounded-xl sm:w-auto sm:px-4"><Edit className="w-4 h-4" /><span className="hidden sm:inline sm:ml-2">Rediger oppskrift</span></Button>
                             </Link>
                         )}

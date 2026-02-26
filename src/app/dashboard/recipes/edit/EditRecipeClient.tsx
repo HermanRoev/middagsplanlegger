@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,7 +23,8 @@ import { getAllTags, addTag } from '@/lib/tags'
 
 export default function EditRecipePage() {
   const router = useRouter()
-  const { id } = useParams()
+  const searchParams = useSearchParams()
+  const id = searchParams.get('id')
   const { user } = useAuth()
 
   const [loading, setLoading] = useState(true)
@@ -127,7 +128,7 @@ export default function EditRecipePage() {
       ])
 
       toast.success("Oppskrift oppdatert!")
-      router.push(`/dashboard/recipes/${id}`)
+      router.push(`/dashboard/recipes/view?id=${id}`)
     } catch (error) {
       console.error(error)
       toast.error("Kunne ikke lagre oppskrift")

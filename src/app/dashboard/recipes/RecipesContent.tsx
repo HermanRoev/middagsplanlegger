@@ -208,7 +208,7 @@ export default function RecipesContent() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="hidden lg:block cursor-pointer"
-                    onClick={() => planDate ? handlePlanMeal(featuredRecipe) : router.push(`/dashboard/recipes/${featuredRecipe.id}`)}
+                    onClick={() => planDate ? handlePlanMeal(featuredRecipe) : router.push(`/dashboard/recipes/view?id=${featuredRecipe.id}`)}
                 >
                     <div className="relative h-64 rounded-[40px] overflow-hidden group shadow-2xl shadow-indigo-100/20">
                         {featuredRecipe.imageUrl && featuredRecipe.imageUrl.trim() !== "" && (

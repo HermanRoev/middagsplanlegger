@@ -84,7 +84,7 @@ export default function PlannerPage() {
   }, [startDateKey, user, householdId])
 
   const handleMealClick = (meal: PlannedMeal) => {
-    router.push(`/dashboard/recipes/${meal.mealId}?plannedId=${meal.id}`)
+    router.push(`/dashboard/recipes/view?id=${meal.mealId}&plannedId=${meal.id}`)
   }
 
   const handleDateSelect = (date: Date | undefined) => {

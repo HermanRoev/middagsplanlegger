@@ -99,7 +99,7 @@ export function RecipeCard({ recipe, pantryCoverage = 0, canCook = false, onPlan
                     </Button>
                 ) : (
                     <Button asChild variant="outline" className="w-full h-12 rounded-xl font-semibold text-gray-500 border-white/60 bg-white/30 hover:bg-white/60 hover:text-gray-800 hover:border-white/80 backdrop-blur-sm transition-all">
-                        <Link href={`/dashboard/recipes/${recipe.id}`}>Se detaljer</Link>
+                        <Link href={`/dashboard/recipes/view?id=${recipe.id}`}>Se detaljer</Link>
                     </Button>
                 )}
             </div>

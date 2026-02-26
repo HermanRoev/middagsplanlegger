@@ -238,7 +238,7 @@ export default function DashboardPage() {
                             upcomingMeals.slice(0, 3).map((meal) => (
                                 <ListItemCard
                                     key={meal.id}
-                                    href={`/dashboard/recipes/${meal.mealId}?plannedId=${meal.id}`}
+                                    href={`/dashboard/recipes/view?id=${meal.mealId}&plannedId=${meal.id}`}
                                     title={meal.mealName}
                                     subtitleLabel={format(new Date(meal.date), "EEEE", { locale: nb })}
                                     imageUrl={meal.imageUrl}
@@ -273,7 +273,7 @@ export default function DashboardPage() {
                                         : "Du har mye av ingrediensene som trengs i skapet allerede."}
                                 </p>
                                 <Button asChild variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold rounded-xl h-11 border-0 shadow-md">
-                                    <Link href={`/dashboard/recipes/${dailyRecommendation.meal.id}`}>
+                                    <Link href={`/dashboard/recipes/view?id=${dailyRecommendation.meal.id}`}>
                                         Se oppskrift <ArrowRight className="w-4 h-4 ml-2" />
                                     </Link>
                                 </Button>
